@@ -25,7 +25,7 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
     @Override
     public boolean canAccept(Preparable ingredient) {
         String name = ((Item) ingredient).getName().toLowerCase();
-        return name.contains("pasta") || name.contains("beras");
+        return name.contains("pasta");
     }
 
     @Override
