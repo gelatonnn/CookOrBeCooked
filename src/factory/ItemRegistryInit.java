@@ -18,5 +18,10 @@ public class ItemRegistryInit {
         ItemFactory.register("plate", Plate::new);
         ItemFactory.register("boiling_pot", BoilingPot::new);
         ItemFactory.register("frying_pan", FryingPan::new);
+
+        // DISHES
+        ItemFactory.register("pasta_marinara", PastaMarinara::new);
+        ItemFactory.register("pasta_bolognese", PastaBolognese::new);
+        ItemFactory.register("pasta_frutti_di_mare", PastaFruttiDiMare::new);
     }
 }
