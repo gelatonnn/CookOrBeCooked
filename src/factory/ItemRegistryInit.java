@@ -10,9 +10,9 @@ public class ItemRegistryInit {
         // INGREDIENTS
         ItemFactory.register("pasta", Pasta::new);
         ItemFactory.register("tomato", Tomato::new);
-        ItemFactory.register("udang", Udang::new);
-        ItemFactory.register("ikan", Ikan::new);
-        ItemFactory.register("daging", Daging::new);
+        ItemFactory.register("shrimp", Shrimp::new);
+        ItemFactory.register("fish", Fish::new);
+        ItemFactory.register("meat", Meat::new);
 
         // UTENSILS
         ItemFactory.register("plate", Plate::new);
