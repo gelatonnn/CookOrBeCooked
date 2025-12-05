@@ -3,8 +3,8 @@ package chef;
 import chef.state.ChefState;
 import chef.state.IdleState;
 import items.core.Item;
-import model.Position;
-import model.Direction; 
+import model.Direction;
+import model.Position; 
 
 public class Chef {
 
@@ -15,6 +15,7 @@ public class Chef {
     private Item inventory;
     private ChefState currentState;
     private boolean active;
+    private Item heldItem = null;
 
     public Chef(String id, String name, Position startPos) {
         this.id = id;
@@ -66,5 +67,13 @@ public class Chef {
 
     public String getName() {
         return name;
+    }
+
+    public Item getHeldItem() {
+        return heldItem;
+    }
+
+    public void setHeldItem(Item heldItem) {
+        this.heldItem = heldItem;
     }
 }

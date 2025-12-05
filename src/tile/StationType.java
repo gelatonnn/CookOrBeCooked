@@ -5,5 +5,7 @@ public enum StationType {
     COOKING,
     CUTTING,
     SERVING,
-    WASHING
+    WASHING,
+    TRASH,
+    INGREDIENT_STORAGE
 }

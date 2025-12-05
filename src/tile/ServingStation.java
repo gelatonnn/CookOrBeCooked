@@ -1,41 +1,39 @@
 package tile;
 
 
+import items.core.Item;
+import items.dish.DishBase;
+import items.dish.DishState;
 import chef.Chef;
-import model.Position;
-import java.util.LinkedList;
-import java.util.Queue;
 
 
 public class ServingStation extends Station {
-    // private Queue<Order> pendingOrders; // Antrian pesanan yang belum diproses
+    public ServingStation(Position pos) {
+        super(pos, StationType.SERVING);
+    }
 
-    // public ServingStation(Position pos) {
-    //     super(pos, StationType.SERVING);
-    //     this.pendingOrders = new LinkedList<>();
-    // }
+    @Override
+    public InteractionResult interact(Chef c) {
+        if (c.getHeldItem() == null || !(c.getHeldItem() instanceof DishBase)) {
+            return new InteractionResult(false, "Tidak ada hidangan untuk disajikan.");
+        }
 
-    // @Override
-    // public void interact(Chef chef) {
-    //     if (!pendingOrders.isEmpty()) {
-    //         Order order = pendingOrders.peek();
-    //         if (order.matches(chef.getInventory())) {
-    //             System.out.println("Pesanan " + order.getId() + " disajikan dengan sukses!");
-    //             pendingOrders.poll(); 
-    //         } else {
-    //             System.out.println("Pesanan tidak cocok, diberikan penalti.");
-    //         }
-    //     } else {
-    //         System.out.println("Tidak ada pesanan yang harus disajikan.");
-    //     }
-    // }
+        DishBase dish = (DishBase) c.getHeldItem();
+        if (dish.getDishState() == DishState.COMPLETE) {
+            // Menyajikan dish
+            return new InteractionResult(true, "Hidangan berhasil disajikan.");
+        } else {
+            return new InteractionResult(false, "Hidangan belum lengkap.");
+        }
+    }
+    
+    @Override
+    public boolean isWalkable() {
+        return true;
+    }
 
-    // public void addOrder(Order order) {
-    //     pendingOrders.add(order);
-    // }
-
-    // @Override
-    // public void onEnter(Chef chef) {
-    //     // Handle chef entering the serving station
-    // }
+    @Override
+    public void onEnter(Chef chef) {
+        System.out.println("Chef " + chef.getName() + " memasuki Serving Station.");
+    }
 }

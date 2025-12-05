@@ -16,9 +16,7 @@ public abstract class Tile {
         return pos;
     }
 
-    public boolean isWalkable() {
-        return isWalkable;
-    }
+    public abstract boolean isWalkable(); 
 
     public abstract void onEnter(Chef chef);
 }

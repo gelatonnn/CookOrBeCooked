@@ -10,36 +10,32 @@ public class WashingStation extends Station {
     private Stack<Plate> cleanStack;  
 
     public WashingStation(Position pos) {
-        super(pos, null);
+        super(pos, StationType.WASHING);
         this.dirtyStack = new Stack<>();
         this.cleanStack = new Stack<>();
     }
 
     @Override
-    public void interact(Chef chef) {
-        if (!dirtyStack.isEmpty()) {
-            Plate plate = dirtyStack.pop();
-            plate.wash(); 
-            cleanStack.push(plate);  
-            System.out.println("Chef " + chef.getName() + " mencuci piring.");
-        } else {
-            System.out.println("Tidak ada piring kotor untuk dicuci.");
+    public InteractionResult interact(Chef c) {
+        if (c.getHeldItem() instanceof Plate) {
+            Plate plate = (Plate) c.getHeldItem();
+            if (plate.isClean()) {
+                return new InteractionResult(false, "Piring sudah bersih.");
+            }
+            plate.wash();
+            cleanStack.push(plate);
+            return new InteractionResult(true, "Piring dicuci.");
         }
+        return new InteractionResult(false, "Tidak ada piring kotor untuk dicuci.");
     }
 
-    public void addDirtyPlate(Plate plate) {
-        dirtyStack.push(plate);
+    @Override
+    public boolean isWalkable() {
+        return true;
     }
 
     @Override
     public void onEnter(Chef chef) {
-        // Handle chef entering the washing station
-    }
-
-    public Plate getCleanPlate() {
-        if (!cleanStack.isEmpty()) {
-            return cleanStack.pop();
-        }
-        return null;
+        System.out.println("Chef " + chef.getName() + " memasuki Washing Station.");
     }
 }

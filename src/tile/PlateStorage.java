@@ -6,30 +6,34 @@ import items.utensils.Plate;
 import java.util.Stack;
 
 public class PlateStorage extends Station {
-    private Stack<Plate> plates;  
+    private Stack<Plate> plates = new Stack<>();  
 
     public PlateStorage(Position pos) {
-        super(pos, null);
-        this.plates = new Stack<>();
+        super(pos, StationType.PLATE_STORAGE);
     }
 
     @Override
-    public void interact(Chef chef) {
-        if (!plates.isEmpty()) {
-            Plate plate = plates.pop();  // Ambil piring bersih
-            chef.pickUp(plate);  // Chef mengambil piring
-            System.out.println("Chef " + chef.getName() + " mengambil piring bersih.");
-        } else {
-            System.out.println("Tidak ada piring bersih.");
+    public InteractionResult interact(Chef c) {
+        if (plates.isEmpty()) {
+            return new InteractionResult(false, "Tidak ada piring bersih.");
         }
+
+        Plate plate = plates.pop();
+        c.setHeldItem(plate);
+        return new InteractionResult(true, "Piring berhasil diambil.");
     }
 
     public void addPlate(Plate plate) {
-        plates.push(plate);  // Menambahkan piring bersih
+        plates.push(plate);
+    }
+
+    @Override
+    public boolean isWalkable() {
+        return true;
     }
 
     @Override
     public void onEnter(Chef chef) {
-        // Handle chef entering the plate storage
+        System.out.println("Chef " + chef.getName() + " memasuki Plate Storage.");
     }
 }

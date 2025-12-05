@@ -12,4 +12,9 @@ public class Walkable extends Tile {
     public void onEnter(Chef chef) {
         System.out.println("Chef " + chef.getName() + " memasuki tile di posisi " + pos);
     }
+
+    @Override
+    public boolean isWalkable() {
+        return true;
+    }
 }
