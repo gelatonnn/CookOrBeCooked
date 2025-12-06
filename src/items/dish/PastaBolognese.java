@@ -1,28 +1,15 @@
 package items.dish;
 
-import items.core.Preparable;
-import items.ingredients.Pasta;
-import items.ingredients.Meat;
-
-import java.util.List;
+import model.recipes.RecipeBook;
+import model.recipes.DishType;
 
 public class PastaBolognese extends DishBase {
+    public PastaBolognese() {
+        super(RecipeBook.getRecipe(DishType.PASTA_BOLOGNESE));
+    }
 
     @Override
     public String getName() {
         return "Pasta Bolognese";
-    }
-
-    @Override
-    public boolean validateRecipe(List<Preparable> list) {
-        boolean pasta = false;
-        boolean meat = false;
-
-        for (Preparable p : list) {
-            if (p instanceof Pasta) pasta = true;
-            if (p instanceof Meat) meat = true;
-        }
-
-        return pasta && meat && list.size() == 2;
     }
 }

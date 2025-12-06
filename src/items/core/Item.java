@@ -1,8 +1,7 @@
 package items.core;
 
 public abstract class Item {
-
-    protected boolean portable = true;     // default item bisa dipegang
+    protected boolean portable = true;
     protected ItemState state = ItemState.RAW;
 
     public boolean isPortable() {
@@ -13,8 +12,8 @@ public abstract class Item {
         return state;
     }
 
-    public void setState(ItemState state) {
-        this.state = state;
+    public void setState(ItemState s) {
+        this.state = s;
     }
 
     public abstract String getName();

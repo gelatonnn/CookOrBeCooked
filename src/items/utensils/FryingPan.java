@@ -9,22 +9,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FryingPan extends UtensilBase implements CookingDevice {
-
     private final List<Preparable> contents = new ArrayList<>();
     private final int capacity = 2;
+    private boolean cooking = false;
 
     @Override
-    public boolean isPortable() {
-        return true;
-    }
+    public String getName() { return "Frying Pan"; }
 
     @Override
-    public int capacity() {
-        return capacity;
-    }
+    public boolean isPortable() { return true; }
+
+    @Override
+    public int capacity() { return capacity; }
 
     @Override
     public boolean canAccept(Preparable ingredient) {
+        if (contents.size() >= capacity) return false;
         return ((Item) ingredient).getState() == ItemState.CHOPPED;
     }
 
@@ -37,13 +37,35 @@ public class FryingPan extends UtensilBase implements CookingDevice {
 
     @Override
     public void startCooking() {
-        for (Preparable p : contents) {
-            p.cook();
-        }
+        if (contents.isEmpty() || cooking) return;
+        cooking = true;
+        for (Preparable p : contents) p.cook();
     }
 
     @Override
-    public String getName() {
-        return "Frying Pan";
+    public void finishCooking() {
+        cooking = false;
+    }
+
+    @Override
+    public List<Preparable> getContents() {
+        return new ArrayList<>(contents);
+    }
+
+    @Override
+    public void clearContents() {
+        contents.clear();
+        cooking = false;
+    }
+
+    @Override
+    public boolean isCooking() {
+        return cooking;
+    }
+
+    @Override
+    public String toString() {
+        return getName() + " [" + contents.size() + "/" + capacity + "]" +
+                (cooking ? " COOKING" : "");
     }
 }
