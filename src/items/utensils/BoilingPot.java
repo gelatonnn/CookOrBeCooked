@@ -8,24 +8,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BoilingPot extends UtensilBase implements CookingDevice {
-
     private final List<Preparable> contents = new ArrayList<>();
     private final int capacity = 3;
+    private boolean cooking = false;
 
     @Override
-    public boolean isPortable() {
-        return true;
-    }
+    public String getName() { return "Boiling Pot"; }
 
     @Override
-    public int capacity() {
-        return capacity;
-    }
+    public boolean isPortable() { return true; }
+
+    @Override
+    public int capacity() { return capacity; }
 
     @Override
     public boolean canAccept(Preparable ingredient) {
-        String name = ((Item) ingredient).getName().toLowerCase();
-        return name.contains("pasta");
+        if (contents.size() >= capacity) return false;
+        String n = ((Item) ingredient).getName().toLowerCase();
+        return n.contains("pasta");
     }
 
     @Override
@@ -37,13 +37,35 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
 
     @Override
     public void startCooking() {
-        for (Preparable p : contents) {
-            p.cook(); // cooking timer handled in IngredientBase
-        }
+        if (contents.isEmpty() || cooking) return;
+        cooking = true;
+        for (Preparable p : contents) p.cook();
     }
 
     @Override
-    public String getName() {
-        return "Boiling Pot";
+    public void finishCooking() {
+        cooking = false;
+    }
+
+    @Override
+    public List<Preparable> getContents() {
+        return new ArrayList<>(contents);
+    }
+
+    @Override
+    public void clearContents() {
+        contents.clear();
+        cooking = false;
+    }
+
+    @Override
+    public boolean isCooking() {
+        return cooking;
+    }
+
+    @Override
+    public String toString() {
+        return getName() + " [" + contents.size() + "/" + capacity + "]" +
+                (cooking ? " COOKING" : "");
     }
 }

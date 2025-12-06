@@ -3,17 +3,10 @@ package items.ingredients;
 import items.core.Item;
 import items.core.ItemState;
 import items.core.Preparable;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import utils.TimerUtils;
 
 public abstract class IngredientBase extends Item implements Preparable {
-
-    private static final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(10);
-
-    private boolean isCurrentlyCooking = false;
+    private boolean cooking = false;
 
     public IngredientBase() {
         this.state = ItemState.RAW;
@@ -22,7 +15,7 @@ public abstract class IngredientBase extends Item implements Preparable {
 
     @Override
     public boolean canBePlacedOnPlate() {
-        return state == ItemState.COOKED;
+        return state == ItemState.COOKED || state == ItemState.CHOPPED;
     }
 
     @Override
@@ -34,24 +27,24 @@ public abstract class IngredientBase extends Item implements Preparable {
 
     @Override
     public void cook() {
-        if (!canBeCooked()) return;
-        if (isCurrentlyCooking) return; // prevent double schedule
+        if (!canBeCooked() || cooking) return;
 
-        isCurrentlyCooking = true;
+        cooking = true;
         state = ItemState.COOKING;
 
-        // 12 detik bakal jadi COOKED
-        scheduler.schedule(() -> {
+        // After 12s → COOKED
+        TimerUtils.scheduleSeconds(() -> {
             if (state == ItemState.COOKING) {
                 state = ItemState.COOKED;
             }
-        }, 12, TimeUnit.SECONDS);
+        }, 12);
 
-        // 24 detik bakal jadi BURNED
-        scheduler.schedule(() -> {
-            if (state == ItemState.COOKED || state == ItemState.COOKING) {
+        // After 24s → BURNED
+        TimerUtils.scheduleSeconds(() -> {
+            if (state == ItemState.COOKING || state == ItemState.COOKED) {
                 state = ItemState.BURNED;
+                cooking = false;
             }
-        }, 24, TimeUnit.SECONDS);
+        }, 24);
     }
 }

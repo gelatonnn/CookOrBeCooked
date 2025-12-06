@@ -8,34 +8,31 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Plate extends UtensilBase {
-
     private ItemState cleanliness = ItemState.CLEAN;
     private final List<Preparable> contents = new ArrayList<>();
 
-    public Plate() {}
+    @Override
+    public String getName() { return "Plate"; }
 
-    public boolean isClean() {
-        return cleanliness == ItemState.CLEAN;
-    }
-
-    public void makeDirty() {
-        cleanliness = ItemState.DIRTY;
-    }
+    public boolean isClean() { return cleanliness == ItemState.CLEAN; }
 
     public void wash() {
         cleanliness = ItemState.CLEAN;
+        contents.clear();
     }
 
-    public void addIngredient(Preparable ingredient) {
-        contents.add(ingredient);
+    public void makeDirty() { cleanliness = ItemState.DIRTY; }
+
+    public void addIngredient(Preparable p) {
+        contents.add(p);
     }
 
     public List<Preparable> getContents() {
-        return contents;
+        return new ArrayList<>(contents);
     }
 
     @Override
-    public String getName() {
-        return "Plate";
+    public String toString() {
+        return getName() + " [" + cleanliness + "] with " + contents.size() + " items";
     }
 }
