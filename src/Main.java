@@ -6,49 +6,59 @@ import model.engine.GameEngine;
 import model.orders.OrderManager;
 import model.world.WorldMap;
 import model.chef.Chef;
-import view.*;
+import view.gui.GamePanel;
+
+import javax.swing.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 public class Main {
     public static void main(String[] args) {
-        // Initialize item factory
         ItemRegistryInit.registerAll();
 
-        // 1. World
+        // 1. Setup World & Components
         WorldMap world = new WorldMap();
-
-        // 2. Chefs (spawn at V positions)
-        Chef chef1 = new Chef("chef1", "Gordon", 2, 3);
-        Chef chef2 = new Chef("chef2", "Ramsay", 11, 6);
-        Chef[] chefs = { chef1, chef2 };
-
-        // 3. Orders
         OrderManager orders = new OrderManager(false);
-
-        // 4. Engine
+        
+        // 2. Setup Engine (Manual, bukan singleton getInstance)
         GameEngine engine = new GameEngine(world, orders, 180);
-        engine.addChef(chef1);
-        engine.addChef(chef2);
+        
+        // Spawn Chefs
+        Chef c1 = new Chef("c1", "Gordon", 2, 3);
+        Chef c2 = new Chef("c2", "Ramsay", 11, 6);
+        engine.addChef(c1);
+        engine.addChef(c2);
 
-        // 5. View
-        ConsoleRenderer console = new ConsoleRenderer(world, chefs);
-        HUDRenderer hud = new HUDRenderer(chefs);
-        OrderRenderer orderView = new OrderRenderer(orders);
+        // 3. Setup Controller
+        GameController controller = new GameController(engine);
 
-        // 6. Controller
-        GameController controller = new GameController(engine, world, chefs,
-                console, hud, orderView);
+        // 4. GUI Setup
+        SwingUtilities.invokeLater(() -> {
+            JFrame window = new JFrame("Nimonscooked GUI");
+            window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            
+            GamePanel panel = new GamePanel(engine);
+            engine.addObserver(panel); // Daftarkan panel sebagai observer
+            
+            window.add(panel);
+            window.pack();
+            window.setLocationRelativeTo(null);
+            window.setVisible(true);
 
-        System.out.println("=== NIMONSCOOKED ===");
-        System.out.println("Controls:");
-        System.out.println("  WASD - Move active chef");
-        System.out.println("  E - Interact with station");
-        System.out.println("  P - Pick item from station");
-        System.out.println("  O - Place item to station");
-        System.out.println("  T - Throw item");
-        System.out.println("  C - Switch chef");
-        System.out.println("  Q - Quit game");
-        System.out.println("====================\n");
+            window.addKeyListener(new KeyAdapter() {
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    char key = Character.toLowerCase(e.getKeyChar());
+                    // Mapping sederhana
+                    if (key == 'w' || key == 'a' || key == 's' || key == 'd') controller.handleInput(String.valueOf(key));
+                    if (key == 'p') controller.handleInput("p");
+                    if (key == 'e') controller.handleInput("e");
+                    if (key == 't') controller.handleInput("t");
+                }
+            });
+        });
 
-        controller.gameLoop();
+        // 5. Start Loop
+        new Thread(engine::start).start();
     }
 }

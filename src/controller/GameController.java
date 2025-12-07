@@ -1,91 +1,43 @@
 package controller;
 
-import controller.commands.*;
-import model.engine.GameEngine;
-import model.world.WorldMap;
+import java.util.List;
 import model.chef.Chef;
+import model.engine.GameEngine;
 import utils.Direction;
-import view.*;
-
-import java.util.Scanner;
 
 public class GameController {
     private final GameEngine engine;
-    private final WorldMap world;
-    private final Chef[] chefs;
-    private int activeChef = 0;
+    private int activeChefIndex = 0; // Tambahan untuk melacak chef mana yang aktif
 
-    private final ConsoleRenderer console;
-    private final HUDRenderer hud;
-    private final OrderRenderer orderView;
-
-    private final Scanner input = new Scanner(System.in);
-
-    public GameController(
-            GameEngine engine,
-            WorldMap world,
-            Chef[] chefs,
-            ConsoleRenderer console,
-            HUDRenderer hud,
-            OrderRenderer orderView
-    ) {
+    public GameController(GameEngine engine) {
         this.engine = engine;
-        this.world = world;
-        this.chefs = chefs;
-        this.console = console;
-        this.hud = hud;
-        this.orderView = orderView;
     }
 
-    public void gameLoop() {
-        console.render();
-        hud.render();
-        orderView.render();
+    public void handleInput(String key) {
+        List<Chef> chefs = engine.getChefs();
+        if (chefs.isEmpty()) return;
 
-        while (!engine.isFinished()) {
-            System.out.print("Command: ");
-            String cmd = input.nextLine().trim().toLowerCase();
+        // Ambil chef yang sedang aktif
+        Chef activeChef = chefs.get(activeChefIndex);
 
-            Command action = parseCommand(cmd);
-            if (action == null) continue;
-            action.execute();
-
-            engine.tick();
-
-            console.render();
-            hud.setActiveChefIndex(activeChef);
-            hud.render();
-            orderView.render();
+        switch (key) {
+            // Movement
+            case "w" -> engine.moveChef(activeChef, Direction.UP);
+            case "s" -> engine.moveChef(activeChef, Direction.DOWN);
+            case "a" -> engine.moveChef(activeChef, Direction.LEFT);
+            case "d" -> engine.moveChef(activeChef, Direction.RIGHT);
+            
+            // Actions
+            case "e" -> engine.interactAt(activeChef, activeChef.getFacingPosition());
+            case "p" -> engine.pickAt(activeChef, activeChef.getFacingPosition());
+            case "o" -> engine.placeAt(activeChef, activeChef.getFacingPosition()); // Tambahan tombol 'o' untuk place
+            case "t" -> engine.throwItem(activeChef);
+            
+            // Switch Chef (Tab atau C)
+            case "c", "tab" -> {
+                activeChefIndex = (activeChefIndex + 1) % chefs.size();
+                System.out.println("Switched to Chef " + (activeChefIndex + 1));
+            }
         }
-
-        System.out.println("\n=== GAME OVER ===");
-        System.out.println("Final Score: " + engine.getOrders().getScore());
-        System.out.println("Time Remaining: " + engine.getClock().getTimeRemaining() + "s");
-    }
-
-    private Command parseCommand(String s) {
-        Chef chef = chefs[activeChef];
-
-        return switch (s) {
-            case "w" -> new MoveCommand(engine, chef, Direction.UP);
-            case "s" -> new MoveCommand(engine, chef, Direction.DOWN);
-            case "a" -> new MoveCommand(engine, chef, Direction.LEFT);
-            case "d" -> new MoveCommand(engine, chef, Direction.RIGHT);
-            case "e" -> new InteractCommand(engine, chef, world);
-            case "p" -> new PickCommand(engine, chef, world);
-            case "o" -> new PlaceCommand(engine, chef, world);
-            case "t" -> new ThrowCommand(engine, chef, world);
-            case "c" -> {
-                activeChef = (activeChef+1)%chefs.length;
-                System.out.println("Switched to Chef " + (activeChef+1));
-                yield null;
-            }
-            case "q" -> new QuitCommand(engine);
-
-            default -> {
-                System.out.println("Unknown command.");
-                yield null;
-            }
-        };
     }
 }
