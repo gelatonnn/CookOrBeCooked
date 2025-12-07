@@ -2,33 +2,25 @@ package factory;
 
 import items.ingredients.*;
 import items.utensils.*;
-import items.dish.*;
-import model.recipes.*;
 
 public class ItemRegistryInit {
     public static void registerAll() {
-        System.out.println("🔧 Registering all items...");
-
-        // INGREDIENTS
-        ItemFactory.register("pasta", Pasta::new);
+        // --- INGREDIENTS (Sesuai Spec Pasta Map) ---
+        // Pastikan nama string (id) sama dengan yang dipanggil di WorldMap dan Resep
         ItemFactory.register("tomato", Tomato::new);
         ItemFactory.register("meat", Meat::new);
-        ItemFactory.register("fish", Fish::new);
+        ItemFactory.register("pasta", Pasta::new);
         ItemFactory.register("shrimp", Shrimp::new);
+        ItemFactory.register("fish", Fish::new);
 
-        // UTENSILS
+        // --- UTENSILS ---
         ItemFactory.register("plate", Plate::new);
-        ItemFactory.register("boiling_pot", BoilingPot::new);
-        ItemFactory.register("frying_pan", FryingPan::new);
+        ItemFactory.register("boiling pot", BoilingPot::new);
+        ItemFactory.register("frying pan", FryingPan::new);
 
-        // DISHES
-        ItemFactory.register("pasta_marinara",
-                () -> new DishBase(RecipeBook.getRecipe(DishType.PASTA_MARINARA)));
-        ItemFactory.register("pasta_bolognese",
-                () -> new DishBase(RecipeBook.getRecipe(DishType.PASTA_BOLOGNESE)));
-        ItemFactory.register("pasta_frutti_di_mare",
-                () -> new DishBase(RecipeBook.getRecipe(DishType.PASTA_FRUTTI_DI_MARE)));
+        // --- DISHES (Opsional jika ingin spawn dish via debug, tapi factory dish biasanya complex) ---
+        // Disini cukup Ingredients dan Utensils dasar
 
-        System.out.println("✅ All items registered successfully!");
+        System.out.println("DEBUG: All items registered successfully.");
     }
 }

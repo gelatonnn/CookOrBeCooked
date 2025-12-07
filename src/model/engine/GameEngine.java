@@ -1,13 +1,13 @@
 package model.engine;
 
-import model.world.WorldMap;
-import model.chef.Chef;
-import stations.Station;
-import model.orders.OrderManager;
-import utils.*;
-
 import java.util.ArrayList;
 import java.util.List;
+import model.chef.Chef;
+import model.orders.OrderManager;
+import model.world.WorldMap;
+import stations.Station;
+import utils.*;
+import view.Observer;
 
 public class GameEngine {
     private final WorldMap world;
@@ -18,12 +18,64 @@ public class GameEngine {
     private boolean finished = false;
     private int failedStreak = 0;
     private final int maxFailedStreak = 5;
+    private final List<Observer> observers = new ArrayList<>();
+    private boolean isRunning = false;
+    
 
     public GameEngine(WorldMap world, OrderManager orders, int stageSeconds) {
         this.world = world;
         this.orders = orders;
         this.clock = new GameClock(stageSeconds);
         this.chefs = new ArrayList<>();
+    }
+    public void addObserver(Observer o) {
+        observers.add(o);
+    }
+
+    private void notifyObservers() {
+        for (Observer o : observers) {
+            o.update();
+        }
+    }
+    public void start() {
+        isRunning = true;
+        long lastTime = System.nanoTime();
+        double amountOfTicks = 60.0; // Kecepatan game (Tick per detik) - Bisa dinaikkan
+        double ns = 1000000000 / amountOfTicks;
+        double delta = 0;
+
+        // Timer untuk GameClock (Detik Game)
+        long lastTimerCheck = System.currentTimeMillis();
+
+        while (isRunning) {
+            long now = System.nanoTime();
+            delta += (now - lastTime) / ns;
+            lastTime = now;
+            
+            // Logic & Render Loop (60x per detik)
+            while (delta >= 1) {
+                // tick() untuk update logic ringan (jika ada)
+                // notifyObservers() agar GUI menggambar posisi terbaru (animasi)
+                notifyObservers(); 
+                delta--;
+            }
+            
+            // --- FIX TIMER: Hanya kurangi waktu setiap 1 Detik (1000ms) ---
+            if (System.currentTimeMillis() - lastTimerCheck >= 1000) {
+                lastTimerCheck += 1000;
+                clock.tick();      // Kurangi waktu game 1 detik
+                orders.tick();     // Update expired orders
+                
+                // Cek kondisi kalah/menang di sini agar tidak spam
+                if (clock.isOver()) {
+                    System.out.println("TIME'S UP!");
+                    // isRunning = false; // Uncomment jika ingin stop loop
+                }
+            }
+            
+            // Sleep biar CPU adem
+            try { Thread.sleep(2); } catch (InterruptedException e) {}
+        }
     }
 
     public void addChef(Chef chef) {
@@ -139,6 +191,7 @@ public class GameEngine {
 
     public void stop() {
         finished = true;
+        isRunning = false;
     }
 
     public void incrementFailedStreak() {

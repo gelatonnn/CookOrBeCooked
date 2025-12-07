@@ -2,36 +2,31 @@ package model.world;
 
 import model.world.tiles.*;
 import stations.*;
-import items.core.Item;
 import utils.Position;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class WorldMap {
     private final int width;
     private final int height;
     private final Tile[][] grid;
     private final boolean[][] wallMask;
-    private final Map<Position, Item> itemsOnFloor = new HashMap<>();
 
-    // CORRECT LAYOUT from specification
+    // Layout Map berdasarkan Spec Type B: Pasta Map
     private final String[] MAP = {
-            "AARRAAXXXXXXXX",  // Row 1
-            "I....AXXX....W",  // Row 2
-            "I....AXXX....W",  // Row 3
-            "I.V..AXXX....A",  // Row 4
-            "A....XXXX....R",  // Row 5
-            "P....XXXC....R",  // Row 6
-            "S....XXXC..V.I",  // Row 7
-            "S....XXXA....I",  // Row 8
-            "A.............T",  // Row 9
-            "XXXXXXXXXXXXXX"   // Row 10
+            "AARRAAXXXXXXXX",
+            "I....AXXX...W.", // y=1: Ingredient Storage 1
+            "I....AXxX...W.", // y=2: Ingredient Storage 2
+            "I.V..AXXX...A.", // y=3: Ingredient Storage 3
+            "A....XXXX...R.",
+            "P....XXC....R.",
+            "S....XXC..V.I.", // y=6: Ingredient Storage 4
+            "S....XXA....I.", // y=7: Ingredient Storage 5
+            "A..........T.",
+            "XXXXXXXXXXXXXX"
     };
 
     public WorldMap() {
         this.height = MAP.length;
-        this.width = 14; // Fixed width
+        this.width = MAP[0].length();
         this.grid = new Tile[height][width];
         this.wallMask = new boolean[height][width];
         parseMap();
@@ -49,12 +44,14 @@ public class WorldMap {
                 Position pos = new Position(x, y);
 
                 switch (c) {
-                    case 'X', 'x':
+                    case 'X':
+                    case 'x':
                         grid[y][x] = new WallTile(pos);
                         wallMask[y][x] = true;
                         break;
 
-                    case '.', 'V':
+                    case '.':
+                    case 'V':
                         grid[y][x] = new WalkableTile(pos);
                         break;
 
@@ -79,9 +76,19 @@ public class WorldMap {
                         break;
 
                     case 'I':
-                        // Multiple ingredient storages with different types
-                        String ingredientType = determineIngredientType(x, y);
-                        grid[y][x] = new StationTile(pos, new IngredientStorage(ingredientType));
+                        // LOGIKA BARU: Mapping Bahan berdasarkan Spec Map B (Pasta)
+                        // Kiri Atas (x=0): Tomato, Meat, Pasta
+                        // Kanan Bawah (x=13): Shrimp, Fish
+
+                        String ingType = "pasta"; // Default fallback
+
+                        if (x == 0 && y == 1) ingType = "tomato";
+                        else if (x == 0 && y == 2) ingType = "meat";
+                        else if (x == 0 && y == 3) ingType = "pasta";
+                        else if (x == 13 && y == 6) ingType = "shrimp";
+                        else if (x == 13 && y == 7) ingType = "fish";
+
+                        grid[y][x] = new StationTile(pos, new IngredientStorage(ingType));
                         wallMask[y][x] = true;
                         break;
 
@@ -105,28 +112,6 @@ public class WorldMap {
                 }
             }
         }
-    }
-
-    private String determineIngredientType(int x, int y) {
-        // Distribute different ingredients across storages
-        if (y <= 2) return "pasta";      // Top left storages
-        if (y == 3) return "tomato";
-        if (y == 6) return "fish";       // Right side storage
-        if (y == 7) return "shrimp";
-        return "meat";                    // Default
-    }
-
-    // Floor item management
-    public void placeItemAt(Position p, Item item) {
-        itemsOnFloor.put(p, item);
-    }
-
-    public Item pickItemAt(Position p) {
-        return itemsOnFloor.remove(p);
-    }
-
-    public Item peekItemAt(Position p) {
-        return itemsOnFloor.get(p);
     }
 
     public int getWidth()  { return width; }
