@@ -2,6 +2,7 @@ package stations;
 
 import items.core.CookingDevice;
 import items.core.Item;
+import items.core.Preparable;
 
 public class CookingStation extends BaseStation {
     @Override
@@ -9,11 +10,36 @@ public class CookingStation extends BaseStation {
 
     @Override
     public boolean canPlace(Item item) {
-        return item instanceof CookingDevice;
+        if (storedItem == null) return item instanceof CookingDevice;
+        if (storedItem instanceof CookingDevice device && item instanceof Preparable prep) {
+            return device.canAccept(prep);
+        }
+        return false;
     }
 
     @Override
     public boolean place(Item item) {
-        return super.place(item);
+        if (storedItem == null) return super.place(item);
+        if (storedItem instanceof CookingDevice device && item instanceof Preparable prep) {
+            if (device.canAccept(prep)) {
+                device.addIngredient(prep);
+                return true; 
+            }
+        }
+        return false;
+    }
+
+    // --- FIX MASALAH GOSONG ---
+    @Override
+    public Item pick() {
+        // Ambil item dari station
+        Item item = super.pick();
+        
+        // Jika yang diambil adalah alat masak, matikan apinya (Timer Stop)
+        if (item instanceof CookingDevice device) {
+            device.finishCooking();
+        }
+        
+        return item;
     }
 }
