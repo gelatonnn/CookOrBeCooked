@@ -191,6 +191,7 @@ public class GameEngine {
 
     public void stop() {
         finished = true;
+        isRunning = false;
     }
 
     public void incrementFailedStreak() {

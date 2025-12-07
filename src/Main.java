@@ -64,31 +64,32 @@ public class Main {
         window.setVisible(true);
     }
 
-    // Method ini HANYA dipanggil saat tombol PLAY ditekan
     private static void initAndStartGame() {
-        if (engine != null) return; // Cegah start dua kali
+        if (engine != null) return; 
 
         System.out.println("Initializing Game Engine & Views...");
 
-        // --- 1. Setup Model (Logic) ---
         WorldMap world = new WorldMap();
         OrderManager orders = new OrderManager(false);
-        engine = new GameEngine(world, orders, 180); // 3 menit
+        engine = new GameEngine(world, orders, 180); 
 
         Chef c1 = new Chef("c1", "Gordon", 2, 3);
         Chef c2 = new Chef("c2", "Ramsay", 11, 6);
         engine.addChef(c1);
         engine.addChef(c2);
 
-        // --- 2. Setup Controller ---
         GameController controller = new GameController(engine);
 
-        // --- 3. Setup View (Game & HUD) ---
-        // Wadah untuk menumpuk HUD (Atas) dan GamePanel (Tengah)
         gameContainerPanel = new JPanel(new BorderLayout());
         
         GamePanel gamePanel = new GamePanel(engine);
-        HUDPanel hudPanel = new HUDPanel(engine);
+        
+        // --- UPDATED: Pass callback untuk tombol EXIT ---
+        HUDPanel hudPanel = new HUDPanel(engine, () -> {
+            // Aksi saat tombol Exit ditekan:
+            stopGame(); // 1. Matikan engine
+            cardLayout.show(mainContainer, "HOME_SCREEN"); // 2. Balik ke menu
+        });
 
         engine.addObserver(gamePanel);
         engine.addObserver(hudPanel);
@@ -96,17 +97,12 @@ public class Main {
         gameContainerPanel.add(hudPanel, BorderLayout.NORTH);
         gameContainerPanel.add(gamePanel, BorderLayout.CENTER);
 
-        // Setup Input Keyboard pada panel game container
         setupKeyListener(gameContainerPanel, controller);
 
-        // Tambahkan wadah game ini ke CardLayout utama
         mainContainer.add(gameContainerPanel, "GAME_SCREEN");
-
-        // Sesuaikan ukuran window dengan ukuran game yang sebenarnya
         window.pack(); 
-        window.setLocationRelativeTo(null); // Tengahkan lagi setelah resize
+        window.setLocationRelativeTo(null); 
 
-        // --- 4. Start Game Loop di Thread baru ---
         new Thread(engine::start).start();
     }
 
@@ -128,5 +124,19 @@ public class Main {
                 }
             }
         });
+    }
+    // --- METHOD BARU: Membersihkan Game saat Exit ---
+    private static void stopGame() {
+        if (engine != null) {
+            engine.stop(); // Pastikan Anda punya method stop() di GameEngine yang set isRunning = false
+            engine = null; // Hapus referensi agar bisa di-new lagi nanti
+        }
+        
+        // Hapus panel game lama dari container agar tidak menumpuk memori
+        // Saat play lagi, kita akan buat panel baru
+        if (gameContainerPanel != null) {
+            mainContainer.remove(gameContainerPanel);
+            gameContainerPanel = null;
+        }
     }
 }
