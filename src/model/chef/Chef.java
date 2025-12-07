@@ -72,16 +72,12 @@ public class Chef {
         else if (s instanceof BusyWashingState) currentAction = ChefAction.WASHING;
     }
 
-    // ... import items.core.CookingDevice; (Pastikan import ini ada di paling atas) ...
-    // ... import items.core.Preparable; ...
-    // ... import items.utensils.Plate; ...
-
     public void tryPickFrom(Station st) {
         // KASUS 1: Tangan Kosong -> Boleh ambil apa saja
         if (held == null) {
-            Item item = st.pick(); 
+            Item item = st.pick();
             if (item != null) {
-                state.pickItem(this, item); 
+                state.pickItem(this, item);
             }
             return;
         }
@@ -95,8 +91,7 @@ public class Chef {
             if (device.canAccept(prep)) {
                 st.pick(); // SAH! Ambil item dari station
                 device.addIngredient(prep); // Masukkan ke panci
-                
-                // FIX ERROR: Lakukan casting ke (Item) untuk mengambil nama
+
                 String prepName = ((Item) prep).getName();
                 String devName = ((Item) device).getName();
                 System.out.println("Added " + prepName + " to " + devName);
@@ -108,10 +103,9 @@ public class Chef {
 
         // B. Jika tangan pegang Piring (Plate), dan station ada Bahan (Preparable)
         if (held instanceof items.utensils.Plate plate && itemOnStation instanceof items.core.Preparable prep) {
-            st.pick(); // SAH!
+            st.pick();
             plate.addIngredient(prep);
-            
-            // Cek apakah piring jadi Dish (Resep Jadi)
+
             model.recipes.DishType match = model.recipes.RecipeBook.findMatch(plate.getContents());
             if (match != null) {
                 if (match == model.recipes.DishType.PASTA_MARINARA) setHeldItem(new items.dish.PastaMarinara());
@@ -134,10 +128,13 @@ public class Chef {
         state.interact(this, st);
     }
 
+    // FIX 3: Ensure logic handles state reset
     public void throwItem(boolean[][] worldMask) {
         if (held == null) return;
         System.out.println(name + " threw " + held.getName() + "!");
         held = null;
+
+        // This line is crucial for fixing the "Carrying -> Idle" bug
         changeState(new IdleState());
     }
 
