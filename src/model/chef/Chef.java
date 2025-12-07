@@ -72,8 +72,58 @@ public class Chef {
         else if (s instanceof BusyWashingState) currentAction = ChefAction.WASHING;
     }
 
+    // ... import items.core.CookingDevice; (Pastikan import ini ada di paling atas) ...
+    // ... import items.core.Preparable; ...
+    // ... import items.utensils.Plate; ...
+
     public void tryPickFrom(Station st) {
-        state.pickItem(this, st.pick());
+        // KASUS 1: Tangan Kosong -> Boleh ambil apa saja
+        if (held == null) {
+            Item item = st.pick(); 
+            if (item != null) {
+                state.pickItem(this, item); 
+            }
+            return;
+        }
+
+        // KASUS 2: Tangan Penuh -> Cek apakah bisa di-MERGE?
+        Item itemOnStation = st.peek();
+        if (itemOnStation == null) return;
+
+        // A. Jika tangan pegang Panci/Wajan (CookingDevice), dan station ada Bahan (Preparable)
+        if (held instanceof items.core.CookingDevice device && itemOnStation instanceof items.core.Preparable prep) {
+            if (device.canAccept(prep)) {
+                st.pick(); // SAH! Ambil item dari station
+                device.addIngredient(prep); // Masukkan ke panci
+                
+                // FIX ERROR: Lakukan casting ke (Item) untuk mengambil nama
+                String prepName = ((Item) prep).getName();
+                String devName = ((Item) device).getName();
+                System.out.println("Added " + prepName + " to " + devName);
+            } else {
+                System.out.println("Alat masak ini tidak menerima bahan tersebut!");
+            }
+            return;
+        }
+
+        // B. Jika tangan pegang Piring (Plate), dan station ada Bahan (Preparable)
+        if (held instanceof items.utensils.Plate plate && itemOnStation instanceof items.core.Preparable prep) {
+            st.pick(); // SAH!
+            plate.addIngredient(prep);
+            
+            // Cek apakah piring jadi Dish (Resep Jadi)
+            model.recipes.DishType match = model.recipes.RecipeBook.findMatch(plate.getContents());
+            if (match != null) {
+                if (match == model.recipes.DishType.PASTA_MARINARA) setHeldItem(new items.dish.PastaMarinara());
+                else if (match == model.recipes.DishType.PASTA_BOLOGNESE) setHeldItem(new items.dish.PastaBolognese());
+                else if (match == model.recipes.DishType.PASTA_FRUTTI_DI_MARE) setHeldItem(new items.dish.PastaFruttiDiMare());
+                System.out.println("Plating Complete via Pick: " + match);
+            }
+            return;
+        }
+
+        // C. Tangan Penuh & Tidak Bisa Merge
+        System.out.println("Tangan penuh! Tidak bisa mengambil " + itemOnStation.getName());
     }
 
     public void tryPlaceTo(Station st) {

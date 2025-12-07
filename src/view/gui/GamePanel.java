@@ -1,21 +1,20 @@
 package view.gui;
 
-import model.chef.Chef;
-import model.engine.GameEngine;
-import model.world.WorldMap;
-import model.world.tiles.StationTile;
-import model.world.Tile;
 import items.core.Item;
-import stations.Station;
-import utils.Position;
-import view.Observer;
-
-import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.swing.*;
+import model.chef.Chef;
+import model.engine.GameEngine;
+import model.world.Tile;
+import model.world.WorldMap;
+import model.world.tiles.StationTile;
+import stations.Station;
+import utils.Position;
+import view.Observer;
 
 public class GamePanel extends JPanel implements Observer {
     private final GameEngine engine;
@@ -82,17 +81,41 @@ public class GamePanel extends JPanel implements Observer {
         else if (name.contains("serve")) img = sprites.getSprite("serving station");
         else if (name.contains("ingredient")) img = sprites.getSprite("ingredient storage");
         else if (name.contains("trash")) img = sprites.getSprite("trash station");
-        else img = sprites.getSprite("counter");
+        else if (name.contains("plate") && name.contains("storage")) img = sprites.getSprite("plate storage");
+        else img = sprites.getSprite("counter"); 
 
-        if (img != null) g2d.drawImage(img, x, y, TILE_SIZE, TILE_SIZE, null);
+        if (img != null) {
+            g2d.drawImage(img, x, y, TILE_SIZE, TILE_SIZE, null);
+        }
 
         // Gambar Item di atas Station
         Item stored = station.peek();
         if (stored != null) {
+            // HAPUS baris deklarasi 'sprites' di sini karena sudah ada di paling atas method
             BufferedImage itemImg = sprites.getSprite(stored.getName());
-            g2d.drawImage(itemImg, x + 16, y + 16, TILE_SIZE/2, TILE_SIZE/2, null);
+            
+            // Gambar Item Utama (Piring/Dish/Bahan)
+            if (itemImg != null) {
+                g2d.drawImage(itemImg, x + 16, y + 16, TILE_SIZE/2, TILE_SIZE/2, null);
+            }
+            
+            // Gambar Isi Piring (Ingredients di atas piring)
+            if (stored instanceof items.utensils.Plate plate) {
+                List<items.core.Preparable> contents = plate.getContents();
+                int offsetX = 0;
+                
+                for (items.core.Preparable p : contents) {
+                    if (p instanceof Item i) {
+                        BufferedImage ingImg = sprites.getSprite(i.getName());
+                        // Gambar bahan kecil-kecil menumpuk di atas piring
+                        g2d.drawImage(ingImg, x + 10 + offsetX, y + 10, 20, 20, null);
+                        offsetX += 10;
+                    }
+                }
+            }
         }
-    }
+    } 
+    // <--- PASTIKAN KURUNG KURAWAL TUTUP INI ADA SEBELUM drawChefs
 
     private void drawChefs(Graphics2D g2d) {
         List<Chef> chefs = engine.getChefs();

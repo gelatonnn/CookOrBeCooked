@@ -49,6 +49,7 @@ public class SpriteLibrary {
             case "washing station" -> drawSink(g);
             case "serving station" -> drawServing(g);
             case "ingredient storage" -> drawCrate(g);
+            case "plate storage" -> drawPlateStorage(g);
             case "trash station" -> drawTrash(g);
 
             // --- CHEFS (BARU) ---
@@ -68,6 +69,37 @@ public class SpriteLibrary {
     }
 
     // --- DRAWING LOGIC (SENIMAN KODE) ---
+    // --- Method Baru untuk Menggambar Plate Storage ---
+    private void drawPlateStorage(Graphics2D g) {
+        // 1. Gambar dasarnya dulu (meja counter kayu)
+        drawCounter(g); 
+
+        // 2. Gambar tumpukan piring di atasnya
+        // Kita gambar 3 piring bertumpuk agar terlihat jelas
+        int stackX = 12;
+        int stackWidth = 40;
+        int stackHeight = 18; // Piring dilihat dari samping agak gepeng
+        int baseY = 38;
+
+        // Loop menggambar dari bawah ke atas
+        for (int i = 0; i < 3; i++) {
+            int y = baseY - (i * 6); // Geser ke atas setiap iterasi
+            
+            // Badan piring (Putih cerah)
+            g.setColor(new Color(245, 245, 245)); 
+            g.fillOval(stackX, y, stackWidth, stackHeight);
+            
+            // Pinggiran piring (Abu-abu halus)
+            g.setColor(new Color(180, 180, 180));
+            g.setStroke(new BasicStroke(1));
+            g.drawOval(stackX, y, stackWidth, stackHeight);
+
+            // Khusus piring paling atas, gambar lingkaran dalam
+            if (i == 2) {
+                 g.drawOval(stackX + 5, y + 4, stackWidth - 10, stackHeight - 8);
+            }
+        }
+    }
 
     private void drawChefCharacter(Graphics2D g, Color apronColor) {
         // 1. Badan (Putih)

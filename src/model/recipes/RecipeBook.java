@@ -1,5 +1,6 @@
 package model.recipes;
 
+import items.core.Preparable;
 import items.ingredients.*;
 import java.util.*;
 
@@ -26,6 +27,15 @@ public class RecipeBook {
 
     public static Recipe getRecipe(DishType type) {
         return recipes.get(type);
+    }
+
+    public static DishType findMatch(List<Preparable> ingredients) {
+        for (Map.Entry<DishType, Recipe> entry : recipes.entrySet()) {
+            if (entry.getValue().matches(ingredients)) {
+                return entry.getKey();
+            }
+        }
+        return null; // Tidak ada resep yang cocok
     }
 
     public static DishType getRandomDish() {
