@@ -2,88 +2,131 @@ package main;
 
 import controller.GameController;
 import factory.ItemRegistryInit;
+import model.chef.Chef;
 import model.engine.GameEngine;
 import model.orders.OrderManager;
 import model.world.WorldMap;
-import model.chef.Chef;
 import view.gui.GamePanel;
-import view.gui.HUDPanel; // Import panel HUD yang baru dibuat
+import view.gui.HUDPanel;
+import view.gui.HomePanel; // Import panel baru
 
 import javax.swing.*;
-import java.awt.*; // <--- PENTING: Ini mengimport BorderLayout dan layout lainnya
+import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class Main {
+    // Komponen GUI Utama dishoimpan sebagai field agar bisa diakses antar method
+    private static JFrame window;
+    private static JPanel mainContainer;
+    private static CardLayout cardLayout;
+    private static JPanel gameContainerPanel; // Wadah untuk HUD + GamePanel
+    private static GameEngine engine; // Engine disimpan agar tidak double-start
+
     public static void main(String[] args) {
-        // 1. Inisialisasi Registry Item (Agar factory kenal tomato, pasta, dll)
+        // 1. Inisialisasi Registry Item (Wajib di awal)
         ItemRegistryInit.registerAll();
 
-        // 2. Setup World & Components
+        // 2. Setup GUI Dasar (Window & Layout)
+        SwingUtilities.invokeLater(() -> {
+            setupMainWindow();
+            showHomeScreen();
+        });
+    }
+
+    private static void setupMainWindow() {
+        window = new JFrame("Nimonscooked");
+        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        window.setResizable(false);
+        // Ukuran awal window (sebelum game diload)
+        window.setSize(800, 600); 
+        window.setLocationRelativeTo(null);
+
+        // Setup CardLayout sebagai manajer tampilan utama
+        cardLayout = new CardLayout();
+        mainContainer = new JPanel(cardLayout);
+        window.add(mainContainer);
+    }
+
+    private static void showHomeScreen() {
+        // Buat HomePanel.
+        // Kita berikan "aksi" apa yang harus dilakukan saat tombol PLAY ditekan.
+        HomePanel homePanel = new HomePanel(() -> {
+            // Aksi saat PLAY ditekan:
+            initAndStartGame(); // 1. Siapkan game logic
+            cardLayout.show(mainContainer, "GAME_SCREEN"); // 2. Ganti tampilan ke game
+            // Request fokus agar keyboard langsung terdeteksi di game panel
+            gameContainerPanel.requestFocusInWindow(); 
+        });
+
+        mainContainer.add(homePanel, "HOME_SCREEN");
+        cardLayout.show(mainContainer, "HOME_SCREEN"); // Tampilkan Home duluan
+        window.setVisible(true);
+    }
+
+    // Method ini HANYA dipanggil saat tombol PLAY ditekan
+    private static void initAndStartGame() {
+        if (engine != null) return; // Cegah start dua kali
+
+        System.out.println("Initializing Game Engine & Views...");
+
+        // --- 1. Setup Model (Logic) ---
         WorldMap world = new WorldMap();
         OrderManager orders = new OrderManager(false);
-        
-        // Setup Engine
-        GameEngine engine = new GameEngine(world, orders, 180);
-        
-        // Spawn Chefs
+        engine = new GameEngine(world, orders, 180); // 3 menit
+
         Chef c1 = new Chef("c1", "Gordon", 2, 3);
         Chef c2 = new Chef("c2", "Ramsay", 11, 6);
         engine.addChef(c1);
         engine.addChef(c2);
 
-        // 3. Setup Controller
+        // --- 2. Setup Controller ---
         GameController controller = new GameController(engine);
 
-        // 4. GUI Setup
-        SwingUtilities.invokeLater(() -> {
-            JFrame window = new JFrame("Nimonscooked - Milestone 2");
-            window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            window.setResizable(false);
-            
-            // Gunakan BorderLayout: 
-            // - NORTH (Atas) untuk HUD (Skor/Timer)
-            // - CENTER (Tengah) untuk Game Area
-            window.setLayout(new BorderLayout());
-            
-            GamePanel gamePanel = new GamePanel(engine);
-            HUDPanel hudPanel = new HUDPanel(engine); 
-            
-            // Daftarkan panel sebagai observer agar mereka update saat game berjalan
-            engine.addObserver(gamePanel);
-            engine.addObserver(hudPanel); 
-            
-            // Pasang panel ke window
-            window.add(hudPanel, BorderLayout.NORTH);
-            window.add(gamePanel, BorderLayout.CENTER);
-            
-            window.pack(); // Sesuaikan ukuran window otomatis
-            window.setLocationRelativeTo(null); // Taruh di tengah layar laptop
-            window.setVisible(true);
+        // --- 3. Setup View (Game & HUD) ---
+        // Wadah untuk menumpuk HUD (Atas) dan GamePanel (Tengah)
+        gameContainerPanel = new JPanel(new BorderLayout());
+        
+        GamePanel gamePanel = new GamePanel(engine);
+        HUDPanel hudPanel = new HUDPanel(engine);
 
-            // Setup Input Keyboard
-            window.addKeyListener(new KeyAdapter() {
-                @Override
-                public void keyPressed(KeyEvent e) {
-                    char key = Character.toLowerCase(e.getKeyChar());
-                    // Mapping Input
-                    if (key == 'w' || key == 'a' || key == 's' || key == 'd') 
-                        controller.handleInput(String.valueOf(key));
-                    
-                    if (key == 'p') controller.handleInput("p"); // Pick
-                    if (key == 'e') controller.handleInput("e"); // Interact
-                    if (key == 'o') controller.handleInput("o"); // Place / Put Down
-                    if (key == 't') controller.handleInput("t"); // Throw
-                    
-                    // Tab atau C untuk ganti Chef
-                    if (e.getKeyCode() == KeyEvent.VK_TAB || key == 'c') {
-                        controller.handleInput("tab");
-                    }
-                }
-            });
-        });
+        engine.addObserver(gamePanel);
+        engine.addObserver(hudPanel);
 
-        // 5. Start Game Loop
+        gameContainerPanel.add(hudPanel, BorderLayout.NORTH);
+        gameContainerPanel.add(gamePanel, BorderLayout.CENTER);
+
+        // Setup Input Keyboard pada panel game container
+        setupKeyListener(gameContainerPanel, controller);
+
+        // Tambahkan wadah game ini ke CardLayout utama
+        mainContainer.add(gameContainerPanel, "GAME_SCREEN");
+
+        // Sesuaikan ukuran window dengan ukuran game yang sebenarnya
+        window.pack(); 
+        window.setLocationRelativeTo(null); // Tengahkan lagi setelah resize
+
+        // --- 4. Start Game Loop di Thread baru ---
         new Thread(engine::start).start();
+    }
+
+    private static void setupKeyListener(JPanel panel, GameController controller) {
+        // Agar panel bisa menerima input keyboard, dia harus bisa fokus
+        panel.setFocusable(true);
+        panel.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                char key = Character.toLowerCase(e.getKeyChar());
+                if (key == 'w' || key == 'a' || key == 's' || key == 'd')
+                    controller.handleInput(String.valueOf(key));
+                if (key == 'p') controller.handleInput("p");
+                if (key == 'e') controller.handleInput("e");
+                if (key == 'o') controller.handleInput("o");
+                if (key == 't') controller.handleInput("t");
+                if (e.getKeyCode() == KeyEvent.VK_TAB || key == 'c') {
+                    controller.handleInput("tab");
+                }
+            }
+        });
     }
 }
