@@ -21,21 +21,33 @@ public class HUDRenderer implements Observer {
     }
 
     public void render() {
-        System.out.println("\n=== CHEF STATUS ===");
+        System.out.println("╔════════════════════════════════════════════╗");
+        System.out.println("║           CHEF STATUS                     ║");
+        System.out.println("╚════════════════════════════════════════════╝");
 
         for (int i = 0; i < chefs.length; i++) {
             Chef c = chefs[i];
             Item held = c.getHeldItem();
+            String active = (i == activeChefIndex) ? " ⭐ ACTIVE" : "";
 
-            System.out.print("Chef " + (i+1) + (i == activeChefIndex ? " [ACTIVE]" : "") + " : ");
+            System.out.printf("  👨‍🍳 %s [%s]%s\n",
+                    c.getName(),
+                    c.getCurrentAction(),
+                    active);
+            System.out.printf("     Position: (%d,%d) facing %s\n",
+                    c.getX() + 1,
+                    c.getY() + 1,
+                    c.getDirection());
 
             if (held == null) {
-                System.out.println("Empty-handed");
+                System.out.println("     Holding: Empty hands");
             } else {
-                System.out.println("Holding → " + held.getName() + " (" + held.getState() + ")");
+                System.out.printf("     Holding: %s [%s]\n",
+                        held.getName(),
+                        held.getState());
             }
+            System.out.println();
         }
-
-        System.out.println("====================\n");
+        System.out.println("════════════════════════════════════════════\n");
     }
 }

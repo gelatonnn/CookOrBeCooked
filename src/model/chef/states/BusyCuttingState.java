@@ -8,6 +8,8 @@ import items.core.Item;
 
 public class BusyCuttingState implements ChefState {
     private final Station station;
+    private int progress = 0;
+    private final int maxProgress = 3;
 
     public BusyCuttingState(Station st) {
         this.station = st;
@@ -15,21 +17,33 @@ public class BusyCuttingState implements ChefState {
 
     @Override
     public void enter(Chef chef) {
-        System.out.println(chef.getName() + " mulai memotong...");
-        TimerUtils.scheduleSeconds(() -> finishCutting(chef), 3);
+        System.out.println("🔪 " + chef.getName() + " started cutting...");
+        cutWithProgress(chef);
+    }
+
+    private void cutWithProgress(Chef chef) {
+        if (progress >= maxProgress) {
+            finishCutting(chef);
+            return;
+        }
+
+        progress++;
+        System.out.println("   Cutting progress: " + progress + "/" + maxProgress);
+
+        TimerUtils.schedule(() -> cutWithProgress(chef), 1000);
     }
 
     private void finishCutting(Chef chef) {
         if (station.isOccupied() && station.peek() instanceof Preparable p) {
             p.chop();
-            System.out.println("Pemotongan selesai!");
+            System.out.println("✅ Cutting complete! Item is now CHOPPED");
         }
         chef.changeState(new IdleState());
     }
 
     @Override
     public void move(Chef chef, int dx, int dy) {
-        System.out.println("Chef sedang memotong, tidak bisa bergerak!");
+        System.out.println("⚠ Chef is cutting, cannot move! Progress paused.");
     }
 
     @Override

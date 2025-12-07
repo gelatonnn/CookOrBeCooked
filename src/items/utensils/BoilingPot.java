@@ -2,6 +2,7 @@ package items.utensils;
 
 import items.core.CookingDevice;
 import items.core.Item;
+import items.core.ItemState;
 import items.core.Preparable;
 
 import java.util.ArrayList;
@@ -23,28 +24,52 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
 
     @Override
     public boolean canAccept(Preparable ingredient) {
-        if (contents.size() >= capacity) return false;
+        if (contents.size() >= capacity) {
+            System.out.println("⚠ Boiling pot is full!");
+            return false;
+        }
+
         String n = ((Item) ingredient).getName().toLowerCase();
-        return n.contains("pasta");
+        boolean canAccept = n.contains("pasta");
+
+        if (!canAccept) {
+            System.out.println("❌ Boiling pot only accepts pasta!");
+        }
+
+        return canAccept;
     }
 
     @Override
     public void addIngredient(Preparable ingredient) {
         if (contents.size() < capacity && canAccept(ingredient)) {
             contents.add(ingredient);
+            System.out.println("✅ Added " + ((Item)ingredient).getName() + " to boiling pot");
         }
     }
 
     @Override
     public void startCooking() {
-        if (contents.isEmpty() || cooking) return;
+        if (contents.isEmpty()) {
+            System.out.println("❌ Boiling pot is empty! Add pasta first.");
+            return;
+        }
+
+        if (cooking) {
+            System.out.println("⚠ Already cooking!");
+            return;
+        }
+
         cooking = true;
-        for (Preparable p : contents) p.cook();
+        System.out.println("🔥 Started cooking in boiling pot...");
+        for (Preparable p : contents) {
+            p.cook();
+        }
     }
 
     @Override
     public void finishCooking() {
         cooking = false;
+        System.out.println("✅ Cooking finished in boiling pot");
     }
 
     @Override
@@ -65,7 +90,7 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
 
     @Override
     public String toString() {
-        return getName() + " [" + contents.size() + "/" + capacity + "]" +
+        return getName() + " [" + contents.size() + "/" + capacity + " items]" +
                 (cooking ? " COOKING" : "");
     }
 }

@@ -14,6 +14,19 @@ public class CookingStation extends BaseStation {
 
     @Override
     public boolean place(Item item) {
-        return super.place(item);
+        if (!canPlace(item)) {
+            System.out.println("❌ Only cooking devices (pots/pans) can be placed on stove!");
+            return false;
+        }
+
+        boolean result = super.place(item);
+        if (result && item instanceof CookingDevice dev) {
+            if (!dev.getContents().isEmpty()) {
+                System.out.println("🔥 Cooking device placed on stove. Ready to start cooking!");
+            } else {
+                System.out.println("📍 Empty cooking device placed on stove. Add ingredients first.");
+            }
+        }
+        return result;
     }
 }

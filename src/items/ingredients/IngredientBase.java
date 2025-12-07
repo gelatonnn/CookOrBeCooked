@@ -22,6 +22,7 @@ public abstract class IngredientBase extends Item implements Preparable {
     public void chop() {
         if (canBeChopped() && state == ItemState.RAW) {
             state = ItemState.CHOPPED;
+            System.out.println("✂️  " + getName() + " is now CHOPPED");
         }
     }
 
@@ -31,11 +32,13 @@ public abstract class IngredientBase extends Item implements Preparable {
 
         cooking = true;
         state = ItemState.COOKING;
+        System.out.println("🔥 " + getName() + " is COOKING... (12s to COOKED, 24s to BURNED)");
 
         // After 12s → COOKED
         TimerUtils.scheduleSeconds(() -> {
             if (state == ItemState.COOKING) {
                 state = ItemState.COOKED;
+                System.out.println("✅ " + getName() + " is now COOKED!");
             }
         }, 12);
 
@@ -44,6 +47,7 @@ public abstract class IngredientBase extends Item implements Preparable {
             if (state == ItemState.COOKING || state == ItemState.COOKED) {
                 state = ItemState.BURNED;
                 cooking = false;
+                System.out.println("🔥💀 " + getName() + " is BURNED! Throw it away!");
             }
         }, 24);
     }

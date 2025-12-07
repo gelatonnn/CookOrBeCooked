@@ -14,14 +14,18 @@ public class Plate extends UtensilBase {
     @Override
     public String getName() { return "Plate"; }
 
-    public boolean isClean() { return cleanliness == ItemState.CLEAN; }
+    public boolean isClean() {
+        return cleanliness == ItemState.CLEAN;
+    }
 
     public void wash() {
         cleanliness = ItemState.CLEAN;
         contents.clear();
     }
 
-    public void makeDirty() { cleanliness = ItemState.DIRTY; }
+    public void makeDirty() {
+        cleanliness = ItemState.DIRTY;
+    }
 
     public void addIngredient(Preparable p) {
         contents.add(p);
@@ -33,6 +37,7 @@ public class Plate extends UtensilBase {
 
     @Override
     public String toString() {
-        return getName() + " [" + cleanliness + "] with " + contents.size() + " items";
+        String status = isClean() ? "CLEAN" : "DIRTY";
+        return getName() + " [" + status + "] with " + contents.size() + " items";
     }
 }

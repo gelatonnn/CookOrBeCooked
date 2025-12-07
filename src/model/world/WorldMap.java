@@ -2,30 +2,36 @@ package model.world;
 
 import model.world.tiles.*;
 import stations.*;
+import items.core.Item;
 import utils.Position;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class WorldMap {
     private final int width;
     private final int height;
     private final Tile[][] grid;
     private final boolean[][] wallMask;
+    private final Map<Position, Item> itemsOnFloor = new HashMap<>();
 
+    // CORRECT LAYOUT from specification
     private final String[] MAP = {
-            "AARRAAXXXXXXXX",
-            "I....AXXX...W.",
-            "I....AXxX...W.",
-            "I.V..AXXX...A.",
-            "A....XXXX...R.",
-            "P....XXC....R.",
-            "S....XXC..V.I.",
-            "S....XXA....I.",
-            "A..........T.",
-            "XXXXXXXXXXXXXX"
+            "AARRAAXXXXXXXX",  // Row 1
+            "I....AXXX....W",  // Row 2
+            "I....AXXX....W",  // Row 3
+            "I.V..AXXX....A",  // Row 4
+            "A....XXXX....R",  // Row 5
+            "P....XXXC....R",  // Row 6
+            "S....XXXC..V.I",  // Row 7
+            "S....XXXA....I",  // Row 8
+            "A.............T",  // Row 9
+            "XXXXXXXXXXXXXX"   // Row 10
     };
 
     public WorldMap() {
         this.height = MAP.length;
-        this.width = MAP[0].length();
+        this.width = 14; // Fixed width
         this.grid = new Tile[height][width];
         this.wallMask = new boolean[height][width];
         parseMap();
@@ -43,14 +49,12 @@ public class WorldMap {
                 Position pos = new Position(x, y);
 
                 switch (c) {
-                    case 'X':
-                    case 'x':
+                    case 'X', 'x':
                         grid[y][x] = new WallTile(pos);
                         wallMask[y][x] = true;
                         break;
 
-                    case '.':
-                    case 'V':
+                    case '.', 'V':
                         grid[y][x] = new WalkableTile(pos);
                         break;
 
@@ -75,7 +79,9 @@ public class WorldMap {
                         break;
 
                     case 'I':
-                        grid[y][x] = new StationTile(pos, new IngredientStorage());
+                        // Multiple ingredient storages with different types
+                        String ingredientType = determineIngredientType(x, y);
+                        grid[y][x] = new StationTile(pos, new IngredientStorage(ingredientType));
                         wallMask[y][x] = true;
                         break;
 
@@ -99,6 +105,28 @@ public class WorldMap {
                 }
             }
         }
+    }
+
+    private String determineIngredientType(int x, int y) {
+        // Distribute different ingredients across storages
+        if (y <= 2) return "pasta";      // Top left storages
+        if (y == 3) return "tomato";
+        if (y == 6) return "fish";       // Right side storage
+        if (y == 7) return "shrimp";
+        return "meat";                    // Default
+    }
+
+    // Floor item management
+    public void placeItemAt(Position p, Item item) {
+        itemsOnFloor.put(p, item);
+    }
+
+    public Item pickItemAt(Position p) {
+        return itemsOnFloor.remove(p);
+    }
+
+    public Item peekItemAt(Position p) {
+        return itemsOnFloor.get(p);
     }
 
     public int getWidth()  { return width; }

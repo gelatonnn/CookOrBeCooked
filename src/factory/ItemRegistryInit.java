@@ -7,6 +7,8 @@ import model.recipes.*;
 
 public class ItemRegistryInit {
     public static void registerAll() {
+        System.out.println("🔧 Registering all items...");
+
         // INGREDIENTS
         ItemFactory.register("pasta", Pasta::new);
         ItemFactory.register("tomato", Tomato::new);
@@ -26,5 +28,7 @@ public class ItemRegistryInit {
                 () -> new DishBase(RecipeBook.getRecipe(DishType.PASTA_BOLOGNESE)));
         ItemFactory.register("pasta_frutti_di_mare",
                 () -> new DishBase(RecipeBook.getRecipe(DishType.PASTA_FRUTTI_DI_MARE)));
+
+        System.out.println("✅ All items registered successfully!");
     }
 }

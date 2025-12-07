@@ -24,27 +24,52 @@ public class FryingPan extends UtensilBase implements CookingDevice {
 
     @Override
     public boolean canAccept(Preparable ingredient) {
-        if (contents.size() >= capacity) return false;
-        return ((Item) ingredient).getState() == ItemState.CHOPPED;
+        if (contents.size() >= capacity) {
+            System.out.println("⚠ Frying pan is full!");
+            return false;
+        }
+
+        ItemState state = ((Item) ingredient).getState();
+        boolean canAccept = state == ItemState.CHOPPED;
+
+        if (!canAccept) {
+            System.out.println("❌ Frying pan only accepts CHOPPED ingredients!");
+        }
+
+        return canAccept;
     }
 
     @Override
     public void addIngredient(Preparable ingredient) {
         if (contents.size() < capacity && canAccept(ingredient)) {
             contents.add(ingredient);
+            System.out.println("✅ Added " + ((Item)ingredient).getName() + " to frying pan");
         }
     }
 
     @Override
     public void startCooking() {
-        if (contents.isEmpty() || cooking) return;
+        if (contents.isEmpty()) {
+            System.out.println("❌ Frying pan is empty! Add CHOPPED ingredients first.");
+            return;
+        }
+
+        if (cooking) {
+            System.out.println("⚠ Already cooking!");
+            return;
+        }
+
         cooking = true;
-        for (Preparable p : contents) p.cook();
+        System.out.println("🔥 Started cooking in frying pan...");
+        for (Preparable p : contents) {
+            p.cook();
+        }
     }
 
     @Override
     public void finishCooking() {
         cooking = false;
+        System.out.println("✅ Cooking finished in frying pan");
     }
 
     @Override
@@ -65,7 +90,7 @@ public class FryingPan extends UtensilBase implements CookingDevice {
 
     @Override
     public String toString() {
-        return getName() + " [" + contents.size() + "/" + capacity + "]" +
+        return getName() + " [" + contents.size() + "/" + capacity + " items]" +
                 (cooking ? " COOKING" : "");
     }
 }
