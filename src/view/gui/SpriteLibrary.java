@@ -39,6 +39,15 @@ public class SpriteLibrary {
             case "plate" -> drawPlate(g);
             case "boiling pot" -> drawPot(g);
             case "frying pan" -> drawPan(g);
+
+            // --- UTENSILS STATES ---
+            case "boiling pot cooking" -> drawPotState(g, "cooking");
+            case "boiling pot cooked" -> drawPotState(g, "cooked");
+            case "boiling pot burned" -> drawPotState(g, "burned");
+
+            case "frying pan cooking" -> drawPanState(g, "cooking");
+            case "frying pan cooked" -> drawPanState(g, "cooked");
+            case "frying pan burned" -> drawPanState(g, "burned");
             
             // --- STATIONS ---
             case "wall" -> drawWall(g);
@@ -69,6 +78,68 @@ public class SpriteLibrary {
     }
 
     // --- DRAWING LOGIC (SENIMAN KODE) ---
+
+    // --- Helper Drawing States ---
+
+    private void drawPotState(Graphics2D g, String state) {
+        // 1. Gambar Panci Dasar
+        if (state.equals("burned")) g.setColor(new Color(50, 50, 50)); // Panci jadi gelap
+        else g.setColor(Color.GRAY);
+        
+        g.fillRoundRect(12, 16, 40, 32, 5, 5); 
+        g.setColor(Color.DARK_GRAY);
+        g.fillRect(8, 20, 4, 8); 
+        g.fillRect(52, 20, 4, 8); 
+
+        // 2. Isi Panci (Air)
+        if (state.equals("burned")) g.setColor(new Color(20, 20, 20)); // Air hitam
+        else if (state.equals("cooked")) g.setColor(new Color(50, 205, 50)); // Air hijau (matang)
+        else g.setColor(new Color(100, 100, 255)); // Air biru (masak)
+        
+        g.fillOval(14, 18, 36, 10);
+
+        // 3. Efek Visual Tambahan
+        drawStatusEffect(g, state);
+    }
+
+    private void drawPanState(Graphics2D g, String state) {
+        // 1. Gambar Wajan Dasar
+        if (state.equals("burned")) g.setColor(new Color(50, 50, 50));
+        else g.setColor(Color.DARK_GRAY);
+        
+        g.fillOval(12, 12, 40, 40);
+        g.setStroke(new BasicStroke(6));
+        g.drawLine(50, 50, 60, 60);
+
+        // 2. Efek Visual Tambahan
+        drawStatusEffect(g, state);
+    }
+
+    private void drawStatusEffect(Graphics2D g, String state) {
+        if (state.equals("cooking")) {
+            // Gambar Gelembung / Uap
+            g.setColor(Color.WHITE);
+            g.fillOval(20, 8, 6, 6);
+            g.fillOval(30, 4, 8, 8);
+            g.fillOval(42, 10, 5, 5);
+        } else if (state.equals("cooked")) {
+            // Gambar Centang Hijau Besar
+            g.setColor(new Color(0, 255, 0));
+            g.setStroke(new BasicStroke(4));
+            g.drawLine(20, 30, 30, 40);
+            g.drawLine(30, 40, 50, 20);
+        } else if (state.equals("burned")) {
+            // Gambar Asap Hitam / Silang Merah
+            g.setColor(Color.BLACK);
+            g.fillOval(20, 0, 10, 10);
+            g.fillOval(35, 5, 12, 12);
+            g.setColor(Color.RED);
+            g.setStroke(new BasicStroke(3));
+            g.drawLine(20, 20, 44, 44);
+            g.drawLine(44, 20, 20, 44);
+        }
+    }
+    
     // --- Method Baru untuk Menggambar Plate Storage ---
     private void drawPlateStorage(Graphics2D g) {
         // 1. Gambar dasarnya dulu (meja counter kayu)
