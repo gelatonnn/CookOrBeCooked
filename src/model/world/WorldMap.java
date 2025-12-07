@@ -10,15 +10,16 @@ public class WorldMap {
     private final Tile[][] grid;
     private final boolean[][] wallMask;
 
+    // Layout Map berdasarkan Spec Type B: Pasta Map
     private final String[] MAP = {
             "AARRAAXXXXXXXX",
-            "I....AXXX...W.",
-            "I....AXxX...W.",
-            "I.V..AXXX...A.",
+            "I....AXXX...W.", // y=1: Ingredient Storage 1
+            "I....AXxX...W.", // y=2: Ingredient Storage 2
+            "I.V..AXXX...A.", // y=3: Ingredient Storage 3
             "A....XXXX...R.",
             "P....XXC....R.",
-            "S....XXC..V.I.",
-            "S....XXA....I.",
+            "S....XXC..V.I.", // y=6: Ingredient Storage 4
+            "S....XXA....I.", // y=7: Ingredient Storage 5
             "A..........T.",
             "XXXXXXXXXXXXXX"
     };
@@ -75,7 +76,19 @@ public class WorldMap {
                         break;
 
                     case 'I':
-                        grid[y][x] = new StationTile(pos, new IngredientStorage());
+                        // LOGIKA BARU: Mapping Bahan berdasarkan Spec Map B (Pasta)
+                        // Kiri Atas (x=0): Tomato, Meat, Pasta
+                        // Kanan Bawah (x=13): Shrimp, Fish
+                        
+                        String ingType = "pasta"; // Default fallback
+
+                        if (x == 0 && y == 1) ingType = "tomato";
+                        else if (x == 0 && y == 2) ingType = "meat";
+                        else if (x == 0 && y == 3) ingType = "pasta";
+                        else if (x == 13 && y == 6) ingType = "shrimp";
+                        else if (x == 13 && y == 7) ingType = "fish";
+
+                        grid[y][x] = new StationTile(pos, new IngredientStorage(ingType));
                         wallMask[y][x] = true;
                         break;
 

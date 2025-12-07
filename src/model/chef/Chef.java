@@ -86,7 +86,9 @@ public class Chef {
 
     public void throwItem(boolean[][] worldMask) {
         if (held == null) return;
+        System.out.println(name + " threw " + held.getName() + "!");
         held = null;
+        changeState(new IdleState());
     }
 
     public Position getFacingPosition() {
