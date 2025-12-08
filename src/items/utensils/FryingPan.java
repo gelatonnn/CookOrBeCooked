@@ -28,7 +28,7 @@ public class FryingPan extends UtensilBase implements CookingDevice {
     public boolean canAccept(Preparable ingredient) {
         if (contents.size() >= capacity) return false;
         if (cooking) return false;
-        
+
         Item item = (Item) ingredient;
         // Frying Pan menerima bahan CHOPPED (Meat, Fish, Shrimp, Tomato)
         // Tidak menerima Pasta (karena Pasta butuh air/pot)
@@ -55,7 +55,7 @@ public class FryingPan extends UtensilBase implements CookingDevice {
             for (Preparable p : contents) p.cook();
             System.out.println("✅ Frying Pan: MATANG! (Segera angkat sebelum gosong)");
             scheduleBurn();
-        }, 12000); 
+        }, 12000);
     }
 
     private void scheduleBurn() {

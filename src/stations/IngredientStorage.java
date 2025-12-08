@@ -15,22 +15,40 @@ public class IngredientStorage implements Station {
     }
 
     @Override
-    public String getName() { return "Ingredient Storage"; }
-
-    @Override
-    public boolean canPlace(Item item) { return false; }
-
-    @Override
-    public boolean place(Item item) { return false; }
-
-    @Override
-    public Item pick() {
-        return ItemFactory.create(ingredientType);
+    public String getName() {
+        return "Ingredient Storage [" + ingredientType.toUpperCase() + "]";
     }
 
     @Override
-    public Item peek() { return null; }
+    public boolean canPlace(Item item) {
+        return false;
+    }
 
     @Override
-    public boolean isOccupied() { return false; }
+    public boolean place(Item item) {
+        System.out.println("❌ Cannot place items in ingredient storage!");
+        return false;
+    }
+
+    @Override
+    public Item pick() {
+        try {
+            Item item = ItemFactory.create(ingredientType);
+            System.out.println("📦 Got " + item.getName() + " from storage");
+            return item;
+        } catch (Exception e) {
+            System.out.println("❌ Ingredient not available: " + ingredientType);
+            return null;
+        }
+    }
+
+    @Override
+    public Item peek() {
+        return null;
+    }
+
+    @Override
+    public boolean isOccupied() {
+        return false;
+    }
 }

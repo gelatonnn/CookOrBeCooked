@@ -1,29 +1,39 @@
 package model.engine;
 
-import model.world.WorldMap;
-import model.chef.Chef;
-import stations.Station;
-import model.orders.OrderManager;
-import utils.*;
-
 import java.util.ArrayList;
 import java.util.List;
+import model.chef.Chef;
+import model.chef.states.IdleState;
+import model.orders.OrderManager;
+import model.world.Tile;
+import model.world.WorldMap;
+import model.world.tiles.WalkableTile;
+import stations.Station;
+import utils.Direction;
+import utils.Position;
+import view.Observer;
 
 public class GameEngine {
+    private static GameEngine instance;
     private final WorldMap world;
     private final OrderManager orders;
     private final GameClock clock;
     private final List<Chef> chefs;
+    private final List<Observer> observers = new ArrayList<>();
 
+    private boolean isRunning = false;
     private boolean finished = false;
-    private int failedStreak = 0;
-    private final int maxFailedStreak = 5;
 
     public GameEngine(WorldMap world, OrderManager orders, int stageSeconds) {
         this.world = world;
         this.orders = orders;
         this.clock = new GameClock(stageSeconds);
         this.chefs = new ArrayList<>();
+        instance = this;
+    }
+
+    public static GameEngine getInstance() {
+        return instance;
     }
 
     public void addChef(Chef chef) {
@@ -34,79 +44,121 @@ public class GameEngine {
         return new ArrayList<>(chefs);
     }
 
+    // --- GAME LOOP ---
+    public void start() {
+        isRunning = true;
+
+        long lastTime = System.nanoTime();
+        double amountOfTicks = 60.0;
+        double ns = 1000000000 / amountOfTicks;
+        double delta = 0;
+
+        long lastTimerCheck = System.currentTimeMillis();
+
+        while (isRunning) {
+            long now = System.nanoTime();
+            delta += (now - lastTime) / ns;
+            lastTime = now;
+
+            while (delta >= 1) {
+                notifyObservers();
+                delta--;
+            }
+
+            if (System.currentTimeMillis() - lastTimerCheck >= 1000) {
+                lastTimerCheck += 1000;
+                tick();
+            }
+
+            try { Thread.sleep(2); } catch (InterruptedException e) {}
+        }
+    }
+
+    public void stop() {
+        isRunning = false;
+        finished = true;
+    }
+
     public void tick() {
         clock.tick();
         orders.tick();
 
         if (clock.isOver()) {
-            finished = true;
-            System.out.println("\nTIME'S UP! Game Over!");
-        }
-
-        if (failedStreak >= maxFailedStreak) {
-            finished = true;
-            System.out.println("\nToo many failed orders! Game Over!");
+            System.out.println("TIME'S UP!");
         }
     }
 
-    public boolean isFinished() {
-        return finished;
-    }
+    // --- CHEF ACTIONS ---
 
     public void moveChef(Chef chef, Direction dir) {
-        if (chef.isBusy()) {
-            System.out.println("Chef is busy and cannot move!");
-            return;
-        }
+        if (chef.isBusy()) return;
+
+        // FIX (Retained): Update Direction FIRST so chef faces walls if blocked
+        chef.setDirection(dir);
 
         Position currentPos = chef.getPos();
         Position newPos = currentPos.move(dir);
 
-        if (!world.inBounds(newPos)) {
-            System.out.println("Cannot move out of bounds!");
-            return;
-        }
-
-        if (!world.isWalkable(newPos)) {
-            System.out.println("Path is blocked!");
-            return;
-        }
+        if (!world.inBounds(newPos)) return;
+        if (!world.isWalkable(newPos)) return;
 
         for (Chef other : chefs) {
-            if (other != chef && other.getPos().equals(newPos)) {
-                System.out.println("Another chef is in the way!");
-                return;
-            }
+            if (other != chef && other.getPos().equals(newPos)) return;
         }
 
         chef.setPos(newPos.x, newPos.y);
-        chef.setDirection(dir);
+    }
+
+    // NEW: Dash Mechanic
+    public void dashChef(Chef chef) {
+        if (chef.isBusy()) return;
+
+        if (!chef.canDash()) {
+            System.out.println("Dash is on cooldown!");
+            return;
+        }
+
+        System.out.println("Chef triggered Dash!");
+        Direction dir = chef.getDirection();
+
+        // Dash distance: 3 tiles
+        for (int i = 0; i < 3; i++) {
+            // Re-use moveChef to ensure collision logic is respected
+            moveChef(chef, dir);
+        }
+
+        chef.registerDash();
     }
 
     public void pickAt(Chef chef, Position p) {
-        if (chef.isBusy()) {
-            System.out.println("Chef is busy!");
-            return;
-        }
+        if (chef.isBusy()) return;
 
+        // Priority 1: Pick from Station
         Station st = world.getStationAt(p);
-        if (st == null) {
-            System.out.println("No station here!");
+        if (st != null) {
+            chef.tryPickFrom(st);
             return;
         }
 
-        chef.tryPickFrom(st);
+        // FIX (Retained): Pick from Floor (WalkableTile)
+        Tile t = world.getTile(p);
+        if (t instanceof WalkableTile wt) {
+            if (wt.getItem() != null && chef.getHeldItem() == null) {
+                chef.setHeldItem(wt.pick());
+                chef.changeState(new model.chef.states.CarryingState());
+                System.out.println("Picked up " + chef.getHeldItem().getName() + " from floor.");
+            }
+        }
     }
 
     public void placeAt(Chef chef, Position p) {
-        if (chef.isBusy()) {
-            System.out.println("Chef is busy!");
-            return;
-        }
+        if (chef.isBusy()) return;
 
         Station st = world.getStationAt(p);
-        if (st == null) {
-            System.out.println("No station here!");
+        if (st == null) return;
+
+        if (st instanceof stations.ServingStation) {
+            processServing(chef);
             return;
         }
 
@@ -114,14 +166,13 @@ public class GameEngine {
     }
 
     public void interactAt(Chef chef, Position p) {
-        if (chef.isBusy()) {
-            System.out.println("Chef is already busy!");
-            return;
-        }
+        if (chef.isBusy()) return;
 
         Station st = world.getStationAt(p);
-        if (st == null) {
-            System.out.println("No station to interact with!");
+        if (st == null) return;
+
+        if (st instanceof stations.ServingStation) {
+            processServing(chef);
             return;
         }
 
@@ -129,39 +180,63 @@ public class GameEngine {
     }
 
     public void throwItem(Chef chef) {
-        if (chef.isBusy()) {
-            System.out.println("Chef is busy!");
-            return;
+        if (chef.isBusy() || chef.getHeldItem() == null) return;
+
+        // FIX (Retained): Throw item onto the map
+        Position p = chef.getPos();
+        Direction d = chef.getDirection();
+
+        for (int i = 0; i < 3; i++) {
+            Position next = p.move(d);
+            if (!world.inBounds(next) || !world.isWalkable(next)) {
+                break;
+            }
+            p = next;
+        }
+
+        Tile t = world.getTile(p);
+        if (t instanceof WalkableTile wt) {
+            if (wt.getItem() == null) {
+                wt.setItem(chef.getHeldItem());
+            } else {
+                System.out.println("Floor occupied, item lost!");
+            }
         }
 
         chef.throwItem(world.getWallMask());
     }
 
-    public void stop() {
-        finished = true;
+    private void processServing(Chef chef) {
+        if (chef.getHeldItem() == null) return;
+
+        if (chef.getHeldItem() instanceof items.dish.DishBase dish) {
+            model.recipes.DishType type = dish.getRecipe().getType();
+            boolean success = orders.submitDish(type);
+
+            if (success) {
+                System.out.println("✅ ORDER COMPLETED! +Points");
+                chef.setHeldItem(null);
+                chef.changeState(new IdleState());
+            } else {
+                System.out.println("❌ WRONG ORDER! Penalty");
+            }
+        } else {
+            System.out.println("⚠️ Item ini bukan masakan jadi (Dish)!");
+        }
     }
 
-    public void incrementFailedStreak() {
-        failedStreak++;
+    // --- OBSERVER PATTERN ---
+    public void addObserver(Observer o) {
+        observers.add(o);
     }
 
-    public void resetFailedStreak() {
-        failedStreak = 0;
+    private void notifyObservers() {
+        for (Observer o : observers) o.update();
     }
 
-    public int getFailedStreak() {
-        return failedStreak;
-    }
-
-    public WorldMap getWorld() {
-        return world;
-    }
-
-    public GameClock getClock() {
-        return clock;
-    }
-
-    public OrderManager getOrders() {
-        return orders;
-    }
+    // --- GETTERS ---
+    public WorldMap getWorld() { return world; }
+    public GameClock getClock() { return clock; }
+    public OrderManager getOrders() { return orders; }
+    public boolean isFinished() { return finished; }
 }

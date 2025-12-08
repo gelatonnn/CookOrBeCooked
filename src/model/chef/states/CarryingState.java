@@ -1,6 +1,9 @@
 package model.chef.states;
 
 import items.core.Item;
+import items.core.Preparable;
+import items.core.CookingDevice;
+import items.utensils.Plate;
 import model.chef.*;
 import stations.Station;
 
@@ -15,18 +18,78 @@ public class CarryingState implements ChefState {
     }
 
     @Override
-    public void pickItem(Chef chef, Item item) {}
+    public void pickItem(Chef chef, Item item) {
+        System.out.println("⚠ Hands are full! Drop current item first.");
+    }
 
     @Override
     public void placeItem(Chef chef, Station st) {
         if (st == null || chef.getHeldItem() == null) return;
 
         Item held = chef.getHeldItem();
-        if (!st.canPlace(held)) return;
+
+        // Special handling for Assembly/Plating
+        if (st.getName().toLowerCase().contains("assembly")) {
+            handlePlating(chef, st, held);
+            return;
+        }
+
+        // Special handling for Serving
+        if (st.getName().toLowerCase().contains("serv")) {
+            handleServing(chef, st, held);
+            return;
+        }
+
+        if (!st.canPlace(held)) {
+            System.out.println("❌ Cannot place " + held.getName() + " on " + st.getName());
+            return;
+        }
 
         if (st.place(held)) {
             chef.setHeldItem(null);
             chef.changeState(new IdleState());
+            System.out.println("✅ Placed " + held.getName() + " on " + st.getName());
+        }
+    }
+
+    private void handlePlating(Chef chef, Station st, Item held) {
+        if (held instanceof Plate plate) {
+            if (!plate.isClean()) {
+                System.out.println("❌ Cannot use dirty plate! Wash it first.");
+                return;
+            }
+            // Place plate on station for plating
+            st.place(held);
+            chef.setHeldItem(null);
+            chef.changeState(new IdleState());
+            System.out.println("✅ Placed clean plate on Assembly Station");
+        } else if (held instanceof Preparable) {
+            // Add ingredient to plate on station
+            Item onStation = st.peek();
+            if (onStation instanceof Plate plate && plate.isClean()) {
+                plate.addIngredient((Preparable) held);
+                chef.setHeldItem(null);
+                chef.changeState(new IdleState());
+                System.out.println("✅ Added " + held.getName() + " to plate");
+            } else {
+                System.out.println("❌ Need clean plate on station first!");
+            }
+        }
+    }
+
+    private void handleServing(Chef chef, Station st, Item held) {
+        if (held instanceof Plate plate) {
+            if (plate.getContents().isEmpty()) {
+                System.out.println("❌ Cannot serve empty plate!");
+                return;
+            }
+
+            st.place(held);
+            chef.setHeldItem(null);
+            chef.changeState(new IdleState());
+            System.out.println("🍽️  Served dish to customer!");
+        } else {
+            System.out.println("❌ Must serve on a plate!");
         }
     }
 

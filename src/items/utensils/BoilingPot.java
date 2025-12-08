@@ -28,7 +28,7 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
     public boolean canAccept(Preparable ingredient) {
         if (contents.size() >= capacity) return false;
         if (cooking) return false; // Tidak bisa tambah bahan saat sedang proses masak
-        
+
         // Sesuai Spec Map B: Boiling Pot untuk Pasta
         // Kita cek nama itemnya mengandung "pasta"
         String n = ((Item)ingredient).getName().toLowerCase();
@@ -40,7 +40,7 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
         if (canAccept(ingredient)) {
             contents.add(ingredient);
             // AUTO START: Sesuai spec, masak otomatis berjalan saat bahan masuk
-            startCooking(); 
+            startCooking();
         }
     }
 
@@ -57,9 +57,9 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
                 p.cook(); // Ubah state menjadi COOKED
             }
             System.out.println("✅ Boiling Pot: MATANG! (Segera angkat sebelum gosong)");
-            
+
             // TASK 2: Gosong jika tidak diangkat (12 Detik setelah matang)
-            scheduleBurn(); 
+            scheduleBurn();
         }, 12000); // 12000 ms = 12 detik
     }
 
@@ -111,7 +111,7 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
         if (cooking) status = " [COOKING...]";
         else if (!contents.isEmpty() && ((Item)contents.get(0)).getState() == ItemState.BURNED) status = " [BURNED]";
         else if (!contents.isEmpty() && ((Item)contents.get(0)).getState() == ItemState.COOKED) status = " [READY]";
-        
+
         return getName() + " (" + contents.size() + "/" + capacity + ")" + status;
     }
 }

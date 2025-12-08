@@ -61,7 +61,21 @@ public class WorldMap {
                         break;
 
                     case 'R':
-                        grid[y][x] = new StationTile(pos, new CookingStation());
+                        StationTile cookTile = new StationTile(pos, new CookingStation());
+                        CookingStation cs = (CookingStation) cookTile.getStation();
+                        
+                        // LOGIC BARU: Spawn Alat Masak di Awal Game
+                        // Sesuai Layout Map B:
+                        // Baris atas (y=0) pakai Boiling Pot (untuk Pasta)
+                        // Baris samping/bawah pakai Frying Pan (untuk Daging/Ikan)
+                        
+                        if (y == 0) {
+                            cs.place(new items.utensils.BoilingPot());
+                        } else {
+                            cs.place(new items.utensils.FryingPan());
+                        }
+
+                        grid[y][x] = cookTile;
                         wallMask[y][x] = true;
                         break;
 
@@ -79,7 +93,7 @@ public class WorldMap {
                         // LOGIKA BARU: Mapping Bahan berdasarkan Spec Map B (Pasta)
                         // Kiri Atas (x=0): Tomato, Meat, Pasta
                         // Kanan Bawah (x=13): Shrimp, Fish
-                        
+
                         String ingType = "pasta"; // Default fallback
 
                         if (x == 0 && y == 1) ingType = "tomato";
@@ -106,6 +120,7 @@ public class WorldMap {
                         grid[y][x] = new StationTile(pos, new TrashStation());
                         wallMask[y][x] = true;
                         break;
+                    
 
                     default:
                         grid[y][x] = new WalkableTile(pos);
