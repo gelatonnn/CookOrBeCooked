@@ -93,8 +93,7 @@ public class GameEngine {
     public void moveChef(Chef chef, Direction dir) {
         if (chef.isBusy()) return;
 
-        // FIX 1: Update Direction FIRST.
-        // Even if movement is blocked, the chef should face the requested direction.
+        // FIX (Retained): Update Direction FIRST so chef faces walls if blocked
         chef.setDirection(dir);
 
         Position currentPos = chef.getPos();
@@ -103,12 +102,32 @@ public class GameEngine {
         if (!world.inBounds(newPos)) return;
         if (!world.isWalkable(newPos)) return;
 
-        // Collision check with other chefs
         for (Chef other : chefs) {
             if (other != chef && other.getPos().equals(newPos)) return;
         }
 
         chef.setPos(newPos.x, newPos.y);
+    }
+
+    // NEW: Dash Mechanic
+    public void dashChef(Chef chef) {
+        if (chef.isBusy()) return;
+
+        if (!chef.canDash()) {
+            System.out.println("Dash is on cooldown!");
+            return;
+        }
+
+        System.out.println("Chef triggered Dash!");
+        Direction dir = chef.getDirection();
+
+        // Dash distance: 3 tiles
+        for (int i = 0; i < 3; i++) {
+            // Re-use moveChef to ensure collision logic is respected
+            moveChef(chef, dir);
+        }
+
+        chef.registerDash();
     }
 
     public void pickAt(Chef chef, Position p) {
@@ -121,8 +140,7 @@ public class GameEngine {
             return;
         }
 
-        // FIX 2b: Pick from Floor (WalkableTile)
-        // If no station, check if there is an item on the floor
+        // FIX (Retained): Pick from Floor (WalkableTile)
         Tile t = world.getTile(p);
         if (t instanceof WalkableTile wt) {
             if (wt.getItem() != null && chef.getHeldItem() == null) {
@@ -164,25 +182,20 @@ public class GameEngine {
     public void throwItem(Chef chef) {
         if (chef.isBusy() || chef.getHeldItem() == null) return;
 
-        // FIX 2a: Logic to throw item onto the map
+        // FIX (Retained): Throw item onto the map
         Position p = chef.getPos();
         Direction d = chef.getDirection();
 
-        // Throw distance: up to 3 tiles
         for (int i = 0; i < 3; i++) {
             Position next = p.move(d);
-
-            // Stop if out of bounds or hitting a wall/station (not walkable)
             if (!world.inBounds(next) || !world.isWalkable(next)) {
                 break;
             }
             p = next;
         }
 
-        // Place item on the final valid WalkableTile
         Tile t = world.getTile(p);
         if (t instanceof WalkableTile wt) {
-            // Only place if floor is empty
             if (wt.getItem() == null) {
                 wt.setItem(chef.getHeldItem());
             } else {
@@ -190,7 +203,6 @@ public class GameEngine {
             }
         }
 
-        // Chef logic: Clear hands and reset state
         chef.throwItem(world.getWallMask());
     }
 

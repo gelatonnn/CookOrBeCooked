@@ -15,6 +15,10 @@ public class Chef {
     private ChefState state;
     private ChefAction currentAction;
 
+    // NEW: Dash Cooldown variables
+    private long lastDashTime = 0;
+    private static final long DASH_COOLDOWN_MS = 2000; // 2 seconds cooldown
+
     public Chef(String id, String name, int x, int y) {
         this.id = id;
         this.name = name;
@@ -52,12 +56,26 @@ public class Chef {
     }
 
     public void move(int dx, int dy) {
-        if (dx > 0) direction = Direction.RIGHT;
-        else if (dx < 0) direction = Direction.LEFT;
-        else if (dy > 0) direction = Direction.DOWN;
-        else if (dy < 0) direction = Direction.UP;
+        // UPDATED: Logic to handle 8 directions
+        if (dx == 0 && dy < 0) direction = Direction.UP;
+        else if (dx == 0 && dy > 0) direction = Direction.DOWN;
+        else if (dx < 0 && dy == 0) direction = Direction.LEFT;
+        else if (dx > 0 && dy == 0) direction = Direction.RIGHT;
+        else if (dx < 0 && dy < 0) direction = Direction.UP_LEFT;
+        else if (dx > 0 && dy < 0) direction = Direction.UP_RIGHT;
+        else if (dx < 0 && dy > 0) direction = Direction.DOWN_LEFT;
+        else if (dx > 0 && dy > 0) direction = Direction.DOWN_RIGHT;
 
         state.move(this, dx, dy);
+    }
+
+    // NEW: Dash Cooldown Logic
+    public boolean canDash() {
+        return System.currentTimeMillis() - lastDashTime >= DASH_COOLDOWN_MS;
+    }
+
+    public void registerDash() {
+        this.lastDashTime = System.currentTimeMillis();
     }
 
     public void changeState(ChefState s) {
@@ -73,7 +91,6 @@ public class Chef {
     }
 
     public void tryPickFrom(Station st) {
-        // KASUS 1: Tangan Kosong -> Boleh ambil apa saja
         if (held == null) {
             Item item = st.pick();
             if (item != null) {
@@ -82,26 +99,20 @@ public class Chef {
             return;
         }
 
-        // KASUS 2: Tangan Penuh -> Cek apakah bisa di-MERGE?
         Item itemOnStation = st.peek();
         if (itemOnStation == null) return;
 
-        // A. Jika tangan pegang Panci/Wajan (CookingDevice), dan station ada Bahan (Preparable)
         if (held instanceof items.core.CookingDevice device && itemOnStation instanceof items.core.Preparable prep) {
             if (device.canAccept(prep)) {
-                st.pick(); // SAH! Ambil item dari station
-                device.addIngredient(prep); // Masukkan ke panci
-
-                String prepName = ((Item) prep).getName();
-                String devName = ((Item) device).getName();
-                System.out.println("Added " + prepName + " to " + devName);
+                st.pick();
+                device.addIngredient(prep);
+                System.out.println("Added " + ((Item)prep).getName() + " to " + ((Item)device).getName());
             } else {
                 System.out.println("Alat masak ini tidak menerima bahan tersebut!");
             }
             return;
         }
 
-        // B. Jika tangan pegang Piring (Plate), dan station ada Bahan (Preparable)
         if (held instanceof items.utensils.Plate plate && itemOnStation instanceof items.core.Preparable prep) {
             st.pick();
             plate.addIngredient(prep);
@@ -116,7 +127,6 @@ public class Chef {
             return;
         }
 
-        // C. Tangan Penuh & Tidak Bisa Merge
         System.out.println("Tangan penuh! Tidak bisa mengambil " + itemOnStation.getName());
     }
 
@@ -128,13 +138,11 @@ public class Chef {
         state.interact(this, st);
     }
 
-    // FIX 3: Ensure logic handles state reset
+    // FIX (Retained): Ensure state reset after throwing
     public void throwItem(boolean[][] worldMask) {
         if (held == null) return;
         System.out.println(name + " threw " + held.getName() + "!");
         held = null;
-
-        // This line is crucial for fixing the "Carrying -> Idle" bug
         changeState(new IdleState());
     }
 
