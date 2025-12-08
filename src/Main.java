@@ -1,5 +1,3 @@
-package main;
-
 import controller.GameController;
 import factory.ItemRegistryInit;
 import model.chef.Chef;
