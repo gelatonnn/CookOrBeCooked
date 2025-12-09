@@ -1,12 +1,11 @@
 package view.gui;
 
+import java.awt.*;
+import java.util.List;
+import javax.swing.*;
 import model.engine.GameEngine;
 import model.orders.Order;
 import view.Observer;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
 
 public class HUDPanel extends JPanel implements Observer {
     private final GameEngine engine;
@@ -88,18 +87,25 @@ public class HUDPanel extends JPanel implements Observer {
 
     private String getHelpContent() {
         return """
-            CONTROLS:
-            [W, A, S, D] : Move Chef
-            [P] : Pick Up Item
-            [E] : Interact / Use Station
-            [O] : Place Item Down
-            [T] : Throw Item
-            [TAB] : Switch Chef
+            === CARA BERMAIN NIMONSCOOKED ===
             
-            TIPS:
-            - Masak Pasta di Boiling Pot (Panci).
-            - Masak Daging/Ikan di Frying Pan (Wajan).
-            - Jangan lupa angkat sebelum GOSONG!
+            [KONTROL]
+            W, A, S, D  : Bergerak
+            E           : Interaksi (Ambil/Taruh/Proses)
+            CTRL + WASD : Dash (Lari Cepat)
+            C           : Ganti Chef
+            O           : Place Item Down
+            P           : Pick Up Item
+            T           : Throw Item
+            
+            [TUJUAN]
+            1. Ambil bahan dari kotak (Crate).
+            2. Potong bahan di talenan (Cutting Board).
+            3. Masak di kompor (Stove) sampai matang.
+            4. Letakkan di piring (Plate).
+            5. Antar ke loket penyajian (Serving Window).
+            
+            Hati-hati! Jangan sampai masakan gosong!
             """;
     }
 
