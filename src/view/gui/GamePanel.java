@@ -131,7 +131,7 @@ public class GamePanel extends JPanel implements Observer {
     private void drawStation(Graphics2D g2d, int x, int y, Station station) {
         SpriteLibrary sprites = SpriteLibrary.getInstance();
         String name = station.getName().toLowerCase();
-        BufferedImage img = null;
+        BufferedImage img;
         
         if (station instanceof IngredientStorage) {
             if (name.contains("pasta"))

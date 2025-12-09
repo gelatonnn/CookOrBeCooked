@@ -112,7 +112,7 @@ public class SpriteLibrary {
 
     public BufferedImage getChefSprite(int chefId, String direction, boolean hasItem, boolean busy, int animationStep) {
         int row = (chefId == 0) ? 5 : 6; 
-        int col = 0;
+        int col;
 
         //FRAME ANIMASI
         // DOWN 
