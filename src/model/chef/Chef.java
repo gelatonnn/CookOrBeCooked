@@ -1,8 +1,14 @@
 package model.chef;
 
+import items.core.CookingDevice;
 import items.core.Item;
+import items.core.Preparable;
+import items.dish.*;
+import items.utensils.Plate;
 import model.chef.states.*;
-import stations.Station;
+import model.recipes.DishType;
+import model.recipes.RecipeBook;
+import stations.Station; // Untuk PastaMarinara, dll
 import utils.Direction;
 import utils.Position;
 
@@ -131,6 +137,56 @@ public class Chef {
     }
 
     public void tryPlaceTo(Station st) {
+        Item itemOnStation = st.peek();
+
+        // --- LOGIKA BARU: Menuang isi Panci/Wajan ke Piring di Station ---
+        if (held instanceof CookingDevice device && itemOnStation instanceof Plate plate) {
+            
+            // 1. Validasi: Piring harus bersih & Alat masak ada isinya
+            if (!plate.isClean()) {
+                System.out.println("❌ Gagal: Piring kotor!");
+                return;
+            }
+            if (device.getContents().isEmpty()) {
+                System.out.println("❌ Gagal: Alat masak kosong!");
+                return;
+            }
+
+            // 2. Pindahkan isi alat masak ke piring
+            System.out.println("Menuang isi " + ((Item)device).getName() + " ke Piring...");
+            for (Preparable ingredient : device.getContents()) {
+                plate.addIngredient(ingredient);
+            }
+
+            // 3. Cek apakah kombinasi bahan di piring membentuk Dish (Resep Valid)
+            DishType match = RecipeBook.findMatch(plate.getContents());
+            
+            if (match != null) {
+                // Jika resep valid, ubah item di station dari 'Plate' menjadi 'Dish'
+                items.dish.DishBase finalDish = null;
+                
+                switch (match) {
+                    case PASTA_MARINARA -> finalDish = new PastaMarinara();
+                    case PASTA_BOLOGNESE -> finalDish = new PastaBolognese();
+                    case PASTA_FRUTTI_DI_MARE -> finalDish = new PastaFruttiDiMare();
+                }
+
+                if (finalDish != null) {
+                    st.pick(); // Ambil piring biasa dari station (hapus ref lama)
+                    st.place(finalDish); // Taruh Dish jadi (yang sudah ada piringnya secara konsep)
+                    System.out.println("✨ Plating Berhasil: " + match);
+                }
+            } else {
+                System.out.println("⚠️ Bahan dituang, tapi belum jadi menu lengkap.");
+            }
+
+            // 4. Kosongkan alat masak di tangan
+            device.clearContents();
+            return; // Return agar tidak lanjut ke logika default placeItem
+        }
+        // -------------------------------------------------------------
+
+        // Logika default (state pattern) untuk menaruh item biasa
         state.placeItem(this, st);
     }
 
