@@ -40,7 +40,9 @@ public class SpriteLibrary {
             case "fish_cooked":   col = 2; row = 2; break;
             case "fish_burned":   col = 3; row = 2; break; 
             case "shrimp_cooked": col = 2; row = 3; break;
+            case "shrimp_burned": col = 3; row = 3; break;
             case "pasta_cooked":  col = 1; row = 4; break;
+            case "pasta_burned": col = 2; row = 4; break;              
             
             //Ingredients Chopped 
             case "tomato_chopped": col = 1; row = 0; break;
