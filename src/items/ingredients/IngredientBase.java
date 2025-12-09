@@ -3,10 +3,8 @@ package items.ingredients;
 import items.core.Item;
 import items.core.ItemState;
 import items.core.Preparable;
-import utils.TimerUtils;
 
 public abstract class IngredientBase extends Item implements Preparable {
-    private boolean cooking = false;
 
     public IngredientBase() {
         this.state = ItemState.RAW;
@@ -15,40 +13,34 @@ public abstract class IngredientBase extends Item implements Preparable {
 
     @Override
     public boolean canBePlacedOnPlate() {
-        return state == ItemState.COOKED || state == ItemState.CHOPPED;
+        return state == ItemState.COOKED || state == ItemState.CHOPPED || state == ItemState.BURNED;
     }
 
     @Override
     public void chop() {
-        if (canBeChopped() && state == ItemState.RAW) {
+        // Validasi ketat: Hanya bisa dipotong jika RAW dan memang bisa dipotong
+        if (state == ItemState.RAW && canBeChopped()) {
             state = ItemState.CHOPPED;
-            System.out.println("✂️  " + getName() + " is now CHOPPED");
+            System.out.println("✂️ " + getName() + " is now CHOPPED");
+        } else {
+            System.out.println("⚠️ " + getName() + " sudah dipotong atau tidak bisa dipotong!");
         }
     }
 
     @Override
     public void cook() {
-        if (!canBeCooked() || cooking) return;
-
-        cooking = true;
-        state = ItemState.COOKING;
-        System.out.println("🔥 " + getName() + " is COOKING... (12s to COOKED, 24s to BURNED)");
-
-        // After 12s → COOKED
-        TimerUtils.scheduleSeconds(() -> {
-            if (state == ItemState.COOKING) {
-                state = ItemState.COOKED;
-                System.out.println("✅ " + getName() + " is now COOKED!");
-            }
-        }, 12);
-
-        // After 24s → BURNED
-        TimerUtils.scheduleSeconds(() -> {
-            if (state == ItemState.COOKING || state == ItemState.COOKED) {
-                state = ItemState.BURNED;
-                cooking = false;
-                System.out.println("🔥💀 " + getName() + " is BURNED! Throw it away!");
-            }
-        }, 24);
+        // Method ini sekarang hanya mengubah state, TIDAK mengatur waktu
+        if (state == ItemState.RAW || state == ItemState.CHOPPED) {
+            state = ItemState.COOKED;
+            System.out.println("✅ " + getName() + " is now COOKED!");
+        }
+    }
+    
+    // Tambahan helper untuk gosong
+    public void burn() {
+        if (state != ItemState.BURNED) {
+            state = ItemState.BURNED;
+            System.out.println("🔥💀 " + getName() + " is BURNED!");
+        }
     }
 }
