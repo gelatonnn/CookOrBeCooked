@@ -13,11 +13,6 @@ import view.gui.GamePanel;
 import view.gui.HUDPanel;
 import view.gui.HomePanel;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-
 public class Main {
     private static JFrame window;
     private static JPanel mainContainer;

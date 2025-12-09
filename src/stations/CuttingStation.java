@@ -1,8 +1,8 @@
 package stations;
 
 import items.core.Item;
-import items.core.Preparable;
 import items.core.ItemState;
+import items.core.Preparable;
 
 public class CuttingStation extends BaseStation {
     @Override
@@ -12,6 +12,7 @@ public class CuttingStation extends BaseStation {
     public boolean canPlace(Item item) {
         if (item instanceof Preparable p) {
             Item i = (Item) p;
+            // FIX PENTING: Cuma boleh taruh kalau statusnya RAW (Mentah)
             return i.getState() == ItemState.RAW && p.canBeChopped();
         }
         return false;
@@ -20,10 +21,11 @@ public class CuttingStation extends BaseStation {
     @Override
     public boolean place(Item item) {
         if (!canPlace(item)) {
-            System.out.println("❌ This item cannot be chopped here!");
+            // Beri tahu kenapa gagal (berguna buat debug di console)
+            System.out.println("❌ CuttingStation: Hanya menerima bahan mentah (RAW)!");
             return false;
         }
-        System.out.println("📍 Placed " + item.getName() + " on Cutting Station");
+        System.out.println("📍 Menaruh " + item.getName() + " di Cutting Station");
         return super.place(item);
     }
 }
