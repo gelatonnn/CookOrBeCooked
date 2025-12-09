@@ -1,10 +1,10 @@
 package model.chef.states;
 
+import items.core.Item;
 import items.core.Preparable;
 import model.chef.*;
 import stations.Station;
 import utils.TimerUtils;
-import items.core.Item;
 
 public class BusyCuttingState implements ChefState {
     private final Station station;
@@ -53,5 +53,14 @@ public class BusyCuttingState implements ChefState {
     public void placeItem(Chef chef, Station st) {}
 
     @Override
-    public void interact(Chef chef, Station st) {}
+    public void interact(Chef chef, Station st) {
+    }
+
+    public int getProgress() {
+    return progress;
+}
+
+    public int getMaxProgress() {
+    return maxProgress;
+}
 }

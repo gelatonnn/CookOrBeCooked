@@ -62,9 +62,11 @@ public class HomePanel extends JPanel {
 
         // Efek Hover Sederhana
         button.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 button.setBackground(new Color(100, 149, 237)); // Lebih terang saat hover
             }
+            @Override
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 button.setBackground(new Color(70, 130, 180)); // Kembali normal
             }

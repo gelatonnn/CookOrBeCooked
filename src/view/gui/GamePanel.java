@@ -91,20 +91,34 @@ public class GamePanel extends JPanel implements Observer {
         BufferedImage img = null;
         
         if (station instanceof IngredientStorage) {
-            if (name.contains("pasta")) img = sprites.getSprite("crate_pasta");
-            else if (name.contains("meat")) img = sprites.getSprite("crate_meat");
-            else if (name.contains("tomato")) img = sprites.getSprite("crate_tomato");
-            else if (name.contains("shrimp")) img = sprites.getSprite("crate_shrimp");
-            else if (name.contains("fish")) img = sprites.getSprite("crate_fish");
-            else img = sprites.getSprite("ingredient storage");
+            if (name.contains("pasta"))
+                img = sprites.getSprite("crate_pasta");
+            else if (name.contains("meat"))
+                img = sprites.getSprite("crate_meat");
+            else if (name.contains("tomato"))
+                img = sprites.getSprite("crate_tomato");
+            else if (name.contains("shrimp"))
+                img = sprites.getSprite("crate_shrimp");
+            else if (name.contains("fish"))
+                img = sprites.getSprite("crate_fish");
+            else
+                img = sprites.getSprite("ingredient storage");
         } else {
-            if (name.contains("cutting")) img = sprites.getSprite("cutting station");
-            else if (name.contains("cook") || name.contains("stove")) img = sprites.getSprite("cooking station");
-            else if (name.contains("wash") || name.contains("sink")) img = sprites.getSprite("washing station");
-            else if (name.contains("serve")) img = sprites.getSprite("serving station");
-            else if (name.contains("trash")) img = sprites.getSprite("trash station");
-            else if (name.contains("plate")) img = sprites.getSprite("plate storage");
-            else img = sprites.getSprite("counter"); // Default meja kayu
+            if (name.contains("cutting"))
+                img = sprites.getSprite("cutting station");
+            else if (name.contains("cook") || name.contains("stove"))
+                img = sprites.getSprite("cooking station");
+            else if (name.contains("wash") || name.contains("sink"))
+                img = sprites.getSprite("washing station");
+            else if (name.contains("serving"))
+                img = sprites.getSprite("serving station");
+            else if (name.contains("trash"))
+                img = sprites.getSprite("trash station");
+            else if (name.contains("plate"))
+                img = sprites.getSprite("plate storage");
+            else if (name.contains("assembly"))
+                img = sprites.getSprite("assembly station");
+            else img = sprites.getSprite("counter");
         }
 
         //Gambar Station
@@ -144,9 +158,19 @@ public class GamePanel extends JPanel implements Observer {
             case CookingDevice dev -> {
                 String devClassName = dev.getClass().getSimpleName().toLowerCase();
                 if (devClassName.contains("pot")) {
-                    spriteName = "boiling pot"; 
+                    // PERUBAHAN DISINI: Cek apakah sedang masak?
+                    if (dev.isCooking()) {
+                        spriteName = "pot_cooking"; // Panci ada airnya
+                    } else {
+                        spriteName = "boiling pot"; // Panci kosong
+                    }
                 } else if (devClassName.contains("pan")) {
-                    spriteName = "frying pan";
+                    // Opsional: Lakukan hal yang sama untuk Frying Pan jika ada sprite "pan_cooking"
+                    if (dev.isCooking()) {
+                        spriteName = "pan_cooking";
+                    } else {
+                        spriteName = "frying pan";
+                    }
                 }
                 isCooking = dev.isCooking();
             }
@@ -170,15 +194,11 @@ public class GamePanel extends JPanel implements Observer {
         }
     }
 
-    private void drawCookingIndicator(Graphics2D g2d, int x, int y, int size) {
-        g2d.setColor(new Color(255, 69, 0, 200)); 
-        g2d.setFont(new Font("Segoe UI Emoji", Font.BOLD, 20));
-        g2d.drawString("🔥", x + size/2 - 10, y + size/2 + 5);
-        
+    private void drawCookingIndicator(Graphics2D g2d, int x, int y, int size) {        
         g2d.setColor(Color.WHITE);
         g2d.fillRect(x, y - 5, size, 5);
         g2d.setColor(Color.RED);
-        g2d.fillRect(x, y - 5, (int)(size * (System.currentTimeMillis() % 1000) / 1000.0), 5);
+        g2d.fillRect(x, y - 5, (int)(size * (System.currentTimeMillis() % 1000) / 1000.0), 7);
     }
 
     private void drawContainerContents(Graphics2D g2d, int x, int y, Item container) {
@@ -206,7 +226,7 @@ public class GamePanel extends JPanel implements Observer {
                     BufferedImage ingImg = SpriteLibrary.getInstance().getSprite(ingName);
                     
                     if (ingImg != null) {
-                        g2d.drawImage(ingImg, x + 15 + offsetX, y + 10 + offsetY, 25, 25, null);
+                        g2d.drawImage(ingImg, x + 25 + offsetX, y + 20 + offsetY, 25, 25, null);
                         offsetX += 12;
                         if (i % 2 == 1) { 
                             offsetX = 5;
@@ -225,11 +245,12 @@ public class GamePanel extends JPanel implements Observer {
 
         for (int i = 0; i < chefs.size(); i++) {
             Chef c = chefs.get(i);
-            BufferedImage chefImg = sprites.getChefSprite(i, c.getDirection().name(), c.getHeldItem() != null, c.isBusy());
-            
+            BufferedImage chefImg = sprites.getChefSprite(i, c.getDirection().name(), c.getHeldItem() != null,
+                    c.isBusy());
+
             int px = c.getX() * TILE_SIZE;
             int py = c.getY() * TILE_SIZE;
-            
+
             if (chefImg != null) {
                 g2d.drawImage(chefImg, px, py, TILE_SIZE, TILE_SIZE, null);
             } else {
@@ -245,7 +266,25 @@ public class GamePanel extends JPanel implements Observer {
             if (c.getHeldItem() != null) {
                 drawItem(g2d, px + 25, py - 20, c.getHeldItem(), 50);
             }
+
+            if (c.getActionProgress() > 0) {
+                drawProgressBar(g2d, px, py - 10, c.getActionProgress(), Color.GREEN);
+            }
         }
+    }
+
+    private void drawProgressBar(Graphics2D g2d, int x, int y, float percentage, Color color) {
+        int barWidth = TILE_SIZE - 20;
+        int barHeight = 8;
+        int screenX = x + 10; // Center bar horizontally
+
+        // Background Bar (Hitam/Abu)
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(screenX, y, barWidth, barHeight);
+        
+        // Foreground Bar (Progress)
+        g2d.setColor(color);
+        g2d.fillRect(screenX + 1, y + 1, (int)((barWidth - 2) * percentage), barHeight - 2);
     }
 
     @Override

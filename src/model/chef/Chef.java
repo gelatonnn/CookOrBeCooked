@@ -162,4 +162,11 @@ public class Chef {
                 " [" + currentAction + "]" +
                 (held != null ? " holding " + held.getName() : "");
     }
+    
+    public float getActionProgress() {
+    if (state instanceof BusyCuttingState cuttingState) {
+        return (float) cuttingState.getProgress() / cuttingState.getMaxProgress();
+    }
+    return 0f;
+}
 }
