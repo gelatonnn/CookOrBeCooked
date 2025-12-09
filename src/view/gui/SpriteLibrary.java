@@ -57,7 +57,7 @@ public class SpriteLibrary {
             case "plate" -> { col = 7; row = 2; }
             case "plate_dirty" -> { col = 8; row = 2; }
             
-            // PERBAIKAN STOVE ITEM: Panci & Wajan 
+            //Panci & Wajan 
             case "boiling pot",
                     "pot" -> { col = 1; row = 8; }
             case "pot_cooking" -> { col = 9; row = 0; }
@@ -66,13 +66,12 @@ public class SpriteLibrary {
                     "pan" -> { col = 0; row = 8; }
             case "pan_cooking" -> { col = 0; row = 8; }
 
-            // === STATIONS (PERBAIKAN UTAMA) ===
             
-            //Wall: Bata Merah
+            //Environment
             case "wall" -> { col = 9; row = 3; }
+            case "floor" -> { col = 2; row = 8; }
 
-            //Counter/Meja: Talenan Kosong 
-            //INI YANG SEBELUMNYA SALAH 
+            //Counter
             case "counter",
                     "assembly station" -> { col = 9; row = 4; }
             case "serving station" -> { col = 9; row = 5; }
@@ -112,33 +111,35 @@ public class SpriteLibrary {
     }
 
     public BufferedImage getChefSprite(int chefId, String direction, boolean hasItem, boolean busy, int animationStep) {
-        int row = (chefId == 0) ? 5 : 6; // Baris 5 untuk Chef 1, Baris 6 untuk Chef 2
+        int row = (chefId == 0) ? 5 : 6; 
         int col = 0;
 
-        // Logika Frame Animasi Sederhana (Ping-Pong 0-1-2-1)
-        // Pola: 0, 1, 2, 1, 0, ...
-        int framePattern = animationStep % 4; 
-        if (framePattern == 3) framePattern = 1; 
+        //FRAME ANIMASI
+        // DOWN 
+        int[] animDown = {1, 2, 1, 2}; 
         
-        // PENTING: Sesuaikan offset kolom ini dengan sprites.png kamu
-        // Asumsi berdasarkan gambar umum sprite sheet:
-        // Down: 0-2, Right: 3-4, Left: 5-7, Up: 8-9
+        // RIGHT 
+        int[] animRight = {3, 4, 3, 4}; 
         
+        // LEFT (
+        int[] animLeft = {5, 6, 5, 6}; 
+        
+        // UP 
+        int[] animUp = {7, 8, 7, 8};
+
+        int stepIndex = animationStep % 4;
+
         if (direction.contains("UP")) {
-            // Arah Atas (Biasanya kol 8-9)
-            col = 8 + (animationStep % 2); 
+            col = animUp[stepIndex];
         } 
         else if (direction.contains("LEFT")) {
-            // Arah Kiri (Biasanya kol 5-7)
-            col = 5 + framePattern; 
+            col = animLeft[stepIndex];
         } 
         else if (direction.contains("RIGHT")) {
-            // Arah Kanan (Biasanya kol 3-4)
-            col = 3 + (animationStep % 2); 
+            col = animRight[stepIndex];
         } 
         else {
-            // Arah Bawah (Biasanya kol 0-2)
-            col = 0 + framePattern;
+            col = animDown[stepIndex];
         }
 
         return assets.getSprite(col, row);

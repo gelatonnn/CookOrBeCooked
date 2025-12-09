@@ -22,13 +22,10 @@ public class GamePanel extends JPanel implements Observer {
     private final GameEngine engine;
     private final int TILE_SIZE = 102;
     
-    // --- TAMBAHAN UNTUK SMOOTH MOVEMENT ---
-    // Menyimpan posisi visual (pixel) untuk setiap chef
     private final Map<Chef, Point2D.Double> chefRenderPositions = new HashMap<>();
     
-    // Variabel untuk animasi (frame counter)
     private int animationTick = 0;
-    private final float MOVEMENT_SPEED = 0.3f; // Kecepatan gerak halus (0.1 lambat - 0.9 cepat)
+    private final float MOVEMENT_SPEED = 0.3f; 
 
     public GamePanel(GameEngine engine) {
         this.engine = engine;
