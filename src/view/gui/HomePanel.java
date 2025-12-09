@@ -27,7 +27,6 @@ public class HomePanel extends JPanel {
         // 2. Tombol How To Play 
         JButton helpButton = createStyledButton("HOW TO PLAY");
         helpButton.addActionListener(e -> showHowToPlay());
-        // -----------------------------------------
 
         // 3. Tombol Exit 
         JButton exitButton = createStyledButton("EXIT");

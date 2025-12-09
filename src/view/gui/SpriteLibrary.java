@@ -40,7 +40,12 @@ public class SpriteLibrary {
             case "fish_cooked" -> { col = 2; row = 2; }
             case "fish_burned" -> { col = 3; row = 2; }
             case "shrimp_cooked" -> { col = 2; row = 3; }
+            case "shrimp_burned" -> { col = 3; row = 3; }
             case "pasta_cooked" -> { col = 1; row = 4; }
+            case "pasta_burned" -> {  col = 2;  row = 4; }
+            case "tomato_cooked" -> { col = 2; row = 0; }
+            case "tomato_burned" -> { col = 3; row = 0; }
+
             
             //Ingredients Chopped 
             case "tomato_chopped" -> { col = 1; row = 0; }
