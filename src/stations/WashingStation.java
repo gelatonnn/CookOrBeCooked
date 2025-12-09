@@ -1,42 +1,60 @@
 package stations;
 
 import items.core.Item;
+import items.utensils.DirtyPlate;
 import items.utensils.Plate;
-import items.core.ItemState;
 
 public class WashingStation extends BaseStation {
+    private boolean isWashing = false;
+    private long washStartTime = 0;
+    private final int WASH_DURATION = 3000; // 3 detik mencuci
+
     @Override
     public String getName() { return "Washing Station"; }
 
     @Override
     public boolean canPlace(Item item) {
-        if (item instanceof Plate plate) {
-            return !plate.isClean();
-        }
-        return false;
+        // Hanya terima piring kotor jika station sedang kosong
+        return storedItem == null && item instanceof DirtyPlate;
     }
 
     @Override
     public boolean place(Item item) {
-        if (!canPlace(item)) {
-            if (item instanceof Plate plate && plate.isClean()) {
-                System.out.println("❌ This plate is already clean!");
-            } else {
-                System.out.println("❌ Only dirty plates can be washed here!");
-            }
-            return false;
+        if (canPlace(item)) {
+            super.place(item);
+            startWashing(); // Mulai cuci otomatis
+            return true;
         }
-
-        System.out.println("📍 Dirty plate placed in washing station");
-        return super.place(item);
+        return false;
     }
 
-    @Override
-    public Item pick() {
-        Item item = super.pick();
-        if (item instanceof Plate plate && plate.isClean()) {
-            System.out.println("✅ Picked up clean plate");
+    private void startWashing() {
+        isWashing = true;
+        washStartTime = System.currentTimeMillis();
+        
+        // Gunakan timer sederhana (bisa juga pakai ScheduledExecutor seperti CookingStation)
+        // Di sini kita pakai Thread simple untuk demo, atau cek di tick()
+        new Thread(() -> {
+            try {
+                Thread.sleep(WASH_DURATION);
+                finishWashing();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private void finishWashing() {
+        if (storedItem instanceof DirtyPlate) {
+            // Ubah DirtyPlate menjadi Plate bersih
+            storedItem = new Plate();
+            isWashing = false;
+            System.out.println("Washing complete! Plate is clean.");
         }
-        return item;
+    }
+
+    // Untuk keperluan visual (opsional)
+    public boolean isWashing() {
+        return isWashing;
     }
 }

@@ -16,13 +16,9 @@ public class IdleState implements ChefState {
 
     @Override
     public void pickItem(Chef chef, Item item) {
-        if (item == null) {
-            System.out.println("❌ No item to pick up!");
-            return;
-        }
+        if (item == null) return;
         chef.setHeldItem(item);
         chef.changeState(new CarryingState());
-        System.out.println("✅ Picked up: " + item.getName());
     }
 
     @Override
@@ -30,48 +26,38 @@ public class IdleState implements ChefState {
 
     @Override
     public void interact(Chef chef, Station st) {
-        if (st == null) {
-            System.out.println("❌ No station to interact with!");
-            return;
-        }
+        if (st == null) return;
 
         String stName = st.getName().toLowerCase();
 
+        // 1. Interaksi Cutting Station (Potong) -> Masuk BusyCuttingState
         if (stName.contains("cutting")) {
-            if (!st.isOccupied()) {
-                System.out.println("❌ Cutting station is empty! Place RAW ingredient first.");
-                return;
-            }
             chef.changeState(new BusyCuttingState(st));
             return;
         }
 
-        if (stName.contains("cooking")) {
-            if (!st.isOccupied()) {
-                System.out.println("❌ No cooking device on stove! Place boiling pot or frying pan first.");
-                return;
-            }
-            chef.changeState(new BusyCookingState(st));
-            return;
-        }
-
-        if (stName.contains("washing")) {
-            if (!st.isOccupied()) {
-                System.out.println("❌ No plate to wash!");
-                return;
-            }
+        // 2. Interaksi Washing Station (Cuci) -> Masuk BusyWashingState
+        if (stName.contains("washing") || stName.contains("sink")) {
             chef.changeState(new BusyWashingState(st));
             return;
         }
 
-        // Default: pick item from station
+        // --- PERBAIKAN DI SINI ---
+        // HAPUS blok kode yang mengecek "cooking" atau "stove".
+        // Karena masak sudah otomatis, menekan E di kompor tidak boleh bikin Chef busy.
+        // Kita cukup return saja agar tidak terjadi apa-apa.
+        if (stName.contains("cooking") || stName.contains("stove")) {
+            // Do nothing (Cooking is automatic)
+            return;
+        }
+        // -------------------------
+
+        // Default: Jika interaksi bukan action khusus, coba ambil item (opsional)
+        // (Atau bisa dikosongkan jika E murni hanya untuk aksi, bukan ambil barang)
         Item i = st.pick();
         if (i != null) {
             chef.setHeldItem(i);
             chef.changeState(new CarryingState());
-            System.out.println("✅ Picked up: " + i.getName() + " from " + st.getName());
-        } else {
-            System.out.println("❌ Nothing to pick from " + st.getName());
         }
     }
 }

@@ -20,6 +20,7 @@ public class GameEngine {
     private final GameClock clock;
     private final List<Chef> chefs;
     private final List<Observer> observers = new ArrayList<>();
+    private Runnable onGameEnd;
 
     private boolean isRunning = false;
     private boolean finished = false;
@@ -42,6 +43,10 @@ public class GameEngine {
 
     public List<Chef> getChefs() {
         return new ArrayList<>(chefs);
+    }
+
+    public void setOnGameEnd(Runnable onGameEnd) {
+        this.onGameEnd = onGameEnd;
     }
 
     // --- GAME LOOP ---
@@ -83,8 +88,15 @@ public class GameEngine {
         clock.tick();
         orders.tick();
 
-        if (clock.isOver()) {
-            System.out.println("TIME'S UP!");
+        // LOGIKA GAME OVER OTOMATIS
+        if (clock.isOver() && isRunning) {
+            System.out.println("TIME'S UP! Game Ending...");
+            stop(); // Matikan loop engine
+            
+            // Panggil callback jika ada
+            if (onGameEnd != null) {
+                onGameEnd.run();
+            }
         }
     }
 
@@ -158,7 +170,7 @@ public class GameEngine {
         if (st == null) return;
 
         if (st instanceof stations.ServingStation) {
-            processServing(chef);
+            processServing(chef, st);
             return;
         }
 
@@ -172,7 +184,7 @@ public class GameEngine {
         if (st == null) return;
 
         if (st instanceof stations.ServingStation) {
-            processServing(chef);
+            processServing(chef, st);
             return;
         }
 
@@ -206,22 +218,41 @@ public class GameEngine {
         chef.throwItem(world.getWallMask());
     }
 
-    private void processServing(Chef chef) {
+    // Ubah parameter method ini
+    private void processServing(Chef chef, Station station) { 
         if (chef.getHeldItem() == null) return;
 
+        // ... logic cek dish ...
         if (chef.getHeldItem() instanceof items.dish.DishBase dish) {
-            model.recipes.DishType type = dish.getRecipe().getType();
-            boolean success = orders.submitDish(type);
+             // ... logic submit order ...
+            boolean success = orders.submitDish(dish.getRecipe().getType());
 
             if (success) {
-                System.out.println("✅ ORDER COMPLETED! +Points");
-                chef.setHeldItem(null);
-                chef.changeState(new IdleState());
+                System.out.println("✅ ORDER COMPLETED!");
+                chef.setHeldItem(null); // Piring di tangan hilang
+                
+                // --- LOGIC BARU: MUNCULKAN PIRING KOTOR ---
+                // Jika Serving Station kosong, munculkan Dirty Plate di situ
+                if (station.peek() == null) {
+                    // Kita perlu 'force' place karena base station mungkin menolak dirty plate
+                    // Jadi kita akses storedItem secara manual atau buat method forcePlace
+                    // Tapi karena ServingStation extends BaseStation, kita bisa pakai place() 
+                    // ASALKAN ServingStation.canPlace() mengizinkan DirtyPlate (atau kita override).
+                    
+                    // Cara paling aman: Langsung set item (tapi butuh akses protected/setter)
+                    // Atau: Kita buat ServingStation menerima DirtyPlate
+                    
+                    // Mari kita asumsikan ServingStation punya method untuk terima hasil return
+                    if (station instanceof stations.ServingStation ss) {
+                        ss.receiveDirtyPlate();
+                    }
+                }
+                // ------------------------------------------
+
+                chef.changeState(new model.chef.states.IdleState());
             } else {
-                System.out.println("❌ WRONG ORDER! Penalty");
+                System.out.println("❌ WRONG ORDER!");
             }
-        } else {
-            System.out.println("⚠️ Item ini bukan masakan jadi (Dish)!");
         }
     }
 
