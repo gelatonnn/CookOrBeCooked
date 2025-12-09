@@ -1,23 +1,44 @@
 package view.gui;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import javax.imageio.ImageIO;
+import javax.sound.sampled.*;
 
 public class AssetManager {
     private static AssetManager instance;
+    
+    // --- SPRITE VARS ---
     private BufferedImage spriteSheet;
-    private final int SPRITE_SIZE = 102; 
+    private final int SPRITE_SIZE = 102; // Ukuran tile (sesuai file sprites.png)
     private final Map<String, BufferedImage> spriteCache = new HashMap<>();
+    
+    // --- AUDIO VARS ---
+    private final Map<String, Clip> soundCache = new HashMap<>();
+    private Clip currentBGM;
 
     private AssetManager() {
-        loadSpriteSheet();
+        loadSprites();
+        loadSounds();
     }
 
-    private void loadSpriteSheet() {
+    public static AssetManager getInstance() {
+        if (instance == null) {
+            instance = new AssetManager();
+        }
+        return instance;
+    }
+
+    // ============================
+    // BAGIAN GAMBAR (SPRITES)
+    // ============================
+
+    private void loadSprites() {
+        // Coba beberapa path kemungkinan agar robust
         String[] paths = {
             "/resources/sprites.png", 
             "/sprites.png",           
@@ -26,38 +47,37 @@ public class AssetManager {
 
         for (String path : paths) {
             try {
-                InputStream is = getClass().getResourceAsStream(path);
-                if (is != null) {
-                    spriteSheet = ImageIO.read(is);
+                // Menggunakan getResource agar kompatibel saat dibuild/run dari IDE
+                URL url = getClass().getResource(path);
+                if (url != null) {
+                    spriteSheet = ImageIO.read(url);
                     System.out.println("✅ BERHASIL memuat sprite dari: " + path);
-                    System.out.println("   Ukuran: " + spriteSheet.getWidth() + "x" + spriteSheet.getHeight());
                     return; 
                 }
             } catch (IOException e) {
                 System.err.println("Gagal membaca dari: " + path);
             }
         }
-
-        System.err.println("ERROR: Tidak bisa menemukan sprites.png di path manapun!");
-        System.err.println("Pastikan file ada di folder 'src/resources/sprites.png'");
+        System.err.println("❌ ERROR: Sprites.png tidak ditemukan!");
     }
 
-    public static AssetManager getInstance() {
-        if (instance == null) instance = new AssetManager();
-        return instance;
-    }
-
+    /**
+     * Mengambil potongan sprite berdasarkan kolom dan baris.
+     * Method ini yang dicari oleh SpriteLibrary.
+     */
     public BufferedImage getSprite(int col, int row) {
         if (spriteSheet == null) return createErrorSprite();
 
         String key = col + "," + row;
         if (spriteCache.containsKey(key)) return spriteCache.get(key);
 
+        // Validasi bounds agar tidak error out of bounds
         if ((col * SPRITE_SIZE) + SPRITE_SIZE > spriteSheet.getWidth() ||
             (row * SPRITE_SIZE) + SPRITE_SIZE > spriteSheet.getHeight()) {
             return createErrorSprite(); 
         }
 
+        // Potong gambar
         BufferedImage sprite = spriteSheet.getSubimage(
             col * SPRITE_SIZE, 
             row * SPRITE_SIZE, 
@@ -70,13 +90,80 @@ public class AssetManager {
     }
     
     private BufferedImage createErrorSprite() {
+        // Membuat kotak pink jika gambar gagal dimuat (Debugging visual)
         BufferedImage img = new BufferedImage(SPRITE_SIZE, SPRITE_SIZE, BufferedImage.TYPE_INT_ARGB);
-        java.awt.Graphics2D g = img.createGraphics();
-        g.setColor(java.awt.Color.MAGENTA); 
+        Graphics2D g = img.createGraphics();
+        g.setColor(Color.MAGENTA); 
         g.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
-        g.setColor(java.awt.Color.BLACK);
+        g.setColor(Color.BLACK);
         g.drawRect(0, 0, SPRITE_SIZE-1, SPRITE_SIZE-1);
         g.dispose();
         return img;
+    }
+
+    public BufferedImage getSpriteSheet() {
+        return spriteSheet;
+    }
+
+    // ============================
+    // BAGIAN SUARA (AUDIO)
+    // ============================
+
+    private void loadSounds() {
+        loadSound("bgm_menu", "/resources/sounds/bgm_menu.wav");
+        loadSound("bgm_game", "/resources/sounds/bgm_game.wav");
+        
+        loadSound("chop", "/resources/sounds/sfx_chop.wav");
+        loadSound("dash", "/resources/sounds/sfx_dash.wav");
+        loadSound("throw", "/resources/sounds/sfx_throw.wav");
+        loadSound("boil", "/resources/sounds/sfx_boil.wav");
+        loadSound("fry", "/resources/sounds/sfx_fry.wav");
+        loadSound("serve", "/resources/sounds/sfx_serve.wav");
+        loadSound("trash", "/resources/sounds/sfx_trash.wav");
+        loadSound("wash", "/resources/sounds/sfx_wash.wav");
+
+        loadSound("pickup", "/resources/sounds/sfx_pickup.wav");
+        loadSound("place", "/resources/sounds/sfx_place.wav");
+    }
+
+    private void loadSound(String name, String path) {
+        try {
+            URL url = getClass().getResource(path);
+            if (url == null) return; // Skip jika file belum ada
+            
+            AudioInputStream ais = AudioSystem.getAudioInputStream(url);
+            Clip clip = AudioSystem.getClip();
+            clip.open(ais);
+            soundCache.put(name, clip);
+            
+        } catch (Exception e) {
+            System.err.println("❌ Error loading sound: " + name);
+            // Tidak throw exception agar game tetap jalan meski tanpa suara
+        }
+    }
+
+    public void playSound(String name) {
+        Clip clip = soundCache.get(name);
+        if (clip != null) {
+            if (clip.isRunning()) clip.stop();
+            clip.setFramePosition(0);
+            clip.start();
+        }
+    }
+
+    public void playBGM(String name) {
+        stopBGM();
+        currentBGM = soundCache.get(name);
+        if (currentBGM != null) {
+            currentBGM.setFramePosition(0);
+            currentBGM.loop(Clip.LOOP_CONTINUOUSLY);
+            currentBGM.start();
+        }
+    }
+
+    public void stopBGM() {
+        if (currentBGM != null && currentBGM.isRunning()) {
+            currentBGM.stop();
+        }
     }
 }

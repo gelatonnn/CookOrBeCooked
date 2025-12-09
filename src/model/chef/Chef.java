@@ -101,6 +101,7 @@ public class Chef {
             Item item = st.pick();
             if (item != null) {
                 state.pickItem(this, item);
+                view.gui.AssetManager.getInstance().playSound("pickup");
             }
             return;
         }
@@ -154,6 +155,9 @@ public class Chef {
 
             // 2. Pindahkan isi alat masak ke piring
             System.out.println("Menuang isi " + ((Item)device).getName() + " ke Piring...");
+
+            view.gui.AssetManager.getInstance().playSound("place");
+
             for (Preparable ingredient : device.getContents()) {
                 plate.addIngredient(ingredient);
             }
@@ -175,6 +179,7 @@ public class Chef {
                     st.pick(); // Ambil piring biasa dari station (hapus ref lama)
                     st.place(finalDish); // Taruh Dish jadi (yang sudah ada piringnya secara konsep)
                     System.out.println("✨ Plating Berhasil: " + match);
+                    view.gui.AssetManager.getInstance().playSound("serve");
                 }
             } else {
                 System.out.println("⚠️ Bahan dituang, tapi belum jadi menu lengkap.");

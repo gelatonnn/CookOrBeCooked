@@ -5,6 +5,7 @@ import items.utensils.Plate;
 import model.chef.*;
 import stations.Station;
 import utils.TimerUtils;
+import view.gui.AssetManager; // Jangan lupa import
 
 public class BusyWashingState implements ChefState {
     private final Station station;
@@ -30,6 +31,10 @@ public class BusyWashingState implements ChefState {
         progress++;
         System.out.println("   Washing progress: " + progress + "/" + maxProgress);
 
+        // TRIGGER SOUND: WASH
+        // Suara akan muncul setiap detik (efek menggosok: sruk... sruk... sruk...)
+        AssetManager.getInstance().playSound("wash");
+
         TimerUtils.schedule(() -> washWithProgress(chef), 1000);
     }
 
@@ -37,21 +42,16 @@ public class BusyWashingState implements ChefState {
         if (station.isOccupied() && station.peek() instanceof Plate plate) {
             plate.wash();
             System.out.println("Plate is now clean!");
+            
+            // Opsional: Bunyi 'cling' atau 'pick' saat selesai jadi bersih
+            AssetManager.getInstance().playSound("pick"); 
         }
         chef.changeState(new IdleState());
     }
 
-    @Override
-    public void move(Chef chef, int dx, int dy) {
-        System.out.println("⚠ Chef is washing, cannot move! Progress paused.");
-    }
-
-    @Override
-    public void pickItem(Chef chef, Item item) {}
-
-    @Override
-    public void placeItem(Chef chef, Station st) {}
-
-    @Override
-    public void interact(Chef chef, Station st) {}
+    // ... (Method lain biarkan tetap sama) ...
+    @Override public void move(Chef chef, int dx, int dy) { System.out.println("⚠ Chef is washing..."); }
+    @Override public void pickItem(Chef chef, Item item) {}
+    @Override public void placeItem(Chef chef, Station st) {}
+    @Override public void interact(Chef chef, Station st) {}
 }

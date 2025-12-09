@@ -45,7 +45,7 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
     @Override
     public void startCooking() {
         if (contents.isEmpty() || cooking) return;
-
+        view.gui.AssetManager.getInstance().playSound("boil");
         System.out.println("🔥 Boiling Pot mulai merebus (12 detik)...");
         cooking = true;
 
