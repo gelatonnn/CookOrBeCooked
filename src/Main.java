@@ -3,11 +3,13 @@ import factory.ItemRegistryInit;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import javax.swing.*;
 import model.chef.Chef;
 import model.engine.GameEngine;
 import model.orders.OrderManager;
-import model.world.WorldMap; // Import panel baru
+import model.world.WorldMap;
+import utils.Position;
 import view.gui.GameOverPanel;
 import view.gui.GamePanel;
 import view.gui.HUDPanel;
@@ -29,17 +31,10 @@ public class Main {
     }
 
     private static void showGameOverScreen(int finalScore) {
-        // Hapus game panel lama (bersih-bersih)
         stopGame();
-
-        // Buat panel Game Over
         GameOverPanel gameOverPanel = new GameOverPanel(finalScore, () -> {
-            // Aksi tombol "Back to Menu":
             cardLayout.show(mainContainer, "HOME_SCREEN");
         });
-
-        // Tambahkan ke container dan tampilkan
-        // Kita namakan kartunya "GAME_OVER_SCREEN"
         mainContainer.add(gameOverPanel, "GAME_OVER_SCREEN");
         cardLayout.show(mainContainer, "GAME_OVER_SCREEN");
     }
@@ -73,17 +68,29 @@ public class Main {
         OrderManager orders = new OrderManager(false);
         engine = new GameEngine(world, orders, 180);
 
-        // --- TAMBAHAN BARU: Handle Game Over ---
         engine.setOnGameEnd(() -> {
-            // Ambil skor terakhir sebelum engine mati
             int finalScore = orders.getScore();
-            
-            // PENTING: Update GUI harus di thread Swing (EDT), bukan thread Engine
             SwingUtilities.invokeLater(() -> showGameOverScreen(finalScore));
         });
 
-        Chef c1 = new Chef("c1", "Gordon", 2, 3);
-        Chef c2 = new Chef("c2", "Ramsay", 11, 6);
+        // --- FIX: Ambil posisi Spawn dari WorldMap ---
+        List<Position> spawns = world.getSpawnPoints();
+        
+        int x1 = 2, y1 = 3;
+        int x2 = 11, y2 = 6;
+
+        if (spawns.size() >= 1) {
+            x1 = spawns.get(0).x;
+            y1 = spawns.get(0).y;
+        }
+        if (spawns.size() >= 2) {
+            x2 = spawns.get(1).x;
+            y2 = spawns.get(1).y;
+        }
+
+        Chef c1 = new Chef("c1", "Gordon", x1, y1);
+        Chef c2 = new Chef("c2", "Ramsay", x2, y2);
+        
         engine.addChef(c1);
         engine.addChef(c2);
 
@@ -115,7 +122,6 @@ public class Main {
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                // FIX: Pass the full KeyEvent to handle Ctrl modifiers
                 controller.handleInput(e);
             }
         });
