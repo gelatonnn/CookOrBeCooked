@@ -39,7 +39,7 @@ public class SpriteLibrary {
             case "meat_burned":   col = 3; row = 1; break;
             case "fish_cooked":   col = 2; row = 2; break;
             case "fish_burned":   col = 3; row = 2; break; 
-            case "shrimp_cooked": col = 1; row = 3; break;
+            case "shrimp_cooked": col = 2; row = 3; break;
             case "pasta_cooked":  col = 1; row = 4; break;
             
             //Ingredients Chopped 
@@ -64,7 +64,7 @@ public class SpriteLibrary {
             
             case "frying pan":  
             case "pan":         col = 0; row = 8; break;
-            case "pan_cooking": col = 7; row = 2; break;
+            case "pan_cooking": col = 0; row = 8; break;
 
             // === STATIONS (PERBAIKAN UTAMA) ===
             
