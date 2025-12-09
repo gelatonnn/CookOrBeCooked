@@ -226,7 +226,7 @@ public class GamePanel extends JPanel implements Observer {
                     BufferedImage ingImg = SpriteLibrary.getInstance().getSprite(ingName);
                     
                     if (ingImg != null) {
-                        g2d.drawImage(ingImg, x + 25 + offsetX, y + 20 + offsetY, 25, 25, null);
+                        g2d.drawImage(ingImg, x + 15 + offsetX, y + 10 + offsetY, 25, 25, null);
                         offsetX += 12;
                         if (i % 2 == 1) { 
                             offsetX = 5;
