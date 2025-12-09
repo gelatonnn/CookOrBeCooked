@@ -3,7 +3,6 @@ package model.engine;
 import java.util.ArrayList;
 import java.util.List;
 import model.chef.Chef;
-import model.chef.states.IdleState;
 import model.orders.OrderManager;
 import model.world.Tile;
 import model.world.WorldMap;

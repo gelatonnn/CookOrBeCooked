@@ -28,82 +28,84 @@ public class SpriteLibrary {
 
         switch (key) {
             //INGREDIENTS
-            case "tomato": col = 0; row = 0; break;
-            case "meat":   col = 0; row = 1; break;
-            case "fish":   col = 0; row = 2; break;
-            case "shrimp": col = 0; row = 3; break; 
-            case "pasta":  col = 0; row = 4; break;
+            case "tomato" -> { col = 0; row = 0; }
+            case "meat" -> { col = 0; row = 1; }
+            case "fish" -> { col = 0; row = 2; }
+            case "shrimp" -> { col = 0; row = 3; }
+            case "pasta" -> { col = 0; row = 4; }
 
             //PROCESSED (COOKED/CHOPPED)
-            case "meat_cooked":   col = 2; row = 1; break;
-            case "meat_burned":   col = 3; row = 1; break;
-            case "fish_cooked":   col = 2; row = 2; break;
-            case "fish_burned":   col = 3; row = 2; break; 
-            case "shrimp_cooked": col = 2; row = 3; break;
-            case "pasta_cooked":  col = 1; row = 4; break;
+            case "meat_cooked" -> { col = 2; row = 1; }
+            case "meat_burned" -> { col = 3; row = 1; }
+            case "fish_cooked" -> { col = 2; row = 2; }
+            case "fish_burned" -> { col = 3; row = 2; }
+            case "shrimp_cooked" -> { col = 2; row = 3; }
+            case "shrimp_burned" -> { col = 3; row = 3; }
+            case "pasta_cooked" -> { col = 1; row = 4; }
+            case "pasta_burned" -> {  col = 2;  row = 4; }
+            case "tomato_cooked" -> { col = 2; row = 0; }
+            case "tomato_burned" -> { col = 3; row = 0; }
+
             
             //Ingredients Chopped 
-            case "tomato_chopped": col = 1; row = 0; break;
-            case "meat_chopped":   col = 1; row = 1; break;
-            case "fish_chopped":   col = 1; row = 2; break;
-            case "shrimp_chopped": col = 1; row = 3; break;
+            case "tomato_chopped" -> { col = 1; row = 0; }
+            case "meat_chopped" -> { col = 1; row = 1; }
+            case "fish_chopped" -> { col = 1; row = 2; }
+            case "shrimp_chopped" -> { col = 1; row = 3; }
 
             //DISHES
-            case "pasta marinara":       col = 4; row = 1; break;
-            case "pasta bolognese":      col = 5; row = 1; break;
-            case "pasta frutti di mare": col = 6; row = 1; break;
+            case "pasta marinara" -> { col = 4; row = 1; }
+            case "pasta bolognese" -> { col = 5; row = 1; }
+            case "pasta frutti di mare" -> { col = 6; row = 1; }
             
             //UTENSILS
-            case "plate":       col = 7; row = 2; break;
-            case "plate_dirty": col = 8; row = 2; break;
+            case "plate" -> { col = 7; row = 2; }
+            case "plate_dirty" -> { col = 8; row = 2; }
             
-            // PERBAIKAN STOVE ITEM: Panci & Wajan 
-            case "boiling pot": 
-            case "pot":         col = 1; row = 8; break; 
-            case "pot_cooking": col = 9; row = 0; break;
+            //Panci & Wajan 
+            case "boiling pot",
+                    "pot" -> { col = 1; row = 8; }
+            case "pot_cooking" -> { col = 9; row = 0; }
             
-            case "frying pan":  
-            case "pan":         col = 0; row = 8; break;
-            case "pan_cooking": col = 0; row = 8; break;
+            case "frying pan",
+                    "pan" -> { col = 0; row = 8; }
+            case "pan_cooking" -> { col = 0; row = 8; }
 
-            // === STATIONS (PERBAIKAN UTAMA) ===
             
-            //Wall: Bata Merah
-            case "wall": col = 9; row = 3; break;
+            //Environment
+            case "wall" -> { col = 9; row = 3; }
+            case "floor" -> { col = 2; row = 8; }
 
-            //Counter/Meja: Talenan Kosong 
-            //INI YANG SEBELUMNYA SALAH 
-            case "counter":
-            case "assembly station":
-                col = 9; row = 4; break;
-            case "serving station":
-                col = 9; row = 5; break;
-            case "cutting station": 
-                col = 4; row = 3; break; 
+            //Counter
+            case "counter",
+                    "assembly station" -> { col = 9; row = 4; }
+            case "serving station" -> { col = 9; row = 5; }
+            case "cutting station" -> { col = 4; row = 3; }
 
             // Stations Lain
-            case "cooking station": 
-            case "stove":           col = 4; row = 0; break;
+            case "cooking station",
+                    "stove" -> { col = 4; row = 0; }
             
-            case "washing station": 
-            case "sink":            col = 4; row = 2; break; 
+            case "washing station",
+                    "sink" -> { col = 4; row = 2; }
             
-            case "trash station":   col = 3; row = 4; break; 
+            case "trash station" -> { col = 3; row = 4; }
             
-            case "plate storage":   col = 6; row = 2; break;
+            case "plate storage" -> { col = 6; row = 2; }
 
             //INGREDIENT STORAGE
-            case "crate_pasta":  col = 4; row = 4; break;
-            case "crate_shrimp": col = 5; row = 4; break;
-            case "crate_meat":   col = 6; row = 4; break;
-            case "crate_tomato": col = 7; row = 4; break;
-            case "crate_fish":   col = 8; row = 4; break;
+            case "crate_pasta" -> { col = 4; row = 4; }
+            case "crate_shrimp" -> { col = 5; row = 4; }
+            case "crate_meat" -> { col = 6; row = 4; }
+            case "crate_tomato" -> { col = 7; row = 4; }
+            case "crate_fish" -> { col = 8; row = 4; }
             
-            case "ingredient storage": col = 4; row = 4; break; 
+            case "ingredient storage" -> { col = 4; row = 4; }
 
             //CHEFS
-            case "chef1": col = 0; row = 5; break; 
-            case "chef2": col = 0; row = 6; break; 
+            case "chef1" -> { col = 0; row = 5; }
+            case "chef2" -> { col = 0; row = 6; }
+            default -> {}
         }
 
         if (col == -1) return null;
@@ -113,14 +115,37 @@ public class SpriteLibrary {
         return img;
     }
 
-    public BufferedImage getChefSprite(int chefId, String direction, boolean hasItem, boolean busy) {
+    public BufferedImage getChefSprite(int chefId, String direction, boolean hasItem, boolean busy, int animationStep) {
         int row = (chefId == 0) ? 5 : 6; 
-        int col = 0; 
+        int col;
 
-        if (direction.contains("UP")) col = 8;
-        else if (direction.contains("LEFT")) col = 5;
-        else if (direction.contains("RIGHT")) col = 3;
-        else col = 1;
+        //FRAME ANIMASI
+        // DOWN 
+        int[] animDown = {1, 2, 1, 2}; 
+        
+        // RIGHT 
+        int[] animRight = {3, 4, 3, 4}; 
+        
+        // LEFT (
+        int[] animLeft = {5, 6, 5, 6}; 
+        
+        // UP 
+        int[] animUp = {7, 8, 7, 8};
+
+        int stepIndex = animationStep % 4;
+
+        if (direction.contains("UP")) {
+            col = animUp[stepIndex];
+        } 
+        else if (direction.contains("LEFT")) {
+            col = animLeft[stepIndex];
+        } 
+        else if (direction.contains("RIGHT")) {
+            col = animRight[stepIndex];
+        } 
+        else {
+            col = animDown[stepIndex];
+        }
 
         return assets.getSprite(col, row);
     }

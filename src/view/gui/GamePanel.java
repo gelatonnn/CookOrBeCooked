@@ -1,27 +1,31 @@
 package view.gui;
 
-import items.core.CookingDevice;
-import items.core.Item;
-import items.core.Preparable;
+import items.core.*;
 import items.utensils.Plate;
 import java.awt.*;
+import java.awt.geom.Point2D; // IMPORT BARU
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.*;
 import model.chef.Chef;
 import model.engine.GameEngine;
 import model.world.Tile;
 import model.world.WorldMap;
-import model.world.tiles.StationTile;
-import model.world.tiles.WalkableTile;
-import stations.IngredientStorage;
-import stations.Station;
+import model.world.tiles.*;
+import stations.*;
 import utils.Position;
 import view.Observer;
 
 public class GamePanel extends JPanel implements Observer {
     private final GameEngine engine;
-    private final int TILE_SIZE = 102; 
+    private final int TILE_SIZE = 102;
+    
+    private final Map<Chef, Point2D.Double> chefRenderPositions = new HashMap<>();
+    
+    private int animationTick = 0;
+    private final float MOVEMENT_SPEED = 0.3f; 
 
     public GamePanel(GameEngine engine) {
         this.engine = engine;
@@ -31,6 +35,44 @@ public class GamePanel extends JPanel implements Observer {
         this.setPreferredSize(new Dimension(w * TILE_SIZE, h * TILE_SIZE));
         this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
+        
+        // Memulai Timer khusus untuk animasi visual (60 FPS)
+        // Ini terpisah dari GameLoop logic agar animasi tetap halus
+        new Timer(16, e -> {
+            updateVisuals();
+            repaint();
+        }).start();
+    }
+
+    // Method baru untuk menghitung posisi halus (LERP) dan animasi
+    private void updateVisuals() {
+        // 1. Update Timer Animasi
+        animationTick++;
+
+        // 2. Update Posisi Halus (Smooth Movement)
+        for (Chef c : engine.getChefs()) {
+            // Posisi Target (Grid * Ukuran Tile)
+            double targetX = c.getX() * TILE_SIZE;
+            double targetY = c.getY() * TILE_SIZE;
+
+            // Ambil posisi visual saat ini, atau inisialisasi jika belum ada
+            if (!chefRenderPositions.containsKey(c)) {
+                chefRenderPositions.put(c, new Point2D.Double(targetX, targetY));
+            }
+            Point2D.Double currentPos = chefRenderPositions.get(c);
+
+            // RUMUS LERP (Linear Interpolation):
+            // Posisi Baru = Posisi Lama + (Jarak ke Target * Kecepatan)
+            double newX = currentPos.x + (targetX - currentPos.x) * MOVEMENT_SPEED;
+            double newY = currentPos.y + (targetY - currentPos.y) * MOVEMENT_SPEED;
+
+            // Jika jarak sangat kecil, langsung tempel (snap) biar tidak getar
+            if (Math.abs(targetX - newX) < 1.0) newX = targetX;
+            if (Math.abs(targetY - newY) < 1.0) newY = targetY;
+
+            // Simpan posisi baru
+            currentPos.setLocation(newX, newY);
+        }
     }
 
     @Override
@@ -38,6 +80,7 @@ public class GamePanel extends JPanel implements Observer {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
         
+        // Agar gambar pixel art tetap tajam saat bergerak
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
@@ -88,7 +131,7 @@ public class GamePanel extends JPanel implements Observer {
     private void drawStation(Graphics2D g2d, int x, int y, Station station) {
         SpriteLibrary sprites = SpriteLibrary.getInstance();
         String name = station.getName().toLowerCase();
-        BufferedImage img = null;
+        BufferedImage img;
         
         if (station instanceof IngredientStorage) {
             if (name.contains("pasta"))
@@ -245,12 +288,36 @@ public class GamePanel extends JPanel implements Observer {
 
         for (int i = 0; i < chefs.size(); i++) {
             Chef c = chefs.get(i);
-            BufferedImage chefImg = sprites.getChefSprite(i, c.getDirection().name(), c.getHeldItem() != null,
-                    c.isBusy());
+            
+            // Ambil posisi visual dari Map (Interpolated Position)
+            Point2D.Double renderPos = chefRenderPositions.get(c);
+            
+            // Fallback jika belum ada di map (misal frame pertama)
+            int px = (renderPos != null) ? (int) renderPos.x : c.getX() * TILE_SIZE;
+            int py = (renderPos != null) ? (int) renderPos.y : c.getY() * TILE_SIZE;
 
-            int px = c.getX() * TILE_SIZE;
-            int py = c.getY() * TILE_SIZE;
+            // Hitung kecepatan animasi
+            // Jika sedang bergerak (jarak visual vs logic jauh), animasi cepat
+            // Jika diam, animasi lambat
+            boolean isMoving = false;
+            if (renderPos != null) {
+                double dist = Math.abs(renderPos.x - c.getX() * TILE_SIZE) + Math.abs(renderPos.y - c.getY() * TILE_SIZE);
+                isMoving = dist > 5.0; 
+            }
+            
+            // step dibagi 10 biar tidak terlalu cepat kedipnya
+            // Jika bergerak, speed animasi lebih cepat (dibagi 5)
+            int step = animationTick / (isMoving ? 5 : 15); 
 
+            BufferedImage chefImg = sprites.getChefSprite(
+                i, 
+                c.getDirection().name(), 
+                c.getHeldItem() != null,
+                c.isBusy(),
+                step // Parameter baru
+            );
+
+            // Gambar Chef
             if (chefImg != null) {
                 g2d.drawImage(chefImg, px, py, TILE_SIZE, TILE_SIZE, null);
             } else {
@@ -258,15 +325,19 @@ public class GamePanel extends JPanel implements Observer {
                 g2d.fillOval(px, py, TILE_SIZE, TILE_SIZE);
             }
 
-            g2d.setColor(new Color(255, 255, 255, 150));
+            // Indikator Arah (Opsional, transparan)
+            g2d.setColor(new Color(255, 255, 255, 50));
             int dirX = px + TILE_SIZE / 2 + (c.getDirection().dx * 35) - 5;
             int dirY = py + TILE_SIZE / 2 + (c.getDirection().dy * 35) - 5;
             g2d.fillOval(dirX, dirY, 10, 10);
 
+            // Draw Held Item (Item melayang mengikuti posisi halus chef)
             if (c.getHeldItem() != null) {
-                drawItem(g2d, px + 25, py - 20, c.getHeldItem(), 50);
+                // Pastikan method drawItem ada atau copy ulang dari kode lama
+                drawItem(g2d, px + 25, py - 20, c.getHeldItem(), 50); 
             }
 
+            // Draw Progress Bar (Misal sedang memotong)
             if (c.getActionProgress() > 0) {
                 drawProgressBar(g2d, px, py - 10, c.getActionProgress(), Color.GREEN);
             }

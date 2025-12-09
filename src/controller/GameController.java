@@ -1,7 +1,7 @@
 package controller;
 
-import java.util.List;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import model.chef.Chef;
 import model.engine.GameEngine;
 import utils.Direction;
@@ -12,7 +12,7 @@ public class GameController {
 
     // Throttling variables
     private long lastMoveTime = 0;
-    private static final long MOVE_DELAY_MS = 150; // 1 tile every 200ms
+    private static final long MOVE_DELAY_MS = 100; // 1 tile every 200ms
 
     public GameController(GameEngine engine) {
         this.engine = engine;
