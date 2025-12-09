@@ -1,9 +1,14 @@
 import controller.GameController;
 import factory.ItemRegistryInit;
+import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import javax.swing.*;
 import model.chef.Chef;
 import model.engine.GameEngine;
 import model.orders.OrderManager;
-import model.world.WorldMap;
+import model.world.WorldMap; // Import panel baru
+import view.gui.GameOverPanel;
 import view.gui.GamePanel;
 import view.gui.HUDPanel;
 import view.gui.HomePanel;
@@ -26,6 +31,22 @@ public class Main {
             setupMainWindow();
             showHomeScreen();
         });
+    }
+
+    private static void showGameOverScreen(int finalScore) {
+        // Hapus game panel lama (bersih-bersih)
+        stopGame();
+
+        // Buat panel Game Over
+        GameOverPanel gameOverPanel = new GameOverPanel(finalScore, () -> {
+            // Aksi tombol "Back to Menu":
+            cardLayout.show(mainContainer, "HOME_SCREEN");
+        });
+
+        // Tambahkan ke container dan tampilkan
+        // Kita namakan kartunya "GAME_OVER_SCREEN"
+        mainContainer.add(gameOverPanel, "GAME_OVER_SCREEN");
+        cardLayout.show(mainContainer, "GAME_OVER_SCREEN");
     }
 
     private static void setupMainWindow() {
@@ -57,8 +78,17 @@ public class Main {
         OrderManager orders = new OrderManager(false);
         engine = new GameEngine(world, orders, 180);
 
-        Chef c1 = new Chef("c1", "Chef 1", 2, 3);
-        Chef c2 = new Chef("c2", "Chef 2", 11, 6);
+        // --- TAMBAHAN BARU: Handle Game Over ---
+        engine.setOnGameEnd(() -> {
+            // Ambil skor terakhir sebelum engine mati
+            int finalScore = orders.getScore();
+            
+            // PENTING: Update GUI harus di thread Swing (EDT), bukan thread Engine
+            SwingUtilities.invokeLater(() -> showGameOverScreen(finalScore));
+        });
+
+        Chef c1 = new Chef("c1", "Gordon", 2, 3);
+        Chef c2 = new Chef("c2", "Ramsay", 11, 6);
         engine.addChef(c1);
         engine.addChef(c2);
 

@@ -17,6 +17,7 @@ public class ItemRegistryInit {
         ItemFactory.register("plate", Plate::new);
         ItemFactory.register("boiling pot", BoilingPot::new);
         ItemFactory.register("frying pan", FryingPan::new);
+        ItemFactory.register("plate_dirty", DirtyPlate::new);
 
         // --- DISHES (Opsional jika ingin spawn dish via debug, tapi factory dish biasanya complex) ---
         // Disini cukup Ingredients dan Utensils dasar
