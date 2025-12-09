@@ -13,14 +13,14 @@ public class WorldMap {
     // Layout Map berdasarkan Spec Type B: Pasta Map
     private final String[] MAP = {
             "AARRAAXXXXXXXX",
-            "I....AXXX...W.", // y=1: Ingredient Storage 1
-            "I....AXxX...W.", // y=2: Ingredient Storage 2
-            "I.V..AXXX...A.", // y=3: Ingredient Storage 3
-            "A....XXXX...R.",
-            "P....XXC....R.",
-            "S....XXC..V.I.", // y=6: Ingredient Storage 4
-            "S....XXA....I.", // y=7: Ingredient Storage 5
-            "A..........T.",
+            "I....AXXX....W", // y=1: Ingredient Storage 1
+            "I....AXxX....W", // y=2: Ingredient Storage 2
+            "I.V..AXXX....A", // y=3: Ingredient Storage 3
+            "A....XXXX....R",
+            "P....XXC.....R",
+            "S....XXC..V..I", // y=6: Ingredient Storage 4
+            "S....XXA.....I", // y=7: Ingredient Storage 5
+            "A............T",
             "XXXXXXXXXXXXXX"
     };
 
