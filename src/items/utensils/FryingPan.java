@@ -43,6 +43,7 @@ public class FryingPan extends UtensilBase implements CookingDevice {
     @Override
     public void startCooking() {
         if (contents.isEmpty() || cooking) return;
+        view.gui.AssetManager.getInstance().playSound("fry");
 
         System.out.println("🔥 Frying Pan mulai menggoreng (12 detik)...");
         cooking = true;

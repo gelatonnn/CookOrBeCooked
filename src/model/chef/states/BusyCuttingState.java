@@ -18,6 +18,7 @@ public class BusyCuttingState implements ChefState {
     @Override
     public void enter(Chef chef) {
         System.out.println("🔪 " + chef.getName() + " started cutting...");
+        view.gui.AssetManager.getInstance().playSound("chop");
         cutWithProgress(chef);
     }
 

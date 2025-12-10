@@ -129,6 +129,8 @@ public class GameEngine {
             return;
         }
 
+        view.gui.AssetManager.getInstance().playSound("dash");
+
         System.out.println("Chef triggered Dash!");
         Direction dir = chef.getDirection();
 
@@ -157,6 +159,7 @@ public class GameEngine {
             if (wt.getItem() != null && chef.getHeldItem() == null) {
                 chef.setHeldItem(wt.pick());
                 chef.changeState(new model.chef.states.CarryingState());
+                view.gui.AssetManager.getInstance().playSound("pickup");
                 System.out.println("Picked up " + chef.getHeldItem().getName() + " from floor.");
             }
         }
@@ -193,6 +196,7 @@ public class GameEngine {
     public void throwItem(Chef chef) {
         if (chef.isBusy() || chef.getHeldItem() == null) return;
 
+        view.gui.AssetManager.getInstance().playSound("throw");
         // FIX (Retained): Throw item onto the map
         Position p = chef.getPos();
         Direction d = chef.getDirection();
@@ -229,7 +233,7 @@ public class GameEngine {
             if (success) {
                 System.out.println("✅ ORDER COMPLETED!");
                 chef.setHeldItem(null); // Piring di tangan hilang
-                
+                view.gui.AssetManager.getInstance().playSound("serve");
                 // --- LOGIC BARU: MUNCULKAN PIRING KOTOR ---
                 // Jika Serving Station kosong, munculkan Dirty Plate di situ
                 if (station.peek() == null) {
