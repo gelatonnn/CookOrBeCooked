@@ -81,17 +81,29 @@ public class HUDPanel extends JPanel implements Observer {
         return """
             === CARA BERMAIN NIMONSCOOKED ===
             
-            [KONTROL]
-            W, A, S, D  : Bergerak
-            E           : Interaksi
-            CTRL + WASD : Dash
-            C           : Ganti Chef
-            O           : Place Item
-            P           : Pick Up Item
-            T           : Throw Item
+            [MODE SINGLE PLAYER]
+            W, A, S, D  : Gerak Chef
+            E           : Interaksi (Potong/Cuci)
+            F           : Ambil / Taruh (Otomatis)
+            T           : Lempar
+            C / TAB     : Ganti Chef
+            
+            [MODE MULTIPLAYER]
+            Player 1 (Kiri):
+               Gerak    : W, A, S, D
+               Interaksi: V
+               Ambil/Taruh: B
+               Lempar   : F
+            
+            Player 2 (Kanan):
+               Gerak    : Panah (Arrow Keys)
+               Interaksi: K
+               Ambil/Taruh: L
+               Lempar   : ; (Titik Koma)
             
             [TUJUAN]
-            Masak dan sajikan pesanan secepat mungkin!
+            Masak pesanan sesuai resep dan sajikan 
+            sebelum waktu habis!
             """;
     }
 

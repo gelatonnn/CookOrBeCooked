@@ -12,4 +12,5 @@ public interface CookingDevice {
     List<Preparable> getContents();
     void clearContents();
     boolean isCooking();
+    default void forceBurn(){}
 }

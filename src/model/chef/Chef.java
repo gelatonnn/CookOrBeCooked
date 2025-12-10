@@ -74,6 +74,7 @@ public class Chef {
     }
 
     public boolean canDash() {
+        if (model.engine.EffectManager.getInstance().isFlash()) return true;
         return System.currentTimeMillis() - lastDashTime >= DASH_COOLDOWN_MS;
     }
 
@@ -185,6 +186,10 @@ public class Chef {
     }
 
     public void tryInteract(Station st) {
+        if (st instanceof stations.LuckyStation ls) {
+            ls.spin();
+            return;
+        }
         state.interact(this, st);
     }
 

@@ -21,6 +21,7 @@ import view.Observer;
 public class GamePanel extends JPanel implements Observer {
     private final GameEngine engine;
     private final int TILE_SIZE = 102;
+    private final SpinOverlay spinOverlay = new SpinOverlay();
     
     private final Map<Chef, Point2D.Double> chefRenderPositions = new HashMap<>();
     
@@ -35,11 +36,25 @@ public class GamePanel extends JPanel implements Observer {
         this.setPreferredSize(new Dimension(w * TILE_SIZE, h * TILE_SIZE));
         this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
+
+        model.engine.EffectManager.getInstance().setOnSpinStart(() -> {
+            
+            // Ambil target hasil
+            model.engine.EffectManager.EffectType target = 
+                model.engine.EffectManager.getInstance().getPendingEffect();
+            
+            // Mulai animasi
+            spinOverlay.start(target, () -> {
+                // Callback saat animasi selesai: Terapkan efeknya!
+                model.engine.EffectManager.getInstance().applyPendingEffect(engine);
+            });
+        });
         
         // Memulai Timer khusus untuk animasi visual (60 FPS)
         // Ini terpisah dari GameLoop logic agar animasi tetap halus
         new Timer(16, e -> {
             updateVisuals();
+            spinOverlay.update();
             repaint();
         }).start();
     }
@@ -86,6 +101,7 @@ public class GamePanel extends JPanel implements Observer {
 
         drawWorld(g2d);
         drawChefs(g2d);
+        spinOverlay.draw((Graphics2D)g, getWidth(), getHeight());
     }
 
     private void drawWorld(Graphics2D g2d) {
@@ -129,59 +145,69 @@ public class GamePanel extends JPanel implements Observer {
     }
     
     private void drawStation(Graphics2D g2d, int x, int y, Station station) {
-        SpriteLibrary sprites = SpriteLibrary.getInstance();
         String name = station.getName().toLowerCase();
-        BufferedImage img;
         
-        if (station instanceof IngredientStorage) {
-            if (name.contains("pasta"))
-                img = sprites.getSprite("crate_pasta");
-            else if (name.contains("meat"))
-                img = sprites.getSprite("crate_meat");
-            else if (name.contains("tomato"))
-                img = sprites.getSprite("crate_tomato");
-            else if (name.contains("shrimp"))
-                img = sprites.getSprite("crate_shrimp");
-            else if (name.contains("fish"))
-                img = sprites.getSprite("crate_fish");
-            else
-                img = sprites.getSprite("ingredient storage");
-        } else {
-            if (name.contains("cutting"))
-                img = sprites.getSprite("cutting station");
-            else if (name.contains("cook") || name.contains("stove"))
-                img = sprites.getSprite("cooking station");
-            else if (name.contains("wash") || name.contains("sink"))
-                img = sprites.getSprite("washing station");
-            else if (name.contains("serving"))
-                img = sprites.getSprite("serving station");
-            else if (name.contains("trash"))
-                img = sprites.getSprite("trash station");
-            else if (name.contains("plate"))
-                img = sprites.getSprite("plate storage");
-            else if (name.contains("assembly"))
-                img = sprites.getSprite("assembly station");
-            else img = sprites.getSprite("counter");
-        }
+        // --- UBAH BAGIAN INI ---
+        // Panggil method helper yang baru kita buat
+        BufferedImage img = getStationSprite(name, station);
+        // -----------------------
 
         //Gambar Station
         if (img != null) {
             g2d.drawImage(img, x, y, TILE_SIZE, TILE_SIZE, null);
         } else {
+            // Fallback jika gambar gagal dimuat
             g2d.setColor(Color.LIGHT_GRAY);
             g2d.fillRect(x, y, TILE_SIZE, TILE_SIZE);
             g2d.setColor(Color.BLACK);
             g2d.setFont(new Font("Arial", Font.BOLD, 10));
-            g2d.drawString(station.getName().substring(0, Math.min(3, station.getName().length())), x+10, y+50);
+            g2d.drawString("?", x+40, y+50);
         }
 
-        //Stored Itemn
+        // Gambar Text Nama Station (Optional, untuk debug)
+        // g2d.setColor(Color.WHITE);
+        // g2d.drawString(station.getName(), x, y);
+
+        // Gambar Item di Atas Station
         if (!(station instanceof stations.PlateStorage)) {
             Item storedItem = station.peek();
             if (storedItem != null) {
                 drawItem(g2d, x + 15, y + 10, storedItem, 70);
             }
         }
+    }
+
+    // Tambahkan method ini di bagian bawah class GamePanel
+    private BufferedImage getStationSprite(String name, Station station) {
+        SpriteLibrary sprites = SpriteLibrary.getInstance();
+
+        // --- TAMBAHAN BARU: Lucky Station ---
+        if (station instanceof stations.LuckyStation) {
+            // Pastikan Anda sudah punya sprite bernama "lucky_station" di sprites.png
+            // Jika belum ada, gunakan fallback ke "crate" atau "counter" sementara
+            BufferedImage img = sprites.getSprite("lucky_station");
+            return (img != null) ? img : sprites.getSprite("crate_mystery"); 
+        }
+        // ------------------------------------
+
+        if (station instanceof IngredientStorage) {
+            if (name.contains("pasta")) return sprites.getSprite("crate_pasta");
+            if (name.contains("meat")) return sprites.getSprite("crate_meat");
+            if (name.contains("tomato")) return sprites.getSprite("crate_tomato");
+            if (name.contains("shrimp")) return sprites.getSprite("crate_shrimp");
+            if (name.contains("fish")) return sprites.getSprite("crate_fish");
+            return sprites.getSprite("ingredient storage");
+        }
+
+        if (name.contains("cutting")) return sprites.getSprite("cutting station");
+        if (name.contains("cook") || name.contains("stove")) return sprites.getSprite("cooking station");
+        if (name.contains("wash") || name.contains("sink")) return sprites.getSprite("washing station");
+        if (name.contains("serving")) return sprites.getSprite("serving station");
+        if (name.contains("trash")) return sprites.getSprite("trash station");
+        if (name.contains("plate")) return sprites.getSprite("plate storage");
+        if (name.contains("assembly")) return sprites.getSprite("assembly station");
+
+        return sprites.getSprite("counter"); // Default sprite
     }
 
     private void drawItem(Graphics2D g2d, int x, int y, Item item, int size) {

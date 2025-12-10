@@ -93,6 +93,7 @@ public class WorldMap {
         Collections.shuffle(floorSpots);
 
         Queue<Character> stationsToPlace = new LinkedList<>();
+        stationsToPlace.add('L');
         for (int i=0; i<5; i++) stationsToPlace.add('I');
         for (int i=0; i<4; i++) stationsToPlace.add('R');
         stationsToPlace.add('S'); stationsToPlace.add('S');
@@ -187,6 +188,10 @@ public class WorldMap {
                         break;
                     case 'T':
                         grid[y][x] = new StationTile(pos, new TrashStation());
+                        wallMask[y][x] = true;
+                        break;
+                    case 'L': // Lucky Spin
+                        grid[y][x] = new StationTile(pos, new LuckyStation());
                         wallMask[y][x] = true;
                         break;
                     default:

@@ -121,7 +121,8 @@ public class AssetManager {
         loadSound("serve", "/resources/sounds/sfx_serve.wav");
         loadSound("trash", "/resources/sounds/sfx_trash.wav");
         loadSound("wash", "/resources/sounds/sfx_wash.wav");
-
+        loadSound("spin", "/resources/sounds/sfx_spin.wav"); // Suara putaran
+        loadSound("win", "/resources/sounds/sfx_win.wav");
         loadSound("pickup", "/resources/sounds/sfx_pickup.wav");
         loadSound("place", "/resources/sounds/sfx_place.wav");
     }
