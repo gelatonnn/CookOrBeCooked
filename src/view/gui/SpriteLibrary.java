@@ -74,7 +74,11 @@ public class SpriteLibrary {
             
             //Environment
             case "wall" -> { col = 9; row = 3; }
-            case "floor" -> { col = 2; row = 8; }
+            case "floor" -> {
+                col = 2;
+                row = 8;
+            }
+            case "lucky_station" -> { col = 3; row = 8; }
 
             //Counter
             case "counter",

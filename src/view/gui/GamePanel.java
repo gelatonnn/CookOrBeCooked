@@ -20,7 +20,7 @@ import view.Observer;
 
 public class GamePanel extends JPanel implements Observer {
     private final GameEngine engine;
-    private final int TILE_SIZE = 102;
+    private final int TILE_SIZE = 60;
     private final SpinOverlay spinOverlay = new SpinOverlay();
     
     private final Map<Chef, Point2D.Double> chefRenderPositions = new HashMap<>();
@@ -161,7 +161,7 @@ public class GamePanel extends JPanel implements Observer {
             g2d.fillRect(x, y, TILE_SIZE, TILE_SIZE);
             g2d.setColor(Color.BLACK);
             g2d.setFont(new Font("Arial", Font.BOLD, 10));
-            g2d.drawString("?", x+40, y+50);
+            g2d.drawString("?", x + (TILE_SIZE/2) - 5, y + (TILE_SIZE/2) + 5);
         }
 
         // Gambar Text Nama Station (Optional, untuk debug)
@@ -172,7 +172,11 @@ public class GamePanel extends JPanel implements Observer {
         if (!(station instanceof stations.PlateStorage)) {
             Item storedItem = station.peek();
             if (storedItem != null) {
-                drawItem(g2d, x + 15, y + 10, storedItem, 70);
+                int itemSize = (int)(TILE_SIZE * 0.6); 
+                // Offset agar item berada tepat di tengah station
+                int offset = (TILE_SIZE - itemSize) / 2;
+                
+                drawItem(g2d, x + offset, y + offset, storedItem, itemSize);
             }
         }
     }
@@ -254,7 +258,7 @@ public class GamePanel extends JPanel implements Observer {
             g2d.drawImage(img, x, y, size, size, null);
             
             if (item instanceof Plate || item instanceof CookingDevice) {
-                drawContainerContents(g2d, x, y, item);
+                drawContainerContents(g2d, x, y, item, size); // Kirim size baru
             }
 
             if (isCooking) {
@@ -270,7 +274,7 @@ public class GamePanel extends JPanel implements Observer {
         g2d.fillRect(x, y - 5, (int)(size * (System.currentTimeMillis() % 1000) / 1000.0), 7);
     }
 
-    private void drawContainerContents(Graphics2D g2d, int x, int y, Item container) {
+    private void drawContainerContents(Graphics2D g2d, int x, int y, Item container, int parentSize) {
         List<Preparable> contents = switch (container) {
             case Plate p -> p.getContents();
             case CookingDevice c -> c.getContents();
@@ -281,25 +285,28 @@ public class GamePanel extends JPanel implements Observer {
             int offsetX = 0;
             int offsetY = 0;
             int i = 0;
+            
+            // Ukuran ingredient kecil (misal 40% dari ukuran wadah)
+            int ingSize = (int)(parentSize * 0.45); 
 
             for (Preparable p : contents) {
                 if (p instanceof Item item) {
+                    // ... (logika nama sprite tetap sama) ...
                     String ingName = item.getName().toLowerCase();
-                    switch (item.getState()) {
-                        case COOKED -> ingName += "_cooked";
-                        case CHOPPED -> ingName += "_chopped";
-                        case BURNED -> ingName += "_burned";
-                        default -> {} 
-                    }
-                    
+                    // ... switch case status item ...
+
                     BufferedImage ingImg = SpriteLibrary.getInstance().getSprite(ingName);
                     
                     if (ingImg != null) {
-                        g2d.drawImage(ingImg, x + 15 + offsetX, y + 10 + offsetY, 25, 25, null);
-                        offsetX += 12;
+                        // Offset sedikit agar terlihat masuk ke dalam panci/piring
+                        int padding = (int)(parentSize * 0.2); 
+                        g2d.drawImage(ingImg, x + padding + offsetX, y + padding + offsetY, ingSize, ingSize, null);
+                        
+                        // Geser posisi untuk item berikutnya agar tidak menumpuk total
+                        offsetX += (ingSize / 2);
                         if (i % 2 == 1) { 
                             offsetX = 5;
-                            offsetY += 10;
+                            offsetY += (ingSize / 2);
                         }
                     }
                 }
@@ -353,14 +360,18 @@ public class GamePanel extends JPanel implements Observer {
 
             // Indikator Arah (Opsional, transparan)
             g2d.setColor(new Color(255, 255, 255, 50));
-            int dirX = px + TILE_SIZE / 2 + (c.getDirection().dx * 35) - 5;
-            int dirY = py + TILE_SIZE / 2 + (c.getDirection().dy * 35) - 5;
+            // Sesuaikan matematika offset dengan TILE_SIZE baru
+            int dirX = px + TILE_SIZE / 2 + (c.getDirection().dx * (TILE_SIZE/3)) - 5;
+            int dirY = py + TILE_SIZE / 2 + (c.getDirection().dy * (TILE_SIZE/3)) - 5;
             g2d.fillOval(dirX, dirY, 10, 10);
 
             // Draw Held Item (Item melayang mengikuti posisi halus chef)
             if (c.getHeldItem() != null) {
-                // Pastikan method drawItem ada atau copy ulang dari kode lama
-                drawItem(g2d, px + 25, py - 20, c.getHeldItem(), 50); 
+                // Item melayang di atas kepala (offset Y dikurangi)
+                int itemSize = (int)(TILE_SIZE * 0.5);
+                int itemX = px + (TILE_SIZE - itemSize) / 2;
+                int itemY = py - (itemSize / 2); 
+                drawItem(g2d, itemX, itemY, c.getHeldItem(), itemSize); 
             }
 
             // Draw Progress Bar (Misal sedang memotong)

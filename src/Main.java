@@ -34,8 +34,7 @@ public class Main {
     private static void setupMainWindow() {
         window = new JFrame("CookOrBeCooked");
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        window.setExtendedState(JFrame.MAXIMIZED_BOTH);
-        window.setMinimumSize(new Dimension(800, 600)); 
+        window.setMinimumSize(new Dimension(800,600)); 
         window.setResizable(true);
         window.setLocationRelativeTo(null);
         cardLayout = new CardLayout();
@@ -112,6 +111,8 @@ public class Main {
 
         mainContainer.add(gameContainerPanel, "GAME_SCREEN");
         cardLayout.show(mainContainer, "GAME_SCREEN");
+        window.pack(); 
+        window.setLocationRelativeTo(null);
         gameContainerPanel.requestFocusInWindow(); // PENTING: Fokus keyboard
 
         new Thread(engine::start).start();
