@@ -81,7 +81,7 @@ public class Main {
 
         WorldMap world = new WorldMap();
         OrderManager orders = new OrderManager(false);
-        engine = new GameEngine(world, orders, 180);
+        engine = new GameEngine(world, orders, 300);
 
         engine.setOnGameEnd(() -> {
             int finalScore = orders.getScore();
