@@ -67,7 +67,12 @@ public class OrderManager {
                 
                 int baseScore = 100;
                 int speedBonus = (o.getTimeLeft() > 45) ? 20 : 0; // Bonus jika cepat
-                addScore(baseScore + speedBonus);
+                int total = baseScore + speedBonus;
+                if (model.engine.EffectManager.getInstance().isDoubleMoney()) {
+                    total *= 2;
+                    System.out.println("💰 DOUBLE MONEY ACTIVE! Score x2");
+                }
+                addScore(total);
                 
                 active.remove(o);
                 System.out.println("✅ Order completed!");

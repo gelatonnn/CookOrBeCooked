@@ -85,6 +85,7 @@ public class GameController {
         
         // 1. Movement
         Direction dir = null;
+        boolean isDrunk = model.engine.EffectManager.getInstance().isDrunk();
         if (key == up) dir = Direction.UP;
         else if (key == down) dir = Direction.DOWN;
         else if (key == left) dir = Direction.LEFT;
@@ -93,8 +94,11 @@ public class GameController {
         if (dir != null) {
             long now = System.currentTimeMillis();
             long lastTime = (playerNum == 1) ? lastMoveTimeP1 : lastMoveTimeP2;
+            // --- LOGIC BARU: THE FLASH ---
+            boolean isFlash = model.engine.EffectManager.getInstance().isFlash();
+            long currentDelay = isFlash ? 75 : MOVE_DELAY_MS;
             
-            if (isCtrl) {
+            if (isCtrl || (isFlash && isCtrl)) {
                 chef.setDirection(dir);
                 engine.dashChef(chef);
             } else if (now - lastTime >= MOVE_DELAY_MS) {
