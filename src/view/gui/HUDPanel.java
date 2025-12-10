@@ -9,13 +9,15 @@ import view.Observer;
 
 public class HUDPanel extends JPanel implements Observer {
     private final GameEngine engine;
-    private final int INFO_OFFSET_X = 360; 
+    private final int INFO_OFFSET_X = 240; 
 
     public HUDPanel(GameEngine engine, Runnable onExitClicked) {
         this.engine = engine;
-        this.setPreferredSize(new Dimension(800, 80));
+        int mapWidth = engine.getWorld().getWidth() * 60;
+
+        this.setPreferredSize(new Dimension(mapWidth, 80));
         this.setBackground(new Color(40, 40, 40));
-        this.setLayout(null); 
+        this.setLayout(null);
 
         // Tombol Recipe
         JButton btnRecipe = createSmallButton("Recipe");
@@ -146,7 +148,7 @@ public class HUDPanel extends JPanel implements Observer {
 
     private void drawScore(Graphics2D g) {
         int score = engine.getOrders().getScore();
-        int xPos = INFO_OFFSET_X + 150;
+        int xPos = INFO_OFFSET_X + 110;
 
         g.setColor(new Color(255, 215, 0)); 
         g.setFont(new Font("Segoe UI", Font.BOLD, 32));
@@ -163,7 +165,8 @@ public class HUDPanel extends JPanel implements Observer {
         List<Order> orders = engine.getOrders().getActiveOrders();
         int startX = getWidth() - 20;
         int y = 10;
-        int cardWidth = 140;
+
+        int cardWidth = 110;
         int cardHeight = 60;
 
         for (Order o : orders) {
@@ -173,19 +176,31 @@ public class HUDPanel extends JPanel implements Observer {
             g.setColor(new Color(240, 240, 240));
             g.fillRoundRect(startX, y, cardWidth, cardHeight, 15, 15);
             
-            // 2. Teks Nama Makanan
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Segoe UI", Font.BOLD, 13));
-            String name = o.getRecipe().getName();
-            if (name.length() > 14) name = name.substring(0, 14) + "..";
-            g.drawString(name, startX + 10, y + 25);
-            
-            // 3. Icon Makanan (Jika ada)
+            // 2. Icon Makanan (Jika ada)
+            int iconSize = 24; // Perkecil icon jadi 24px (sebelumnya 30)
+            int iconX = startX + cardWidth - iconSize - 5; // Posisi Icon di Kanan
+
             try {
                 String spriteName = o.getRecipe().getName().toLowerCase();
                 Image icon = SpriteLibrary.getInstance().getSprite(spriteName);
-                if (icon != null) g.drawImage(icon, startX + cardWidth - 35, y + 5, 30, 30, null);
-            } catch (Exception e) {}
+                if (icon != null) {
+                    g.drawImage(icon, iconX, y + 5, iconSize, iconSize, null);
+                }
+            } catch (Exception e) {
+            }
+
+            // 3. Teks Nama Makanan
+            g.setColor(Color.BLACK);
+            g.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            
+            String name = o.getRecipe().getName().toUpperCase();
+            
+            if (name.length() > 9) {
+                name = name.substring(0, 9) + "..";
+            }
+            
+            g.drawString(name, startX + 8, y + 22);
+            
 
             // --- 4. BAR WAKTU DINAMIS ---
             int maxTime = 90; // Sesuai setting OrderManager di Main.java (90 detik)
