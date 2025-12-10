@@ -17,24 +17,23 @@ public class HUDPanel extends JPanel implements Observer {
         this.setBackground(new Color(40, 40, 40));
         this.setLayout(null); 
 
-        // --- 1. Tombol Recipe ---
+        // Tombol Recipe
         JButton btnRecipe = createSmallButton("Recipe");
         btnRecipe.setBounds(10, 10, 100, 30); 
         btnRecipe.addActionListener(e -> showModelessDialog("Recipe Book", getRecipeContent()));
         this.add(btnRecipe);
 
-        // --- 2. Tombol How To Play ---
+        // Tombol Help
         JButton btnHelp = createSmallButton("Help");
         btnHelp.setBounds(120, 10, 100, 30);
         btnHelp.addActionListener(e -> showModelessDialog("How to Play", getHelpContent()));
         this.add(btnHelp);
 
-        // --- 3. Tombol Exit ---
+        // Tombol Exit
         JButton btnExit = createSmallButton("Exit");
         btnExit.setBounds(10, 45, 210, 25); 
         btnExit.setBackground(new Color(200, 60, 60)); 
         btnExit.addActionListener(e -> {
-            // Khusus Exit tetap pakai Modal (Blocking) karena mau keluar
             int confirm = JOptionPane.showConfirmDialog(this, 
                 "Are you sure you want to quit to Main Menu?", 
                 "Exit Game", JOptionPane.YES_NO_OPTION);
@@ -46,19 +45,12 @@ public class HUDPanel extends JPanel implements Observer {
         this.add(btnExit);
     }
 
-    // --- Helper untuk membuat JDialog Non-Modal (Game Tetap Jalan) ---
     private void showModelessDialog(String title, String content) {
-        // Cari Window utama (JFrame) sebagai parent
         Window parentWindow = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(parentWindow, title);
-        
-        // PENTING 1: Set Modal ke FALSE agar game tidak berhenti
         dialog.setModal(false); 
-        
-        // PENTING 2: Agar dialog tidak mencuri fokus keyboard (WASD tetap jalan di game)
         dialog.setFocusableWindowState(false); 
 
-        // Isi konten teks
         JTextArea textArea = new JTextArea(content);
         textArea.setEditable(false);
         textArea.setMargin(new Insets(10, 10, 10, 10));
@@ -66,7 +58,7 @@ public class HUDPanel extends JPanel implements Observer {
         
         dialog.add(new JScrollPane(textArea));
         dialog.setSize(400, 300);
-        dialog.setLocationRelativeTo(this); // Muncul di tengah
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
 
@@ -91,21 +83,15 @@ public class HUDPanel extends JPanel implements Observer {
             
             [KONTROL]
             W, A, S, D  : Bergerak
-            E           : Interaksi (Ambil/Taruh/Proses)
-            CTRL + WASD : Dash (Lari Cepat)
+            E           : Interaksi
+            CTRL + WASD : Dash
             C           : Ganti Chef
-            O           : Place Item Down
+            O           : Place Item
             P           : Pick Up Item
             T           : Throw Item
             
             [TUJUAN]
-            1. Ambil bahan dari kotak (Crate).
-            2. Potong bahan di talenan (Cutting Board).
-            3. Masak di kompor (Stove) sampai matang.
-            4. Letakkan di piring (Plate).
-            5. Antar ke loket penyajian (Serving Window).
-            
-            Hati-hati! Jangan sampai masakan gosong!
+            Masak dan sajikan pesanan secepat mungkin!
             """;
     }
 
@@ -115,11 +101,7 @@ public class HUDPanel extends JPanel implements Observer {
         btn.setBackground(new Color(100, 149, 237));
         btn.setForeground(Color.WHITE);
         btn.setFocusPainted(false);
-        
-        // PENTING 3: Tombol tidak boleh fokus, agar WASD langsung jalan 
-        // tanpa harus klik peta lagi setelah klik tombol.
         btn.setFocusable(false); 
-        
         btn.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
@@ -164,6 +146,7 @@ public class HUDPanel extends JPanel implements Observer {
         g.drawString("SCORE", xPos + 2, 20);
     }
 
+    // --- FIX BAGIAN INI ---
     private void drawOrders(Graphics2D g) {
         List<Order> orders = engine.getOrders().getActiveOrders();
         int startX = getWidth() - 20;
@@ -173,20 +156,49 @@ public class HUDPanel extends JPanel implements Observer {
 
         for (Order o : orders) {
             startX -= (cardWidth + 10);
+            
+            // 1. Gambar Kotak Kartu
             g.setColor(new Color(240, 240, 240));
             g.fillRoundRect(startX, y, cardWidth, cardHeight, 15, 15);
+            
+            // 2. Teks Nama Makanan
             g.setColor(Color.BLACK);
-            g.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            g.setFont(new Font("Segoe UI", Font.BOLD, 13));
             String name = o.getRecipe().getName();
             if (name.length() > 14) name = name.substring(0, 14) + "..";
             g.drawString(name, startX + 10, y + 25);
+            
+            // 3. Icon Makanan (Jika ada)
             try {
                 String spriteName = o.getRecipe().getName().toLowerCase();
                 Image icon = SpriteLibrary.getInstance().getSprite(spriteName);
-                if (icon != null) g.drawImage(icon, startX + cardWidth - 40, y + 20, 32, 32, null);
+                if (icon != null) g.drawImage(icon, startX + cardWidth - 35, y + 5, 30, 30, null);
             } catch (Exception e) {}
-            g.setColor(new Color(50, 200, 50));
-            g.fillRect(startX + 10, y + 45, cardWidth - 50, 6);
+
+            // --- 4. BAR WAKTU DINAMIS ---
+            int maxTime = 90; // Sesuai setting OrderManager di Main.java (90 detik)
+            int timeLeft = o.getTimeLeft();
+            
+            // Hitung lebar bar agar pas di dalam kartu (padding 10px kiri kanan)
+            int maxBarWidth = cardWidth - 20; 
+            int currentBarWidth = (int) ((double) timeLeft / maxTime * maxBarWidth);
+            
+            // Warna berubah sesuai urgensi
+            if (timeLeft > 30) g.setColor(new Color(46, 204, 113)); // Hijau
+            else if (timeLeft > 15) g.setColor(new Color(241, 196, 15)); // Kuning
+            else g.setColor(new Color(231, 76, 60)); // Merah
+
+            // Gambar Bar Background (Abu-abu tipis)
+            g.setColor(new Color(200, 200, 200));
+            g.fillRect(startX + 10, y + 40, maxBarWidth, 8);
+
+            // Gambar Bar Waktu (Berwarna)
+            if (timeLeft > 30) g.setColor(new Color(46, 204, 113));
+            else if (timeLeft > 15) g.setColor(new Color(241, 196, 15));
+            else g.setColor(new Color(231, 76, 60));
+            
+            if (currentBarWidth < 0) currentBarWidth = 0;
+            g.fillRect(startX + 10, y + 40, currentBarWidth, 8);
         }
     }
 
