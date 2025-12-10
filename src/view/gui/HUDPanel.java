@@ -164,32 +164,86 @@ public class HUDPanel extends JPanel implements Observer {
         g.drawString("SCORE", xPos + 2, 20);
     }
 
+    // Update method ini di HUDPanel.java
     private void drawOrders(Graphics2D g) {
         List<Order> orders = engine.getOrders().getActiveOrders();
-        int startX = getWidth() - 20;
+        
+        int cardWidth = 130;
+        int cardHeight = 65;
+        int spacing = 10;
+        
+        // Mulai menggambar dari pojok kanan atas
+        int startX = getWidth() - 20; 
         int y = 10;
-        int cardWidth = 140;
-        int cardHeight = 60;
 
         for (Order o : orders) {
-            startX -= (cardWidth + 10);
-            g.setColor(new Color(240, 240, 240));
-            g.fillRoundRect(startX, y, cardWidth, cardHeight, 15, 15);
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            // Geser posisi X ke kiri untuk setiap order baru
+            startX -= (cardWidth + spacing);
+
+            // 1. Gambar Background Kartu Order
+            g.setColor(new Color(245, 245, 245)); // Putih gading
+            g.fillRoundRect(startX, y, cardWidth, cardHeight, 10, 10);
+            
+            // Border Kartu
+            g.setColor(new Color(200, 200, 200));
+            g.drawRoundRect(startX, y, cardWidth, cardHeight, 10, 10);
+
+            // 2. Gambar Nama Makanan
+            g.setColor(new Color(50, 50, 50));
+            g.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            
             String name = o.getRecipe().getName();
-            if (name.length() > 14) name = name.substring(0, 14) + "..";
-            g.drawString(name, startX + 10, y + 25);
+            // Truncate nama panjang biar muat (misal: "Pasta Fru..")
+            if (name.length() > 13) name = name.substring(0, 11) + "..";
+            
+            g.drawString(name, startX + 10, y + 22);
+
+            // 3. Gambar Icon Makanan (Jika ada sprite)
             try {
-                String spriteName = o.getRecipe().getName().toLowerCase();
-                Image icon = SpriteLibrary.getInstance().getSprite(spriteName);
-                if (icon != null) g.drawImage(icon, startX + cardWidth - 40, y + 20, 32, 32, null);
-            } catch (Exception e) {}
-            g.setColor(new Color(50, 200, 50));
-            g.fillRect(startX + 10, y + 45, cardWidth - 50, 6);
+                // Asumsi nama file sprite sama dengan nama resep lowercase (misal: pasta marinara)
+                // Anda mungkin perlu menyesuaikan nama file di folder resource Anda
+                String spriteName = o.getRecipe().getName().toLowerCase(); 
+                Image icon = SpriteLibrary.getInstance().getSprite(spriteName); // Pastikan SpriteLibrary handle ini
+                
+                // Jika tidak ada icon khusus, bisa pakai logic fallback atau skip
+                if (icon != null) {
+                    g.drawImage(icon, startX + 10, y + 28, 24, 24, null);
+                }
+            } catch (Exception e) {
+                // Ignore error image rendering
+            }
+
+            // 4. Gambar Progress Bar Waktu (Paling Penting)
+            int timeLeft = o.getTimeLeft();
+            int maxTime = 60; // Asumsi waktu order 60 detik (bisa diambil dari Order.java jika ada getter maxTime)
+            
+            // Hitung lebar bar
+            int barWidth = cardWidth - 20;
+            int barHeight = 8;
+            int barFill = (int) ((double) timeLeft / maxTime * barWidth);
+            
+            // Tentukan Warna Berdasarkan Sisa Waktu
+            Color barColor;
+            if (timeLeft > 30) barColor = new Color(46, 204, 113);      // Hijau (Aman)
+            else if (timeLeft > 15) barColor = new Color(241, 196, 15); // Kuning (Waspada)
+            else barColor = new Color(231, 76, 60);                     // Merah (Bahaya)
+
+            // Gambar Background Bar (Abu-abu)
+            g.setColor(new Color(220, 220, 220));
+            g.fillRoundRect(startX + 10, y + 45, barWidth, barHeight, 4, 4);
+            
+            // Gambar Fill Bar (Warna)
+            g.setColor(barColor);
+            if (barFill < 0) barFill = 0; // Cegah error negatif
+            g.fillRoundRect(startX + 10, y + 45, barFill, barHeight, 4, 4);
+            
+            // Teks Waktu Kecil di Kanan Bar
+            g.setColor(Color.DARK_GRAY);
+            g.setFont(new Font("SansSerif", Font.PLAIN, 10));
+            // g.drawString(timeLeft + "s", startX + cardWidth - 25, y + 40); // Opsional jika ingin angka
         }
     }
-
+    
     @Override
     public void update() {
         repaint();

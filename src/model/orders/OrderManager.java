@@ -1,9 +1,9 @@
 package model.orders;
 
-import model.recipes.*;
-import utils.TimerUtils;
 import java.util.*;
 import java.util.concurrent.ScheduledFuture;
+import model.recipes.*;
+import utils.TimerUtils;
 
 public class OrderManager {
     private final List<Order> active = new ArrayList<>();
@@ -13,28 +13,29 @@ public class OrderManager {
 
     public OrderManager(boolean startThread) {
         if (startThread) {
-            // Start independent timer thread (1 tick per second)
+            // Jalankan timer independen (1 tick per detik)
             tickTask = TimerUtils.repeat(() -> tick(), 1000);
         }
     }
 
     public void tick() {
-        // Tick all active orders
+        // Update waktu setiap order aktif
         active.forEach(Order::tick);
 
-        // Remove expired orders and apply penalty
+        // Cari order yang sudah kadaluarsa (Expired)
         List<Order> expired = active.stream()
                 .filter(Order::isExpired)
                 .toList();
 
         for (Order o : expired) {
             System.out.println("⏰ Order #" + o.getOrderId() + " EXPIRED! -30 points");
-            score -= 30;
+            deductScore(30); // Kurangi skor dengan aman
         }
 
+        // Hapus order kadaluarsa dari daftar
         active.removeIf(Order::isExpired);
 
-        // Generate new orders to maintain queue
+        // Generate order baru jika slot masih ada
         while (active.size() < max) {
             generateOrder();
         }
@@ -43,6 +44,7 @@ public class OrderManager {
     private void generateOrder() {
         DishType type = RecipeBook.getRandomDish();
         Recipe recipe = RecipeBook.getRecipe(type);
+        // Durasi order 60 detik
         Order newOrder = new Order(recipe, 60);
         active.add(newOrder);
         System.out.println("📋 New Order #" + newOrder.getOrderId() + ": " + recipe.getName());
@@ -50,17 +52,41 @@ public class OrderManager {
 
     public boolean submitDish(DishType type) {
         for (Order o : active) {
+            // Cek apakah jenis makanan cocok dan order belum expired
             if (o.getRecipe().getType() == type && !o.isExpired()) {
                 o.complete();
-                score += 100;
+                
+                // --- FITUR BARU: SPEED BONUS ---
+                // Jika selesai saat sisa waktu > 30 detik (separuh jalan), dapat bonus +20
+                int baseScore = 100;
+                int speedBonus = (o.getTimeLeft() > 30) ? 20 : 0;
+                int totalReward = baseScore + speedBonus;
+
+                addScore(totalReward);
+                
                 active.remove(o);
-                System.out.println("✅ Order #" + o.getOrderId() + " completed! +100 points");
+                
+                String bonusMsg = (speedBonus > 0) ? " (⚡ Speed Bonus +" + speedBonus + "!)" : "";
+                System.out.println("✅ Order #" + o.getOrderId() + " completed! +" + totalReward + " points" + bonusMsg);
                 return true;
             }
         }
-        score -= 30;
-        System.out.println("❌ Wrong dish served! -30 points");
+        
+        // Penalti salah sajian (dikurangi jadi -10 biar tidak terlalu sadis)
+        deductScore(10);
+        System.out.println("❌ Wrong dish served! -10 points");
         return false;
+    }
+
+    // --- Helper untuk mengatur skor agar tidak negatif ---
+    private void addScore(int amount) {
+        score += amount;
+    }
+
+    private void deductScore(int amount) {
+        score -= amount;
+        // Opsional: Jika Anda ingin skor tidak pernah minus, aktifkan baris di bawah:
+        // if (score < 0) score = 0; 
     }
 
     public List<Order> getActiveOrders() {

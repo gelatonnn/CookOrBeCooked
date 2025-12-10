@@ -221,40 +221,41 @@ public class GameEngine {
         chef.throwItem(world.getWallMask());
     }
 
-    // Ubah parameter method ini
-    private void processServing(Chef chef, Station station) { 
+    // Update method ini di GameEngine.java
+    private void processServing(Chef chef, Station station) {
         if (chef.getHeldItem() == null) return;
 
-        // ... logic cek dish ...
+        // Pastikan item adalah Dish (bukan ingredient mentah)
         if (chef.getHeldItem() instanceof items.dish.DishBase dish) {
-             // ... logic submit order ...
+            
+            // 1. Cek validitas order
             boolean success = orders.submitDish(dish.getRecipe().getType());
+
+            // 2. Apapun hasilnya (Sukses/Gagal), makanan harus HILANG dari tangan chef
+            // Sesuai spec: "dimakan Kak Jendra (Hilang)"
+            chef.setHeldItem(null); 
+            chef.changeState(new model.chef.states.IdleState());
 
             if (success) {
                 System.out.println("✅ ORDER COMPLETED!");
-                chef.setHeldItem(null); // Piring di tangan hilang
                 view.gui.AssetManager.getInstance().playSound("serve");
-                // --- LOGIC BARU: MUNCULKAN PIRING KOTOR ---
-                // Jika Serving Station kosong, munculkan Dirty Plate di situ
-                if (station.peek() == null) {
-                    // Kita perlu 'force' place karena base station mungkin menolak dirty plate
-                    // Jadi kita akses storedItem secara manual atau buat method forcePlace
-                    // Tapi karena ServingStation extends BaseStation, kita bisa pakai place() 
-                    // ASALKAN ServingStation.canPlace() mengizinkan DirtyPlate (atau kita override).
-                    
-                    // Cara paling aman: Langsung set item (tapi butuh akses protected/setter)
-                    // Atau: Kita buat ServingStation menerima DirtyPlate
-                    
-                    // Mari kita asumsikan ServingStation punya method untuk terima hasil return
-                    if (station instanceof stations.ServingStation ss) {
-                        ss.receiveDirtyPlate();
-                    }
-                }
-                // ------------------------------------------
-
-                chef.changeState(new model.chef.states.IdleState());
             } else {
-                System.out.println("❌ WRONG ORDER!");
+                System.out.println("❌ WRONG ORDER! Dish discarded.");
+                view.gui.AssetManager.getInstance().playSound("trash"); // Sound effect fail
+            }
+
+            // 3. Munculkan Dirty Plate (Logic Gameplay Anda)
+            // Baik sukses atau gagal, piring kotor harus tetap dikembalikan
+            if (station instanceof stations.ServingStation ss) {
+                // Cek apakah station kosong sebelum menaruh piring kotor
+                if (ss.peek() == null) {
+                    ss.receiveDirtyPlate();
+                    System.out.println("🍽️ Dirty plate appeared at Serving Station");
+                } else {
+                    // Jika station penuh (misal spam serving), piring kotor hilang (dianulir)
+                    // atau bisa ditambahkan logika antrian piring kotor jika mau lebih kompleks
+                    System.out.println("⚠️ Serving station full, dirty plate lost.");
+                }
             }
         }
     }
