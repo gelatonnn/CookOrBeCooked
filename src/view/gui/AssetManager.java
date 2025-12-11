@@ -12,9 +12,10 @@ import javax.sound.sampled.*;
 public class AssetManager {
     private static AssetManager instance;
     
-    // --- SPRITE VARS ---
+    // --- SPRITE & IMAGE VARS ---
     private BufferedImage spriteSheet;
-    private final int SPRITE_SIZE = 102; // Ukuran tile (sesuai file sprites.png)
+    private BufferedImage menuBackground; // [BARU]
+    private final int SPRITE_SIZE = 102; 
     private final Map<String, BufferedImage> spriteCache = new HashMap<>();
     
     // --- AUDIO VARS ---
@@ -38,7 +39,6 @@ public class AssetManager {
     // ============================
 
     private void loadSprites() {
-        // Coba beberapa path kemungkinan agar robust
         String[] paths = {
             "/resources/sprites.png", 
             "/sprites.png",           
@@ -47,37 +47,44 @@ public class AssetManager {
 
         for (String path : paths) {
             try {
-                // Menggunakan getResource agar kompatibel saat dibuild/run dari IDE
                 URL url = getClass().getResource(path);
                 if (url != null) {
                     spriteSheet = ImageIO.read(url);
                     System.out.println("✅ BERHASIL memuat sprite dari: " + path);
-                    return; 
+                    break; 
                 }
             } catch (IOException e) {
                 System.err.println("Gagal membaca dari: " + path);
             }
         }
-        System.err.println("❌ ERROR: Sprites.png tidak ditemukan!");
+        if (spriteSheet == null) System.err.println("❌ ERROR: Sprites.png tidak ditemukan!");
+
+        try {
+            URL bgUrl = getClass().getResource("/resources/bg_menu.jpg");
+            if (bgUrl == null) bgUrl = getClass().getResource("/bg_menu.jpg");
+            
+            if (bgUrl != null) {
+                menuBackground = ImageIO.read(bgUrl);
+                System.out.println("✅ BERHASIL memuat background menu");
+            } else {
+                System.err.println("⚠️ Warning: bg_menu.jpg tidak ditemukan");
+            }
+        } catch (IOException e) {
+            System.err.println("Gagal memuat background menu: " + e.getMessage());
+        }
     }
 
-    /**
-     * Mengambil potongan sprite berdasarkan kolom dan baris.
-     * Method ini yang dicari oleh SpriteLibrary.
-     */
     public BufferedImage getSprite(int col, int row) {
         if (spriteSheet == null) return createErrorSprite();
 
         String key = col + "," + row;
         if (spriteCache.containsKey(key)) return spriteCache.get(key);
 
-        // Validasi bounds agar tidak error out of bounds
         if ((col * SPRITE_SIZE) + SPRITE_SIZE > spriteSheet.getWidth() ||
             (row * SPRITE_SIZE) + SPRITE_SIZE > spriteSheet.getHeight()) {
             return createErrorSprite(); 
         }
 
-        // Potong gambar
         BufferedImage sprite = spriteSheet.getSubimage(
             col * SPRITE_SIZE, 
             row * SPRITE_SIZE, 
@@ -89,8 +96,11 @@ public class AssetManager {
         return sprite;
     }
     
+    public BufferedImage getMenuBackground() {
+        return menuBackground;
+    }
+    
     private BufferedImage createErrorSprite() {
-        // Membuat kotak pink jika gambar gagal dimuat (Debugging visual)
         BufferedImage img = new BufferedImage(SPRITE_SIZE, SPRITE_SIZE, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = img.createGraphics();
         g.setColor(Color.MAGENTA); 
@@ -121,7 +131,7 @@ public class AssetManager {
         loadSound("serve", "/resources/sounds/sfx_serve.wav");
         loadSound("trash", "/resources/sounds/sfx_trash.wav");
         loadSound("wash", "/resources/sounds/sfx_wash.wav");
-        loadSound("spin", "/resources/sounds/sfx_spin.wav"); // Suara putaran
+        loadSound("spin", "/resources/sounds/sfx_spin.wav");
         loadSound("win", "/resources/sounds/sfx_win.wav");
         loadSound("pickup", "/resources/sounds/sfx_pickup.wav");
         loadSound("place", "/resources/sounds/sfx_place.wav");
@@ -130,7 +140,7 @@ public class AssetManager {
     private void loadSound(String name, String path) {
         try {
             URL url = getClass().getResource(path);
-            if (url == null) return; // Skip jika file belum ada
+            if (url == null) return;
             
             AudioInputStream ais = AudioSystem.getAudioInputStream(url);
             Clip clip = AudioSystem.getClip();
@@ -139,7 +149,6 @@ public class AssetManager {
             
         } catch (Exception e) {
             System.err.println("❌ Error loading sound: " + name);
-            // Tidak throw exception agar game tetap jalan meski tanpa suara
         }
     }
 
