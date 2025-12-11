@@ -36,20 +36,20 @@ public class GameController {
 
             // Input Player 1 (WASD)
             handlePlayerInput(p1, code,
-                KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D, // Move
-                KeyEvent.VK_V, // Interact
-                KeyEvent.VK_B, // Pick/Place (Smart Button)
-                KeyEvent.VK_F, // Throw
-                e.isControlDown(), 1
+                    KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D, // Move
+                    KeyEvent.VK_V, // Interact
+                    KeyEvent.VK_B, // Pick/Place (Smart Button)
+                    KeyEvent.VK_F, // Throw
+                    e.isControlDown(), 1
             );
 
             // Input Player 2 (ARROWS)
             handlePlayerInput(p2, code,
-                KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, // Move
-                KeyEvent.VK_K, // Interact
-                KeyEvent.VK_L, // Pick/Place (Smart Button)
-                KeyEvent.VK_SEMICOLON, // Throw (Titik Koma)
-                e.isControlDown(), 2
+                    KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, // Move
+                    KeyEvent.VK_K, // Interact
+                    KeyEvent.VK_L, // Pick/Place (Smart Button)
+                    KeyEvent.VK_SEMICOLON, // Throw (Titik Koma)
+                    e.isControlDown(), 2
             );
 
         } else {
@@ -65,11 +65,11 @@ public class GameController {
 
             // Input Active Chef (WASD)
             handlePlayerInput(activeChef, code,
-                KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D,
-                KeyEvent.VK_E, // Interact
-                KeyEvent.VK_F, // Pick/Place (Smart Button)
-                KeyEvent.VK_T, // Throw
-                e.isControlDown(), 1
+                    KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D,
+                    KeyEvent.VK_E, // Interact
+                    KeyEvent.VK_F, // Pick/Place (Smart Button)
+                    KeyEvent.VK_T, // Throw
+                    e.isControlDown(), 1
             );
 
             // Support Legacy Keys (P/O) untuk Singleplayer jika masih mau dipakai

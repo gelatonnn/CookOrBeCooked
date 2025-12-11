@@ -11,27 +11,10 @@ public class WorldMap {
     private final int height = 10;
     private final Tile[][] grid;
     private final boolean[][] wallMask;
-<<<<<<< HEAD
 
-    // Layout Map berdasarkan Spec Type B: Pasta Map
-    private final String[] MAP = {
-            "AARRAAXXXXXXXX",
-            "I....AXXX....W", // y=1: Ingredient Storage 1
-            "I....AXxX....W", // y=2: Ingredient Storage 2
-            "I.V..AXXX....A", // y=3: Ingredient Storage 3
-            "A....XXXX....R",
-            "P....XXC.....R",
-            "S....XXC..V..I", // y=6: Ingredient Storage 4
-            "S....XXA.....I", // y=7: Ingredient Storage 5
-            "A............T",
-            "XXXXXXXXXXXXXX"
-    };
-=======
-    
     private final Queue<String> ingredientQueue = new LinkedList<>();
     private final Queue<items.core.CookingDevice> deviceQueue = new LinkedList<>();
     private final List<Position> spawnPoints = new ArrayList<>();
->>>>>>> origin/main
 
     public WorldMap() {
         this.grid = new Tile[height][width];
@@ -67,7 +50,7 @@ public class WorldMap {
         int cx = width / 2;
         int cy = height / 2;
         layout[cy][cx] = '.';
-        
+
         int floorCount = 1;
         int targetFloor = (int) (width * height * 0.55);
         Random rand = new Random();
@@ -105,7 +88,7 @@ public class WorldMap {
                 }
             }
         }
-        
+
         Collections.shuffle(validStationSpots);
         Collections.shuffle(floorSpots);
 
@@ -149,7 +132,7 @@ public class WorldMap {
 
     private void parseMap(char[][] layout) {
         // FIX: Clear HARUS DILUAR LOOP
-        spawnPoints.clear(); 
+        spawnPoints.clear();
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -157,14 +140,14 @@ public class WorldMap {
                 Position pos = new Position(x, y);
 
                 switch (c) {
-                    case 'X': 
+                    case 'X':
                         grid[y][x] = new WallTile(pos);
                         wallMask[y][x] = true;
                         break;
                     case '.':
                         grid[y][x] = new WalkableTile(pos);
                         break;
-                    case 'V': 
+                    case 'V':
                         grid[y][x] = new WalkableTile(pos);
                         spawnPoints.add(pos); // Simpan posisi spawn
                         break;
@@ -176,7 +159,7 @@ public class WorldMap {
                         StationTile cookTile = new StationTile(pos, new CookingStation());
                         CookingStation cs = (CookingStation) cookTile.getStation();
                         items.core.CookingDevice device = deviceQueue.poll();
-                        if (device == null) device = new items.utensils.FryingPan(); 
+                        if (device == null) device = new items.utensils.FryingPan();
                         cs.place((items.core.Item) device);
                         grid[y][x] = cookTile;
                         wallMask[y][x] = true;
@@ -191,7 +174,7 @@ public class WorldMap {
                         break;
                     case 'I':
                         String ingType = ingredientQueue.poll();
-                        if (ingType == null) ingType = "pasta"; 
+                        if (ingType == null) ingType = "pasta";
                         grid[y][x] = new StationTile(pos, new IngredientStorage(ingType));
                         wallMask[y][x] = true;
                         break;

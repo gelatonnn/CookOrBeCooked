@@ -15,7 +15,13 @@ import utils.Position;
 public class Chef {
     private final String id;
     private final String name;
+
+    // Grid coordinates (integer) untuk interaksi stasiun
     private int x, y;
+
+    // Pixel coordinates (double) untuk gerakan halus (Top-Left)
+    private double exactX, exactY;
+
     private Direction direction;
     private Item held;
     private ChefState state;
@@ -29,6 +35,8 @@ public class Chef {
         this.name = name;
         this.x = x;
         this.y = y;
+        this.exactX = x;
+        this.exactY = y;
         this.direction = Direction.DOWN;
         this.state = new IdleState();
         this.currentAction = ChefAction.IDLE;
@@ -44,6 +52,10 @@ public class Chef {
     public Position getPos() { return new Position(x, y); }
     public int getX() { return x; }
     public int getY() { return y; }
+
+    public double getExactX() { return exactX; }
+    public double getExactY() { return exactY; }
+
     public Direction getDirection() { return direction; }
     public ChefAction getCurrentAction() { return currentAction; }
     public ChefState getState() { return state; }
@@ -58,20 +70,21 @@ public class Chef {
     public void setPos(int x, int y) {
         this.x = x;
         this.y = y;
+        this.exactX = x;
+        this.exactY = y;
     }
 
-    public void move(int dx, int dy) {
-        if (dx == 0 && dy < 0) direction = Direction.UP;
-        else if (dx == 0 && dy > 0) direction = Direction.DOWN;
-        else if (dx < 0 && dy == 0) direction = Direction.LEFT;
-        else if (dx > 0 && dy == 0) direction = Direction.RIGHT;
-        else if (dx < 0 && dy < 0) direction = Direction.UP_LEFT;
-        else if (dx > 0 && dy < 0) direction = Direction.UP_RIGHT;
-        else if (dx < 0 && dy > 0) direction = Direction.DOWN_LEFT;
-        else if (dx > 0 && dy > 0) direction = Direction.DOWN_RIGHT;
-
-        state.move(this, dx, dy);
+    public void setExactPos(double x, double y) {
+        this.exactX = x;
+        this.exactY = y;
+        // PENTING: Koordinat grid ditentukan dari TITIK TENGAH (Center) Chef
+        // Agar saat berdiri di perbatasan tile, dia dianggap di tile yang paling banyak dia injak
+        this.x = (int) Math.floor(x + 0.5);
+        this.y = (int) Math.floor(y + 0.5);
     }
+
+    // ... method move() lama dihapus atau dikosongkan karena logic pindah ke Engine ...
+    public void move(int dx, int dy) { }
 
     public boolean canDash() {
         if (model.engine.EffectManager.getInstance().isFlash()) return true;
@@ -84,9 +97,6 @@ public class Chef {
 
     public void changeState(ChefState s) {
         this.state = s;
-        
-        // Update Action SEBELUM enter() untuk mencegah bug nested state change
-        // Ini memastikan status diset dulu, baru logika dijalankan
         if (s instanceof IdleState) currentAction = ChefAction.IDLE;
         else if (s instanceof MovingState) currentAction = ChefAction.MOVING;
         else if (s instanceof CarryingState) currentAction = ChefAction.CARRYING;
@@ -94,7 +104,6 @@ public class Chef {
         else if (s instanceof BusyCookingState) currentAction = ChefAction.COOKING;
         else if (s instanceof BusyWashingState) currentAction = ChefAction.WASHING;
 
-        // Jalankan logika masuk state (yang mungkin memanggil changeState lagi)
         s.enter(this);
     }
 
@@ -195,7 +204,6 @@ public class Chef {
 
     public void throwItem(boolean[][] worldMask) {
         if (held == null) return;
-        System.out.println(name + " threw " + held.getName() + "!");
         held = null;
         changeState(new IdleState());
     }
@@ -212,12 +220,9 @@ public class Chef {
 
     @Override
     public String toString() {
-        return name + " at (" + x + "," + y + ") facing " + direction +
-                " [" + currentAction + "]" +
-                (held != null ? " holding " + held.getName() : "");
+        return name + " at (" + exactX + "," + exactY + ") facing " + direction;
     }
-    
-    // Helper untuk progress bar UI
+
     public float getActionProgress() {
         if (state instanceof BusyCuttingState cuttingState) {
             return (float) cuttingState.getProgress() / cuttingState.getMaxProgress();

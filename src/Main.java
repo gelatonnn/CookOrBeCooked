@@ -47,8 +47,8 @@ public class Main {
 
         // --- UPDATE HOME PANEL ---
         HomePanel homePanel = new HomePanel(
-            () -> initAndStartGame(false), // Singleplayer
-            () -> initAndStartGame(true)   // Multiplayer
+                () -> initAndStartGame(false), // Singleplayer
+                () -> initAndStartGame(true)   // Multiplayer
         );
         // -------------------------
 
