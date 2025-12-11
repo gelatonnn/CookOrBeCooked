@@ -3,11 +3,8 @@ package view.gui;
 import items.core.*;
 import items.utensils.Plate;
 import java.awt.*;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.swing.*;
 import model.chef.Chef;
 import model.engine.GameEngine;
@@ -23,14 +20,10 @@ public class GamePanel extends JPanel implements Observer {
     private final int TILE_SIZE = 60;
     private final SpinOverlay spinOverlay = new SpinOverlay();
     
-    private final Map<Chef, Point2D.Double> chefRenderPositions = new HashMap<>();
 
     private final java.util.List<NotificationRequest> notificationQueue = new java.util.ArrayList<>();
 
     private record NotificationRequest(int x, int y, items.core.CookingDevice device) {}
-    
-    private int animationTick = 0;
-    private final float MOVEMENT_SPEED = 0.3f; 
 
     public GamePanel(GameEngine engine) {
         this.engine = engine;
@@ -55,33 +48,6 @@ public class GamePanel extends JPanel implements Observer {
             spinOverlay.update();
             repaint();
         }).start();
-    }
-
-    private void updateVisuals() {
-        // 1. Update Timer Animasi
-        animationTick++;
-
-        // 2. Update Posisi Halus (Smooth Movement)
-        for (Chef c : engine.getChefs()) {
-            // Posisi Target (Grid * Ukuran Tile)
-            double targetX = c.getX() * TILE_SIZE;
-            double targetY = c.getY() * TILE_SIZE;
-
-            if (!chefRenderPositions.containsKey(c)) {
-                chefRenderPositions.put(c, new Point2D.Double(targetX, targetY));
-            }
-            Point2D.Double currentPos = chefRenderPositions.get(c);
-
-            double newX = currentPos.x + (targetX - currentPos.x) * MOVEMENT_SPEED;
-            double newY = currentPos.y + (targetY - currentPos.y) * MOVEMENT_SPEED;
-
-            // Jika jarak sangat kecil, langsung tempel (snap) biar tidak getar
-            if (Math.abs(targetX - newX) < 1.0) newX = targetX;
-            if (Math.abs(targetY - newY) < 1.0) newY = targetY;
-
-            // Simpan posisi baru
-            currentPos.setLocation(newX, newY);
-        }
     }
 
     @Override
@@ -293,23 +259,6 @@ public class GamePanel extends JPanel implements Observer {
                 }
                 i++;
             }
-        }
-    }
-
-    // NEW: Draw Flying Projectiles
-    private void drawProjectiles(Graphics2D g2d) {
-        List<GameEngine.Projectile> projectiles = engine.getProjectiles();
-        for (GameEngine.Projectile p : projectiles) {
-            int x = (int) (p.getX() * TILE_SIZE);
-            int y = (int) (p.getY() * TILE_SIZE);
-            int size = (int) (TILE_SIZE * 0.5); // Slightly smaller in air
-
-            // Add shadow
-            g2d.setColor(new Color(0, 0, 0, 100));
-            g2d.fillOval(x + 10, y + 40, size, size/3);
-
-            // Draw item with a slight arc offset could be nice, but simple linear is fine
-            drawItem(g2d, x + (TILE_SIZE-size)/2, y + (TILE_SIZE-size)/2 - 10, p.getItem(), size);
         }
     }
 
