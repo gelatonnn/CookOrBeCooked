@@ -23,6 +23,9 @@ public class Main {
     private static JPanel gameContainerPanel;
     private static GameEngine engine;
 
+    private static final int WINDOW_WIDTH = 800;
+    private static final int WINDOW_HEIGHT = 600;
+
     public static void main(String[] args) {
         ItemRegistryInit.registerAll();
         SwingUtilities.invokeLater(() -> {
@@ -90,6 +93,9 @@ public class Main {
             stopGame();
             AssetManager.getInstance().playBGM("bgm_menu");
             cardLayout.show(mainContainer, "HOME_SCREEN");
+
+            window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+            window.setLocationRelativeTo(null);
         });
 
         engine.addObserver(gamePanel);
@@ -127,9 +133,16 @@ public class Main {
     private static void showGameOverScreen(int finalScore) {
         AssetManager.getInstance().stopBGM();
         stopGame();
+
+        window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        window.setLocationRelativeTo(null);
+
         GameOverPanel gameOverPanel = new GameOverPanel(finalScore, () -> {
             AssetManager.getInstance().playBGM("bgm_menu");
             cardLayout.show(mainContainer, "HOME_SCREEN");
+
+            window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+            window.setLocationRelativeTo(null);
         });
         mainContainer.add(gameOverPanel, "GAME_OVER_SCREEN");
         cardLayout.show(mainContainer, "GAME_OVER_SCREEN");

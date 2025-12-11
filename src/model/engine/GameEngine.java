@@ -1,19 +1,15 @@
 package model.engine;
 
+import items.core.Item;
+import items.core.ItemState;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import items.core.Item;
-import items.core.ItemState;
-import items.core.Preparable;
-import items.core.CookingDevice;
 import model.chef.Chef;
 import model.orders.OrderManager;
 import model.world.Tile;
 import model.world.WorldMap;
-import model.world.tiles.WalkableTile;
-import model.world.tiles.StationTile;
 import stations.Station;
 import utils.Direction;
 import utils.Position;
@@ -35,8 +31,8 @@ public class GameEngine {
     private boolean isRunning = false;
     private boolean finished = false;
 
-    private static final double MOVEMENT_SPEED = 0.15; // Adjusted for tick rate
-    private static final double THROW_MAX_DIST = 3.5;
+    private static final double MOVEMENT_SPEED = 0.075; // Adjusted for tick rate
+    private static final double THROW_MAX_DIST = 4;
     private static final double THROW_SPEED = 0.2;
 
     public GameEngine(WorldMap world, OrderManager orders, int stageSeconds) {

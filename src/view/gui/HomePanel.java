@@ -1,94 +1,111 @@
 package view.gui;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import javax.swing.*;
 
 public class HomePanel extends JPanel {
-    private final Runnable onStartSingle;
-    private final Runnable onStartMulti;
+    private final BufferedImage backgroundImage;
 
     public HomePanel(Runnable onStartSingle, Runnable onStartMulti) {
-        this.onStartSingle = onStartSingle;
-        this.onStartMulti = onStartMulti;
         
-        setLayout(new GridBagLayout());
-        setBackground(new Color(30, 30, 30));
+        this.backgroundImage = AssetManager.getInstance().getMenuBackground();
+        
+        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.insets = new Insets(10, 0, 5, 0); // Jarak antar elemen
+        add(Box.createRigidArea(new Dimension(0, 185))); 
 
-        // --- TITLE ---
-        JLabel title = new JLabel("NIMONSCOOKED");
-        title.setFont(new Font("Segoe UI", Font.BOLD, 48));
-        title.setForeground(Color.WHITE);
-        add(title, gbc);
-
-        JLabel subtitle = new JLabel("Map Type B: Pasta");
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        subtitle.setForeground(Color.LIGHT_GRAY);
-        gbc.gridy++;
-        gbc.insets = new Insets(0, 0, 30, 0); // Jarak agak jauh ke tombol
-        add(subtitle, gbc);
-
-        // --- BUTTONS ---
-        gbc.insets = new Insets(10, 0, 10, 0); // Reset jarak
-
-        // 1. Singleplayer
-        gbc.gridy++;
-        JButton btnSingle = createButton("SINGLE PLAYER (Switch Chef)");
-        btnSingle.addActionListener(e -> {
-            if (onStartSingle != null) onStartSingle.run();
-        });
-        add(btnSingle, gbc);
-
-        // 2. Multiplayer
-        gbc.gridy++;
-        JButton btnMulti = createButton("MULTIPLAYER (Local Co-op)");
-        btnMulti.setBackground(new Color(255, 140, 0)); // Warna Oranye agar beda
-        btnMulti.addActionListener(e -> {
-            if (onStartMulti != null) onStartMulti.run();
-        });
-        add(btnMulti, gbc);
-
-        // 3. How to Play (Tetap Ada)
-        gbc.gridy++;
-        JButton btnHelp = createButton("HOW TO PLAY");
-        btnHelp.setBackground(new Color(46, 204, 113)); // Warna Hijau
-        btnHelp.addActionListener(e -> showModelessDialog("Cara Bermain", getHelpContent()));
-        add(btnHelp, gbc);
-
-        // 4. Exit (Tetap Ada)
-        gbc.gridy++;
-        JButton btnExit = createButton("EXIT GAME");
-        btnExit.setBackground(new Color(200, 60, 60)); // Warna Merah
-        btnExit.addActionListener(e -> {
+        addButton("SINGLE PLAYER (Switch Chef)", new Color(100, 149, 237), onStartSingle);
+        add(Box.createRigidArea(new Dimension(0, 0))); 
+        
+        addButton("MULTIPLAYER (Local Co-op)", new Color(255, 140, 0), onStartMulti);
+        add(Box.createRigidArea(new Dimension(0, 0))); 
+        
+        addButton("HOW TO PLAY", new Color(46, 204, 113), 
+            () -> showModelessDialog("Cara Bermain", getHelpContent()));
+        add(Box.createRigidArea(new Dimension(0, 0))); 
+        
+        addButton("EXIT GAME", new Color(200, 60, 60), () -> {
             int confirm = JOptionPane.showConfirmDialog(this, 
                 "Keluar dari permainan?", "Exit", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                System.exit(0);
-            }
+            if (confirm == JOptionPane.YES_OPTION) System.exit(0);
         });
-        add(btnExit, gbc);
+
+        add(Box.createVerticalGlue());
     }
 
-    private JButton createButton(String text) {
-        JButton btn = new JButton(text);
+    private void addButton(String text, Color baseColor, Runnable action) {
+        JButton btn = createStyledButton(text, baseColor);
+        btn.addActionListener(e -> {
+            if (action != null) action.run();
+        });
+        
+        JPanel wrapper = new JPanel();
+        wrapper.setOpaque(false); 
+        wrapper.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0)); 
+        wrapper.add(btn);
+        
+        add(wrapper);
+    }
+
+    private JButton createStyledButton(String text, Color baseColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                if (getModel().isPressed()) {
+                    g2.setColor(baseColor.darker().darker());
+                } else if (getModel().isRollover()) {
+                    g2.setColor(baseColor.brighter());
+                } else {
+                    g2.setColor(baseColor);
+                }
+
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+
+                g2.setColor(Color.WHITE);
+                g2.setStroke(new BasicStroke(2));
+                g2.drawRoundRect(1, 1, getWidth()-3, getHeight()-3, 30, 30);
+
+                g2.setColor(Color.WHITE);
+                g2.setFont(getFont());
+                FontMetrics fm = g2.getFontMetrics();
+                int x = (getWidth() - fm.stringWidth(getText())) / 2;
+                int y = (getHeight() - fm.getHeight()) / 2 + fm.getAscent();
+                g2.drawString(getText(), x, y);
+
+                g2.dispose();
+            }
+        };
+
         btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btn.setBackground(new Color(100, 149, 237));
-        btn.setForeground(Color.WHITE);
+        btn.setPreferredSize(new Dimension(320, 50));
+        btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
-        btn.setPreferredSize(new Dimension(320, 45)); // Ukuran tombol konsisten
+        btn.setBorderPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
     }
 
-    // --- Helper Dialog (Sama seperti di HUDPanel) ---
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        Graphics2D g2d = (Graphics2D) g;
+
+        if (backgroundImage != null) {
+            g2d.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), null);
+        } else {
+            g2d.setColor(new Color(30, 30, 30));
+            g2d.fillRect(0, 0, getWidth(), getHeight());
+        }
+    }
+
     private void showModelessDialog(String title, String content) {
         Window parentWindow = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(parentWindow, title);
-        dialog.setModal(true); // Modal true agar fokus ke help dulu
+        dialog.setModal(true);
         
         JTextArea textArea = new JTextArea(content);
         textArea.setEditable(false);
