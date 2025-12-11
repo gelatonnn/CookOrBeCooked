@@ -47,15 +47,20 @@ public class Main {
 
     private static void showHomeScreen() {
         AssetManager.getInstance().playBGM("bgm_menu");
+
+        // --- UPDATE HOME PANEL ---
         HomePanel homePanel = new HomePanel(
-                () -> initAndStartGame(false),
-                () -> initAndStartGame(true)
+                () -> initAndStartGame(false), // Singleplayer
+                () -> initAndStartGame(true)   // Multiplayer
         );
+        // -------------------------
+
         mainContainer.add(homePanel, "HOME_SCREEN");
         cardLayout.show(mainContainer, "HOME_SCREEN");
         window.setVisible(true);
     }
 
+    // Tambah parameter boolean isMultiplayer
     private static void initAndStartGame(boolean isMultiplayer) {
         AssetManager.getInstance().playBGM("bgm_game");
 
@@ -63,19 +68,21 @@ public class Main {
 
         WorldMap world = new WorldMap();
         OrderManager orders = new OrderManager(false);
-        engine = new GameEngine(world, orders, 300);
+        engine = new GameEngine(world, orders, 300); // 5 Menit
 
         engine.setOnGameEnd(() -> {
             int finalScore = orders.getScore();
             SwingUtilities.invokeLater(() -> showGameOverScreen(finalScore));
         });
 
+        // Spawn Logic
         List<Position> spawns = world.getSpawnPoints();
         int x1 = 2, y1 = 3;
         int x2 = 11, y2 = 6;
         if (spawns.size() >= 1) { x1 = spawns.get(0).x; y1 = spawns.get(0).y; }
         if (spawns.size() >= 2) { x2 = spawns.get(1).x; y2 = spawns.get(1).y; }
 
+        // Nama Chef Sesuai Mode
         String name1 = isMultiplayer ? "P1 (Gordon)" : "Gordon";
         String name2 = isMultiplayer ? "P2 (Ramsay)" : "Ramsay";
 
@@ -84,7 +91,9 @@ public class Main {
         engine.addChef(c1);
         engine.addChef(c2);
 
+        // --- PASSING IS_MULTIPLAYER KE CONTROLLER ---
         GameController controller = new GameController(engine, isMultiplayer);
+        // --------------------------------------------
 
         gameContainerPanel = new JPanel(new BorderLayout());
         GamePanel gamePanel = new GamePanel(engine);
@@ -110,7 +119,7 @@ public class Main {
         cardLayout.show(mainContainer, "GAME_SCREEN");
         window.pack();
         window.setLocationRelativeTo(null);
-        gameContainerPanel.requestFocusInWindow();
+        gameContainerPanel.requestFocusInWindow(); // PENTING: Fokus keyboard
 
         new Thread(engine::start).start();
     }
@@ -120,12 +129,12 @@ public class Main {
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                controller.handleKeyPressed(e);
+                controller.keyPressed(e);
             }
 
             @Override
             public void keyReleased(KeyEvent e) {
-                controller.handleKeyReleased(e);
+                controller.keyReleased(e);
             }
         });
     }
