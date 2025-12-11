@@ -1,129 +1,160 @@
 package controller;
 
 import java.awt.event.KeyEvent;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import model.chef.Chef;
 import model.engine.GameEngine;
 import utils.Direction;
 
 public class GameController {
     private final GameEngine engine;
+    private final boolean isMultiplayer;
     private int activeChefIndex = 0;
-    private final boolean isMultiplayer; // Flag Mode
 
-    // Throttling movement
-    private long lastMoveTimeP1 = 0;
-    private long lastMoveTimeP2 = 0;
-    private static final long MOVE_DELAY_MS = 150; 
+    // Track active keys for smooth movement
+    private final Set<Integer> pressedKeys = new HashSet<>();
 
-    // Konstruktor menerima mode
     public GameController(GameEngine engine, boolean isMultiplayer) {
         this.engine = engine;
         this.isMultiplayer = isMultiplayer;
     }
 
-    public void handleInput(KeyEvent e) {
+    public void keyPressed(KeyEvent e) {
+        int code = e.getKeyCode();
+        if (!pressedKeys.contains(code)) {
+            pressedKeys.add(code);
+            // Handle actions that trigger ONCE on press (not hold)
+            handleOneTimeActions(code, e.isControlDown());
+        }
+        updateMovement();
+    }
+
+    public void keyReleased(KeyEvent e) {
+        pressedKeys.remove(e.getKeyCode());
+        updateMovement();
+    }
+
+    private void updateMovement() {
         List<Chef> chefs = engine.getChefs();
         if (chefs.isEmpty()) return;
 
-        int code = e.getKeyCode();
-        
-        if (isMultiplayer) {
-            // --- MODE MULTIPLAYER (Split Controls) ---
-            if (chefs.size() < 2) return;
-            Chef p1 = chefs.get(0); // Chef Kiri (Gordon)
-            Chef p2 = chefs.get(1); // Chef Kanan (Ramsay)
-
-            // Input Player 1 (WASD)
-            handlePlayerInput(p1, code, 
-                KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D, // Move
-                KeyEvent.VK_V, // Interact
-                KeyEvent.VK_B, // Pick/Place (Smart Button)
-                KeyEvent.VK_F, // Throw
-                e.isControlDown(), 1
-            );
-
-            // Input Player 2 (ARROWS)
-            handlePlayerInput(p2, code, 
-                KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT, // Move
-                KeyEvent.VK_K, // Interact
-                KeyEvent.VK_L, // Pick/Place (Smart Button)
-                KeyEvent.VK_SEMICOLON, // Throw (Titik Koma)
-                e.isControlDown(), 2
-            );
-
+        if (isMultiplayer && chefs.size() >= 2) {
+            // Player 1 (WASD)
+            updateChefMovement(chefs.get(0), KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D);
+            // Player 2 (ARROWS)
+            updateChefMovement(chefs.get(1), KeyEvent.VK_UP, KeyEvent.VK_DOWN, KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT);
         } else {
-            // --- MODE SINGLEPLAYER (Switch Logic) ---
+            // Single Player
             Chef activeChef = chefs.get(activeChefIndex);
-            
-            // Switch Chef Logic (TAB/C)
-            if (code == KeyEvent.VK_TAB || code == KeyEvent.VK_C) {
-                activeChefIndex = (activeChefIndex + 1) % chefs.size();
-                System.out.println("Switched to Chef " + (activeChefIndex + 1));
-                return;
-            }
-
-            // Input Active Chef (WASD)
-            handlePlayerInput(activeChef, code, 
-                KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D,
-                KeyEvent.VK_E, // Interact
-                KeyEvent.VK_F, // Pick/Place (Smart Button)
-                KeyEvent.VK_T, // Throw
-                e.isControlDown(), 1
-            );
-            
-            // Support Legacy Keys (P/O) untuk Singleplayer jika masih mau dipakai
-            if (code == KeyEvent.VK_P) engine.pickAt(activeChef, activeChef.getFacingPosition());
-            if (code == KeyEvent.VK_O) engine.placeAt(activeChef, activeChef.getFacingPosition());
+            updateChefMovement(activeChef, KeyEvent.VK_W, KeyEvent.VK_S, KeyEvent.VK_A, KeyEvent.VK_D);
         }
     }
 
-    private void handlePlayerInput(Chef chef, int key, 
-                                   int up, int down, int left, int right,
-                                   int interact, int pickPlace, int throwItem,
-                                   boolean isCtrl, int playerNum) {
-        
-        // 1. Movement
+    private void updateChefMovement(Chef chef, int up, int down, int left, int right) {
+        boolean u = pressedKeys.contains(up);
+        boolean d = pressedKeys.contains(down);
+        boolean l = pressedKeys.contains(left);
+        boolean r = pressedKeys.contains(right);
+
         Direction dir = null;
-        boolean isDrunk = model.engine.EffectManager.getInstance().isDrunk();
-        if (key == up) dir = Direction.UP;
-        else if (key == down) dir = Direction.DOWN;
-        else if (key == left) dir = Direction.LEFT;
-        else if (key == right) dir = Direction.RIGHT;
 
-        if (dir != null) {
-            long now = System.currentTimeMillis();
-            long lastTime = (playerNum == 1) ? lastMoveTimeP1 : lastMoveTimeP2;
-            // --- LOGIC BARU: THE FLASH ---
-            boolean isFlash = model.engine.EffectManager.getInstance().isFlash();
-            long currentDelay = isFlash ? 75 : MOVE_DELAY_MS;
-            
-            if (isCtrl || (isFlash && isCtrl)) {
-                chef.setDirection(dir);
-                engine.dashChef(chef);
-            } else if (now - lastTime >= MOVE_DELAY_MS) {
-                engine.moveChef(chef, dir);
-                if (playerNum == 1) lastMoveTimeP1 = now;
-                else lastMoveTimeP2 = now;
-            }
-            return;
+        if (u && !d) {
+            if (l && !r) dir = Direction.UP_LEFT;
+            else if (r && !l) dir = Direction.UP_RIGHT;
+            else dir = Direction.UP;
+        } else if (d && !u) {
+            if (l && !r) dir = Direction.DOWN_LEFT;
+            else if (r && !l) dir = Direction.DOWN_RIGHT;
+            else dir = Direction.DOWN;
+        } else if (l && !r) {
+            dir = Direction.LEFT;
+        } else if (r && !l) {
+            dir = Direction.RIGHT;
         }
 
-        // 2. Actions
-        if (key == interact) {
+        // Apply Drunk Effect
+        if (model.engine.EffectManager.getInstance().isDrunk() && dir != null) {
+            dir = invertDirection(dir);
+        }
+
+        chef.setMoveInput(dir);
+    }
+
+    private Direction invertDirection(Direction d) {
+        switch(d) {
+            case UP: return Direction.DOWN;
+            case DOWN: return Direction.UP;
+            case LEFT: return Direction.RIGHT;
+            case RIGHT: return Direction.LEFT;
+            case UP_LEFT: return Direction.DOWN_RIGHT;
+            case UP_RIGHT: return Direction.DOWN_LEFT;
+            case DOWN_LEFT: return Direction.UP_RIGHT;
+            case DOWN_RIGHT: return Direction.UP_LEFT;
+            default: return d;
+        }
+    }
+
+    private void handleOneTimeActions(int code, boolean isCtrl) {
+        List<Chef> chefs = engine.getChefs();
+        if (chefs.isEmpty()) return;
+
+        if (isMultiplayer) {
+            // P1 Actions
+            handleSpecificAction(chefs.get(0), code,
+                    KeyEvent.VK_V, KeyEvent.VK_B, KeyEvent.VK_F, isCtrl);
+            // P2 Actions
+            if (chefs.size() > 1) {
+                handleSpecificAction(chefs.get(1), code,
+                        KeyEvent.VK_K, KeyEvent.VK_L, KeyEvent.VK_SEMICOLON, isCtrl);
+            }
+        } else {
+            // Single Player Actions
+            if (code == KeyEvent.VK_TAB || code == KeyEvent.VK_C) {
+                // Stop current chef moving before switching
+                chefs.get(activeChefIndex).setMoveInput(null);
+                activeChefIndex = (activeChefIndex + 1) % chefs.size();
+                System.out.println("Switched to Chef " + (activeChefIndex + 1));
+                updateMovement(); // Update input for new chef
+                return;
+            }
+            handleSpecificAction(chefs.get(activeChefIndex), code,
+                    KeyEvent.VK_E, KeyEvent.VK_F, KeyEvent.VK_T, isCtrl);
+
+            // Legacy keys
+            if (code == KeyEvent.VK_P) engine.pickAt(chefs.get(activeChefIndex), chefs.get(activeChefIndex).getFacingPosition());
+            if (code == KeyEvent.VK_O) engine.placeAt(chefs.get(activeChefIndex), chefs.get(activeChefIndex).getFacingPosition());
+        }
+    }
+
+    private void handleSpecificAction(Chef chef, int code, int interact, int pickPlace, int throwItem, boolean isCtrl) {
+        if (code == interact) {
             engine.interactAt(chef, chef.getFacingPosition());
-        } 
-        else if (key == pickPlace) {
-            // SMART LOGIC: Pick or Place based on hand
-            // (Memenuhi spesifikasi tabel Pick Up / Drop)
-            if (chef.getHeldItem() == null) {
-                engine.pickAt(chef, chef.getFacingPosition());
-            } else {
-                engine.placeAt(chef, chef.getFacingPosition());
-            }
-        } 
-        else if (key == throwItem) {
+        } else if (code == pickPlace) {
+            if (chef.getHeldItem() == null) engine.pickAt(chef, chef.getFacingPosition());
+            else engine.placeAt(chef, chef.getFacingPosition());
+        } else if (code == throwItem) {
             engine.throwItem(chef);
+        } else if (isCtrl) {
+            // Dash Trigger (Ctrl) - Checks direction inside engine
+            engine.dashChef(chef);
         }
+
+        // Alternative Dash Trigger (Same key as interact/run if design changes)
+        // Here we rely on updateMovement + isCtrl check in engine?
+        // No, dash is instant trigger.
+        // Let's assume DASH is mapped to CTRL or SHIFT.
+        // Since main `handleInput` passed `isCtrl`, let's use it.
+        // If user presses Ctrl + W (handled in updateMovement + separate Dash check?).
+        // Actually, Dash is better as an "Action" (Press Shift).
+        if (code == KeyEvent.VK_SHIFT) {
+            engine.dashChef(chef);
+        }
+    }
+
+    // Legacy support
+    public void handleInput(KeyEvent e) {
+        keyPressed(e);
     }
 }
