@@ -36,7 +36,7 @@ public class GamePanel extends JPanel implements Observer {
         this.engine = engine;
         int w = engine.getWorld().getWidth();
         int h = engine.getWorld().getHeight();
-        
+
         this.setPreferredSize(new Dimension(w * TILE_SIZE, h * TILE_SIZE));
         this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
@@ -52,7 +52,6 @@ public class GamePanel extends JPanel implements Observer {
         });
         
         new Timer(16, e -> {
-            updateVisuals();
             spinOverlay.update();
             repaint();
         }).start();
@@ -89,8 +88,7 @@ public class GamePanel extends JPanel implements Observer {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        
-        // Agar gambar pixel art tetap tajam saat bergerak
+
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
@@ -111,18 +109,15 @@ public class GamePanel extends JPanel implements Observer {
                 int px = x * TILE_SIZE;
                 int py = y * TILE_SIZE;
 
-                //LANTAI 
                 g2d.setColor(new Color(139, 69, 19));
                 g2d.fillRect(px, py, TILE_SIZE, TILE_SIZE);
                 g2d.setColor(new Color(160, 82, 45));
                 g2d.drawRect(px, py, TILE_SIZE, TILE_SIZE);
 
-                //OBJEK 
                 if (!tile.isWalkable()) {
                     if (tile instanceof StationTile stTile) {
                         drawStation(g2d, px, py, stTile.getStation());
                     } else {
-                        // Wall
                         BufferedImage wall = sprites.getSprite("wall");
                         if (wall != null)
                             g2d.drawImage(wall, px, py, TILE_SIZE, TILE_SIZE, null);
@@ -133,7 +128,6 @@ public class GamePanel extends JPanel implements Observer {
                     }
                 }
 
-                //ITEM DI LANTAI
                 if (tile instanceof WalkableTile wt && wt.getItem() != null) {
                     int itemSize = 40; 
                     int offset = (TILE_SIZE - itemSize) / 2; 
@@ -143,7 +137,7 @@ public class GamePanel extends JPanel implements Observer {
             }
         }
     }
-    
+
     private void drawStation(Graphics2D g2d, int x, int y, Station station) {
         String name = station.getName().toLowerCase();
         
@@ -156,9 +150,6 @@ public class GamePanel extends JPanel implements Observer {
             // Fallback
             g2d.setColor(Color.LIGHT_GRAY);
             g2d.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-            g2d.setColor(Color.BLACK);
-            g2d.setFont(new Font("Arial", Font.BOLD, 10));
-            g2d.drawString("?", x + (TILE_SIZE/2) - 5, y + (TILE_SIZE/2) + 5);
         }
 
         // Gambar Item di Atas Station
@@ -190,7 +181,7 @@ public class GamePanel extends JPanel implements Observer {
 
         if (station instanceof stations.LuckyStation) {
             BufferedImage img = sprites.getSprite("lucky_station");
-            return (img != null) ? img : sprites.getSprite("crate_mystery"); 
+            return (img != null) ? img : sprites.getSprite("crate_mystery");
         }
 
         if (station instanceof IngredientStorage) {
@@ -201,7 +192,6 @@ public class GamePanel extends JPanel implements Observer {
             if (name.contains("fish")) return sprites.getSprite("crate_fish");
             return sprites.getSprite("ingredient storage");
         }
-
         if (name.contains("cutting")) return sprites.getSprite("cutting station");
         if (name.contains("cook") || name.contains("stove")) return sprites.getSprite("cooking station");
         if (name.contains("wash") || name.contains("sink")) return sprites.getSprite("washing station");
@@ -252,18 +242,16 @@ public class GamePanel extends JPanel implements Observer {
         BufferedImage img = sprites.getSprite(spriteName);
         if (img != null) {
             g2d.drawImage(img, x, y, size, size, null);
-            
             if (item instanceof Plate || item instanceof CookingDevice) {
                 drawContainerContents(g2d, x, y, item, size); 
             }
-
             if (isCooking) {
                 drawCookingIndicator(g2d, x, y, size);
             }
         }
     }
 
-    private void drawCookingIndicator(Graphics2D g2d, int x, int y, int size) {        
+    private void drawCookingIndicator(Graphics2D g2d, int x, int y, int size) {
         g2d.setColor(Color.WHITE);
         g2d.fillRect(x, y - 5, size, 5);
         g2d.setColor(Color.RED);
@@ -276,7 +264,6 @@ public class GamePanel extends JPanel implements Observer {
             case CookingDevice c -> c.getContents();
             default -> null;
         };
-
         if (contents != null && !contents.isEmpty()) {
             int offsetX = 0;
             int offsetY = 0;
@@ -301,14 +288,28 @@ public class GamePanel extends JPanel implements Observer {
                         int padding = (int)(parentSize * 0.2); 
                         g2d.drawImage(ingImg, x + padding + offsetX, y + padding + offsetY, ingSize, ingSize, null);
                         offsetX += (ingSize / 2);
-                        if (i % 2 == 1) { 
-                            offsetX = 5;
-                            offsetY += (ingSize / 2);
-                        }
+                        if (i % 2 == 1) { offsetX = 5; offsetY += (ingSize / 2); }
                     }
                 }
                 i++;
             }
+        }
+    }
+
+    // NEW: Draw Flying Projectiles
+    private void drawProjectiles(Graphics2D g2d) {
+        List<GameEngine.Projectile> projectiles = engine.getProjectiles();
+        for (GameEngine.Projectile p : projectiles) {
+            int x = (int) (p.getX() * TILE_SIZE);
+            int y = (int) (p.getY() * TILE_SIZE);
+            int size = (int) (TILE_SIZE * 0.5); // Slightly smaller in air
+
+            // Add shadow
+            g2d.setColor(new Color(0, 0, 0, 100));
+            g2d.fillOval(x + 10, y + 40, size, size/3);
+
+            // Draw item with a slight arc offset could be nice, but simple linear is fine
+            drawItem(g2d, x + (TILE_SIZE-size)/2, y + (TILE_SIZE-size)/2 - 10, p.getItem(), size);
         }
     }
 
@@ -318,19 +319,12 @@ public class GamePanel extends JPanel implements Observer {
 
         for (int i = 0; i < chefs.size(); i++) {
             Chef c = chefs.get(i);
-            
-            Point2D.Double renderPos = chefRenderPositions.get(c);
-            
-            int px = (renderPos != null) ? (int) renderPos.x : c.getX() * TILE_SIZE;
-            int py = (renderPos != null) ? (int) renderPos.y : c.getY() * TILE_SIZE;
 
-            boolean isMoving = false;
-            if (renderPos != null) {
-                double dist = Math.abs(renderPos.x - c.getX() * TILE_SIZE) + Math.abs(renderPos.y - c.getY() * TILE_SIZE);
-                isMoving = dist > 5.0; 
-            }
-            
-            int step = animationTick / (isMoving ? 5 : 15); 
+            // USE EXACT PIXEL COORDINATES from Model
+            int px = (int) (c.getExactX() * TILE_SIZE);
+            int py = (int) (c.getExactY() * TILE_SIZE);
+
+            int step = (int)(System.currentTimeMillis() / 200) % 2; // Simple animation loop
 
             BufferedImage chefImg = sprites.getChefSprite(
                 i, 
@@ -340,7 +334,6 @@ public class GamePanel extends JPanel implements Observer {
                 step
             );
 
-            // Gambar Chef
             if (chefImg != null) {
                 g2d.drawImage(chefImg, px, py, TILE_SIZE, TILE_SIZE, null);
             } else {
@@ -348,22 +341,20 @@ public class GamePanel extends JPanel implements Observer {
                 g2d.fillOval(px, py, TILE_SIZE, TILE_SIZE);
             }
 
-            // Indikator Arah (Opsional, transparan)
             g2d.setColor(new Color(255, 255, 255, 50));
-            // Sesuaikan matematika offset dengan TILE_SIZE baru
+            // Adjust direction indicator logic to use new Double positions logic roughly
+            // Actually it just needs px/py
             int dirX = px + TILE_SIZE / 2 + (c.getDirection().dx * (TILE_SIZE/3)) - 5;
             int dirY = py + TILE_SIZE / 2 + (c.getDirection().dy * (TILE_SIZE/3)) - 5;
             g2d.fillOval(dirX, dirY, 10, 10);
 
-            // Draw Held Item 
             if (c.getHeldItem() != null) {
                 int itemSize = (int)(TILE_SIZE * 0.5);
                 int itemX = px + (TILE_SIZE - itemSize) / 2;
-                int itemY = py - (itemSize / 2); 
-                drawItem(g2d, itemX, itemY, c.getHeldItem(), itemSize); 
+                int itemY = py - (itemSize / 2);
+                drawItem(g2d, itemX, itemY, c.getHeldItem(), itemSize);
             }
 
-            // Draw Progress Bar
             if (c.getActionProgress() > 0) {
                 drawProgressBar(g2d, px, py - 10, c.getActionProgress(), Color.GREEN);
             }
@@ -373,13 +364,9 @@ public class GamePanel extends JPanel implements Observer {
     private void drawProgressBar(Graphics2D g2d, int x, int y, float percentage, Color color) {
         int barWidth = TILE_SIZE - 20;
         int barHeight = 8;
-        int screenX = x + 10; 
-
-        // Background Bar 
+        int screenX = x + 10;
         g2d.setColor(Color.BLACK);
         g2d.fillRect(screenX, y, barWidth, barHeight);
-
-        // Foreground Bar 
         g2d.setColor(color);
         g2d.fillRect(screenX + 1, y + 1, (int) ((barWidth - 2) * percentage), barHeight - 2);
     }
@@ -443,6 +430,6 @@ public class GamePanel extends JPanel implements Observer {
 
     @Override
     public void update() {
-        repaint();
+        // No longer relying on this for render loop, but kept for logic events if needed
     }
 }

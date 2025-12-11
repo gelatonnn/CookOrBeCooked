@@ -34,7 +34,7 @@ public class Main {
     private static void setupMainWindow() {
         window = new JFrame("CookOrBeCooked");
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        window.setMinimumSize(new Dimension(800,600)); 
+        window.setMinimumSize(new Dimension(800,600));
         window.setResizable(true);
         window.setLocationRelativeTo(null);
         cardLayout = new CardLayout();
@@ -47,11 +47,11 @@ public class Main {
 
         // --- UPDATE HOME PANEL ---
         HomePanel homePanel = new HomePanel(
-            () -> initAndStartGame(false), // Singleplayer
-            () -> initAndStartGame(true)   // Multiplayer
+                () -> initAndStartGame(false), // Singleplayer
+                () -> initAndStartGame(true)   // Multiplayer
         );
         // -------------------------
-        
+
         mainContainer.add(homePanel, "HOME_SCREEN");
         cardLayout.show(mainContainer, "HOME_SCREEN");
         window.setVisible(true);
@@ -60,7 +60,7 @@ public class Main {
     // Tambah parameter boolean isMultiplayer
     private static void initAndStartGame(boolean isMultiplayer) {
         AssetManager.getInstance().playBGM("bgm_game");
-        
+
         if (engine != null) return;
 
         WorldMap world = new WorldMap();
@@ -94,10 +94,10 @@ public class Main {
 
         gameContainerPanel = new JPanel(new BorderLayout());
         GamePanel gamePanel = new GamePanel(engine);
-        
+
         HUDPanel hudPanel = new HUDPanel(engine, () -> {
             stopGame();
-            AssetManager.getInstance().playBGM("bgm_menu"); 
+            AssetManager.getInstance().playBGM("bgm_menu");
             cardLayout.show(mainContainer, "HOME_SCREEN");
         });
 
@@ -111,7 +111,7 @@ public class Main {
 
         mainContainer.add(gameContainerPanel, "GAME_SCREEN");
         cardLayout.show(mainContainer, "GAME_SCREEN");
-        window.pack(); 
+        window.pack();
         window.setLocationRelativeTo(null);
         gameContainerPanel.requestFocusInWindow(); // PENTING: Fokus keyboard
 
@@ -123,16 +123,21 @@ public class Main {
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                controller.handleInput(e);
+                controller.keyPressed(e);
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                controller.keyReleased(e);
             }
         });
     }
 
     private static void showGameOverScreen(int finalScore) {
-        AssetManager.getInstance().stopBGM(); 
+        AssetManager.getInstance().stopBGM();
         stopGame();
         GameOverPanel gameOverPanel = new GameOverPanel(finalScore, () -> {
-            AssetManager.getInstance().playBGM("bgm_menu"); 
+            AssetManager.getInstance().playBGM("bgm_menu");
             cardLayout.show(mainContainer, "HOME_SCREEN");
         });
         mainContainer.add(gameOverPanel, "GAME_OVER_SCREEN");
