@@ -22,13 +22,19 @@ public class Chef {
     // Pixel coordinates (double) untuk gerakan halus (Top-Left)
     private double exactX, exactY;
 
-    private Direction direction;
+    private Direction direction; // Arah hadap (facing)
+    private Direction moveInput = null; // Arah input gerak (nullable jika diam)
+
     private Item held;
     private ChefState state;
     private ChefAction currentAction;
 
+    // --- DASH VARIABLES ---
     private long lastDashTime = 0;
-    private static final long DASH_COOLDOWN_MS = 2000;
+    private static final long DASH_COOLDOWN_MS = 1500; // Dikurangi sedikit biar enak
+    private boolean isDashing = false;
+    private double dashDistanceRemaining = 0;
+    private Direction dashDirection;
 
     public Chef(String id, String name, int x, int y) {
         this.id = id;
@@ -67,6 +73,15 @@ public class Chef {
     public void setCurrentAction(ChefAction action) { this.currentAction = action; }
     public void setHeldItem(Item item) { this.held = item; }
 
+    // --- MOVEMENT INPUT ---
+    public void setMoveInput(Direction dir) {
+        this.moveInput = dir;
+    }
+
+    public Direction getMoveInput() {
+        return moveInput;
+    }
+
     public void setPos(int x, int y) {
         this.x = x;
         this.y = y;
@@ -78,7 +93,6 @@ public class Chef {
         this.exactX = x;
         this.exactY = y;
         // PENTING: Koordinat grid ditentukan dari TITIK TENGAH (Center) Chef
-        // Agar saat berdiri di perbatasan tile, dia dianggap di tile yang paling banyak dia injak
         this.x = (int) Math.floor(x + 0.5);
         this.y = (int) Math.floor(y + 0.5);
     }
@@ -86,14 +100,40 @@ public class Chef {
     // ... method move() lama dihapus atau dikosongkan karena logic pindah ke Engine ...
     public void move(int dx, int dy) { }
 
+    // --- DASH LOGIC ---
     public boolean canDash() {
+        if (isDashing) return false;
         if (model.engine.EffectManager.getInstance().isFlash()) return true;
         return System.currentTimeMillis() - lastDashTime >= DASH_COOLDOWN_MS;
     }
 
-    public void registerDash() {
+    public void startDash(Direction dir, double distance) {
+        this.isDashing = true;
+        this.dashDirection = dir;
+        this.dashDistanceRemaining = distance;
         this.lastDashTime = System.currentTimeMillis();
+        // Reset action state visual
+        if (state instanceof IdleState || state instanceof MovingState) {
+            // Visual feedback handled by engine movement speed or trail later
+        }
     }
+
+    public boolean isDashing() { return isDashing; }
+
+    public void updateDash(double distanceCovered) {
+        this.dashDistanceRemaining -= distanceCovered;
+        if (this.dashDistanceRemaining <= 0) {
+            this.isDashing = false;
+            this.dashDistanceRemaining = 0;
+        }
+    }
+
+    public void stopDash() {
+        this.isDashing = false;
+        this.dashDistanceRemaining = 0;
+    }
+
+    public Direction getDashDirection() { return dashDirection; }
 
     public void changeState(ChefState s) {
         this.state = s;

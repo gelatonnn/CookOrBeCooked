@@ -123,7 +123,12 @@ public class Main {
         panel.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                controller.handleInput(e);
+                controller.keyPressed(e);
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                controller.keyReleased(e);
             }
         });
     }

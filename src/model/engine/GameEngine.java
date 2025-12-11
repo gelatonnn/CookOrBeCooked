@@ -31,9 +31,16 @@ public class GameEngine {
     private boolean isRunning = false;
     private boolean finished = false;
 
-    // MOVEMENT SETTINGS
-    // Kecepatan gerak per tick (pixel-based)
-    private static final double MOVEMENT_SPEED = 0.75;
+    // --- MOVEMENT SETTINGS ---
+    // Increased base speed (pixels per tick) for snappier feel.
+    // 3.0 px/tick * 60 ticks/sec = 180 px/sec (3 tiles/sec).
+    private static final double MOVEMENT_SPEED = 3.0;
+
+    // DASH SETTINGS
+    // 120 pixels total distance.
+    // Speed 10.0 px/tick -> 12 frames (0.2 sec).
+    private static final double DASH_SPEED = 10.0;
+    private static final double DASH_TOTAL_DIST = 120.0;
 
     // THROW SETTINGS
     private static final double THROW_DISTANCE = 3.5;
@@ -118,7 +125,7 @@ public class GameEngine {
     // --- PHYSICS & MOVEMENT ---
 
     private void updatePhysics() {
-        // Update Projectiles (Flying Items)
+        // 1. Update Projectiles (Flying Items)
         Iterator<Projectile> it = projectiles.iterator();
         while (it.hasNext()) {
             Projectile p = it.next();
@@ -126,55 +133,94 @@ public class GameEngine {
                 projectiles.remove(p);
             }
         }
+
+        // 2. Update Chefs Movement
+        for (Chef chef : chefs) {
+            updateChefPosition(chef);
+        }
     }
 
-    public void moveChef(Chef chef, Direction dir) {
+    private void updateChefPosition(Chef chef) {
         if (chef.isBusy()) return;
 
-        chef.setDirection(dir);
-
-        double dx = 0, dy = 0;
-        switch (dir) {
-            case UP -> dy = -MOVEMENT_SPEED;
-            case DOWN -> dy = MOVEMENT_SPEED;
-            case LEFT -> dx = -MOVEMENT_SPEED;
-            case RIGHT -> dx = MOVEMENT_SPEED;
-            case UP_LEFT -> { dx = -MOVEMENT_SPEED * 0.707; dy = -MOVEMENT_SPEED * 0.707; }
-            case UP_RIGHT -> { dx = MOVEMENT_SPEED * 0.707; dy = -MOVEMENT_SPEED * 0.707; }
-            case DOWN_LEFT -> { dx = -MOVEMENT_SPEED * 0.707; dy = MOVEMENT_SPEED * 0.707; }
-            case DOWN_RIGHT -> { dx = MOVEMENT_SPEED * 0.707; dy = MOVEMENT_SPEED * 0.707; }
+        // --- DASHING LOGIC ---
+        if (chef.isDashing()) {
+            double moveDist = DASH_SPEED;
+            moveChef(chef, chef.getDashDirection(), moveDist);
+            chef.updateDash(moveDist);
+            return; // Skip normal movement while dashing
         }
 
-        // Prediksi posisi baru
-        double nextX = chef.getExactX() + dx;
-        double nextY = chef.getExactY() + dy;
+        // --- NORMAL MOVEMENT LOGIC ---
+        Direction inputDir = chef.getMoveInput();
+        if (inputDir != null) {
+            // Apply speed buff if FLASH effect is active
+            double speed = MOVEMENT_SPEED;
+            if (EffectManager.getInstance().isFlash()) {
+                speed *= 1.5;
+            }
 
-        // Gerakan Independent Sumbu X (Sliding)
-        if (isValidPosition(nextX, chef.getExactY())) {
-            chef.setExactPos(nextX, chef.getExactY());
-        }
+            chef.setDirection(inputDir); // Always face movement direction
+            moveChef(chef, inputDir, speed);
 
-        // Gerakan Independent Sumbu Y (Sliding)
-        // Kita gunakan getExactX() yang baru (jika tadi berhasil gerak X)
-        if (isValidPosition(chef.getExactX(), nextY)) {
-            chef.setExactPos(chef.getExactX(), nextY);
+            // Set animation state
+            if (!(chef.getState() instanceof model.chef.states.MovingState) &&
+                    !(chef.getState() instanceof model.chef.states.CarryingState)) {
+                // Keep current state (Idle/Carrying) logic but visually valid
+            }
         }
     }
 
-    // PERBAIKAN UTAMA: Collision Detection
+    public void moveChef(Chef chef, Direction dir, double speed) {
+        double dx = 0, dy = 0;
+
+        // Normalize diagonal speed
+        double diagonalFactor = 0.7071;
+
+        switch (dir) {
+            case UP -> dy = -speed;
+            case DOWN -> dy = speed;
+            case LEFT -> dx = -speed;
+            case RIGHT -> dx = speed;
+            case UP_LEFT -> { dx = -speed * diagonalFactor; dy = -speed * diagonalFactor; }
+            case UP_RIGHT -> { dx = speed * diagonalFactor; dy = -speed * diagonalFactor; }
+            case DOWN_LEFT -> { dx = -speed * diagonalFactor; dy = speed * diagonalFactor; }
+            case DOWN_RIGHT -> { dx = speed * diagonalFactor; dy = speed * diagonalFactor; }
+        }
+
+        // Apply Movement (X Axis)
+        double nextX = chef.getExactX() + dx / 60.0; // Convert pixel speed to tile units
+        if (isValidPosition(nextX, chef.getExactY())) {
+            chef.setExactPos(nextX, chef.getExactY());
+        } else {
+            // Hit Wall X -> Stop Dash if dashing
+            if (chef.isDashing()) chef.stopDash();
+        }
+
+        // Apply Movement (Y Axis)
+        double nextY = chef.getExactY() + dy / 60.0; // Convert pixel speed to tile units
+        if (isValidPosition(chef.getExactX(), nextY)) {
+            chef.setExactPos(chef.getExactX(), nextY);
+        } else {
+            // Hit Wall Y -> Stop Dash if dashing
+            if (chef.isDashing()) chef.stopDash();
+        }
+    }
+
+    // Overload for legacy calls (if any)
+    public void moveChef(Chef chef, Direction dir) {
+        moveChef(chef, dir, MOVEMENT_SPEED);
+    }
+
     private boolean isValidPosition(double topLx, double topLy) {
-        // Anggap ukuran Chef = 1.0 (seukuran Tile)
-        // Kita buat "Collision Box" sedikit lebih kecil dari ukuran tile (padding)
-        // Agar chef bisa lewat pintu sempit atau tidak nyangkut di pojok tembok
+        // Collision Box Padding (smaller box for smoother cornering)
         double padding = 0.25;
 
-        // Titik-titik collision box (Relative terhadap Top-Left)
         double left = topLx + padding;
         double right = topLx + 1.0 - padding;
         double top = topLy + padding;
         double bottom = topLy + 1.0 - padding;
 
-        // Cek keempat sudut collision box
         return isWalkablePixel(left, top) &&
                 isWalkablePixel(right, top) &&
                 isWalkablePixel(left, bottom) &&
@@ -184,27 +230,24 @@ public class GameEngine {
     private boolean isWalkablePixel(double x, double y) {
         int tileX = (int) Math.floor(x);
         int tileY = (int) Math.floor(y);
-
         Position p = new Position(tileX, tileY);
-
         if (!world.inBounds(p)) return false;
-
-        Tile t = world.getTile(p);
-        // Stasiun dianggap tembok (tidak bisa ditembus)
-        return t.isWalkable();
+        return world.getTile(p).isWalkable();
     }
 
     public void dashChef(Chef chef) {
         if (chef.isBusy() || !chef.canDash()) return;
 
+        // Cek arah dash (prioritas input gerak, kalau diam pakai arah hadap)
+        Direction dashDir = chef.getMoveInput();
+        if (dashDir == null) dashDir = chef.getDirection();
+
         view.gui.AssetManager.getInstance().playSound("dash");
 
-        Direction dir = chef.getDirection();
-        // Dash bergerak 15x kecepatan normal secara instan tapi tetap cek collision per step
-        for (int i = 0; i < 15; i++) {
-            moveChef(chef, dir);
-        }
-        chef.registerDash();
+        // Start smooth dash state
+        chef.startDash(dashDir, DASH_TOTAL_DIST);
+
+        // Visual effect managed by Chef state/Animation
     }
 
     // --- THROW MECHANIC ---
