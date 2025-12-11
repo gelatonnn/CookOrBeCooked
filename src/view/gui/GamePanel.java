@@ -138,8 +138,11 @@ public class GamePanel extends JPanel implements Observer {
 
                 //ITEM DI LANTAI
                 if (tile instanceof WalkableTile wt && wt.getItem() != null) {
-                    drawItem(g2d, px + 25, py + 25, wt.getItem(), 50);
-                }
+                    int itemSize = 40; 
+                    int offset = (TILE_SIZE - itemSize) / 2; 
+                
+                    drawItem(g2d, px + offset, py + offset, wt.getItem(), itemSize);
+            }
             }
         }
     }
@@ -293,7 +296,13 @@ public class GamePanel extends JPanel implements Observer {
                 if (p instanceof Item item) {
                     // ... (logika nama sprite tetap sama) ...
                     String ingName = item.getName().toLowerCase();
-                    // ... switch case status item ...
+
+                    ingName += switch (item.getState()) {
+                    case COOKED -> "_cooked";
+                    case BURNED -> "_burned";
+                    case CHOPPED -> "_chopped"; // Jika ingin menampilkan potongan di piring
+                    default -> "";
+                };
 
                     BufferedImage ingImg = SpriteLibrary.getInstance().getSprite(ingName);
                     
@@ -301,7 +310,6 @@ public class GamePanel extends JPanel implements Observer {
                         // Offset sedikit agar terlihat masuk ke dalam panci/piring
                         int padding = (int)(parentSize * 0.2); 
                         g2d.drawImage(ingImg, x + padding + offsetX, y + padding + offsetY, ingSize, ingSize, null);
-                        
                         // Geser posisi untuk item berikutnya agar tidak menumpuk total
                         offsetX += (ingSize / 2);
                         if (i % 2 == 1) { 
