@@ -11,7 +11,7 @@ import model.engine.GameEngine;
 import model.world.Tile;
 import model.world.WorldMap;
 import model.world.tiles.*;
-import stations.Station;
+import stations.*;
 import utils.Position;
 import view.Observer;
 
@@ -19,6 +19,11 @@ public class GamePanel extends JPanel implements Observer {
     private final GameEngine engine;
     private final int TILE_SIZE = 60;
     private final SpinOverlay spinOverlay = new SpinOverlay();
+    
+
+    private final java.util.List<NotificationRequest> notificationQueue = new java.util.ArrayList<>();
+
+    private record NotificationRequest(int x, int y, items.core.CookingDevice device) {}
 
     private final java.util.List<NotificationRequest> notificationQueue = new java.util.ArrayList<>();
 
@@ -28,18 +33,21 @@ public class GamePanel extends JPanel implements Observer {
         this.engine = engine;
         int w = engine.getWorld().getWidth();
         int h = engine.getWorld().getHeight();
+
         this.setPreferredSize(new Dimension(w * TILE_SIZE, h * TILE_SIZE));
         this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
 
         model.engine.EffectManager.getInstance().setOnSpinStart(() -> {
-            model.engine.EffectManager.EffectType target =
-                    model.engine.EffectManager.getInstance().getPendingEffect();
+            
+            model.engine.EffectManager.EffectType target = 
+                model.engine.EffectManager.getInstance().getPendingEffect();
+            
             spinOverlay.start(target, () -> {
                 model.engine.EffectManager.getInstance().applyPendingEffect(engine);
             });
         });
-
+        
         new Timer(16, e -> {
             spinOverlay.update();
             repaint();
@@ -50,10 +58,12 @@ public class GamePanel extends JPanel implements Observer {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2d = (Graphics2D) g;
-        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+        notificationQueue.clear();
         drawWorld(g2d);
-        drawFloorItems(g2d); // Changed: Draw items from list, not tile
         drawChefs(g2d);
         drawProjectiles(g2d);
         drawAllNotifications(g2d);
@@ -99,11 +109,13 @@ public class GamePanel extends JPanel implements Observer {
         }
     }
 
-    private void drawFloorItems(Graphics2D g2d) {
-        for (GameEngine.FloorItem fi : engine.getFloorItems()) {
-            int px = (int) (fi.x * TILE_SIZE);
-            int py = (int) (fi.y * TILE_SIZE);
-            drawItem(g2d, px + 5, py + 5, fi.item, 50);
+                if (tile instanceof WalkableTile wt && wt.getItem() != null) {
+                    int itemSize = 40; 
+                    int offset = (TILE_SIZE - itemSize) / 2; 
+                
+                    drawItem(g2d, px + offset, py + offset, wt.getItem(), itemSize);
+            }
+            }
         }
     }
 
@@ -147,22 +159,29 @@ public class GamePanel extends JPanel implements Observer {
 
     private BufferedImage getStationSprite(String name, Station station) {
         SpriteLibrary sprites = SpriteLibrary.getInstance();
-        if (station instanceof stations.LuckyStation) return sprites.getSprite("lucky_station");
-        if (station instanceof stations.IngredientStorage) {
+
+        if (station instanceof stations.LuckyStation) {
+            BufferedImage img = sprites.getSprite("lucky_station");
+            return (img != null) ? img : sprites.getSprite("crate_mystery");
+        }
+
+        if (station instanceof IngredientStorage) {
             if (name.contains("pasta")) return sprites.getSprite("crate_pasta");
             if (name.contains("meat")) return sprites.getSprite("crate_meat");
             if (name.contains("tomato")) return sprites.getSprite("crate_tomato");
             if (name.contains("shrimp")) return sprites.getSprite("crate_shrimp");
             if (name.contains("fish")) return sprites.getSprite("crate_fish");
+            return sprites.getSprite("ingredient storage");
         }
         if (name.contains("cutting")) return sprites.getSprite("cutting station");
-        if (name.contains("cook")) return sprites.getSprite("cooking station");
-        if (name.contains("wash")) return sprites.getSprite("washing station");
+        if (name.contains("cook") || name.contains("stove")) return sprites.getSprite("cooking station");
+        if (name.contains("wash") || name.contains("sink")) return sprites.getSprite("washing station");
         if (name.contains("serving")) return sprites.getSprite("serving station");
         if (name.contains("trash")) return sprites.getSprite("trash station");
         if (name.contains("plate")) return sprites.getSprite("plate storage");
         if (name.contains("assembly")) return sprites.getSprite("assembly station");
-        return sprites.getSprite("counter");
+
+        return sprites.getSprite("counter"); 
     }
 
     private void drawItem(Graphics2D g2d, int x, int y, Item item, int size) {
@@ -222,7 +241,14 @@ public class GamePanel extends JPanel implements Observer {
     }
 
 
-     private void drawContainerContents(Graphics2D g2d, int x, int y, Item container, int parentSize) {
+    private void drawCookingIndicator(Graphics2D g2d, int x, int y, int size) {
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(x, y - 5, size, 5);
+        g2d.setColor(Color.RED);
+        g2d.fillRect(x, y - 5, (int)(size * (System.currentTimeMillis() % 1000) / 1000.0), 7);
+    }
+
+    private void drawContainerContents(Graphics2D g2d, int x, int y, Item container, int parentSize) {
         List<Preparable> contents = switch (container) {
             case Plate p -> p.getContents();
             case CookingDevice c -> c.getContents();
@@ -262,23 +288,18 @@ public class GamePanel extends JPanel implements Observer {
 
 
     private void drawProjectiles(Graphics2D g2d) {
-        for (GameEngine.Projectile p : engine.getProjectiles()) {
-            int x = (int) (p.getRenderX() * TILE_SIZE);
-            int y = (int) (p.getRenderY() * TILE_SIZE);
-            int size = (int) (TILE_SIZE * 0.6);
+        List<GameEngine.Projectile> projectiles = engine.getProjectiles();
+        for (GameEngine.Projectile p : projectiles) {
+            int x = (int) (p.getX() * TILE_SIZE);
+            int y = (int) (p.getY() * TILE_SIZE);
+            int size = (int) (TILE_SIZE * 0.5); // Slightly smaller in air
 
-            // Shadow on ground
-            g2d.setColor(new Color(0, 0, 0, 80));
-            // Shadow stays at target height? No, shadow stays on floor y.
-            // But we don't have exact floor Y in projectile class easily accessible for shadow,
-            // so we estimate shadow based on non-arc Y.
-            // p.getRenderY() includes arc. We want Y without arc for shadow.
-            // Simplified: Draw shadow slightly below rendered item if arc is high, or just below render.
-            // For correct look: Shadow should follow linear path, Item follows arc.
-            // But we can just draw shadow offset.
-            g2d.fillOval(x + 10, y + size + 5, size - 20, 10);
+            // Add shadow
+            g2d.setColor(new Color(0, 0, 0, 100));
+            g2d.fillOval(x + 10, y + 40, size, size / 3);
 
-            drawItem(g2d, x, y, p.getItem(), size);
+            // Draw item with a slight arc offset could be nice, but simple linear is fine
+            drawItem(g2d, x + (TILE_SIZE - size) / 2, y + (TILE_SIZE - size) / 2 - 10, p.getItem(), size);
         }
     }
     
@@ -330,6 +351,73 @@ public class GamePanel extends JPanel implements Observer {
         }
     }
 
+
+    private void drawProgressBar(Graphics2D g2d, int x, int y, float percentage, Color color) {
+        int barWidth = TILE_SIZE - 20;
+        int barHeight = 8;
+        int screenX = x + 10;
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(screenX, y, barWidth, barHeight);
+        g2d.setColor(color);
+        g2d.fillRect(screenX + 1, y + 1, (int) ((barWidth - 2) * percentage), barHeight - 2);
+    }
+
+    private void drawCookedNotification(Graphics2D g2d, int x, int y, CookingDevice device) {
+        // 1. Cek validasi: Panci kosong?
+        if (device.getContents().isEmpty())
+            return;
+
+        // 2. Ambil item pertama
+        items.core.Item firstItem = (items.core.Item) device.getContents().get(0);
+        items.core.ItemState state = firstItem.getState();
+
+        // 3. Cek Status: HANYA gambar jika sudah COOKED atau BURNED
+        if (state == items.core.ItemState.COOKED || state == items.core.ItemState.BURNED) {
+
+            BufferedImage cloud = SpriteLibrary.getInstance().getSprite("cloud");
+
+            if (cloud != null) {
+                int cloudSize = (int) (TILE_SIZE * 0.9);
+
+                int cloudX = x + (TILE_SIZE / 2);
+                int cloudY = y - (TILE_SIZE / 2);
+
+                int panelWidth = getWidth();
+                if (cloudX + cloudSize > panelWidth) {
+                    cloudX = panelWidth - cloudSize;
+                }
+
+                if (cloudY < 0) {
+                    cloudY = 0;
+                }
+
+                g2d.drawImage(cloud, cloudX, cloudY, cloudSize, cloudSize, null);
+
+                String spriteName = firstItem.getName().toLowerCase();
+                if (state == items.core.ItemState.COOKED)
+                    spriteName += "_cooked";
+                else if (state == items.core.ItemState.BURNED)
+                    spriteName += "_burned";
+
+                BufferedImage itemImg = SpriteLibrary.getInstance().getSprite(spriteName);
+
+                if (itemImg != null) {
+                    int itemSize = (int) (cloudSize * 0.55);
+
+                    int itemX = cloudX + (cloudSize - itemSize) / 2;
+                    int itemY = cloudY + (cloudSize - itemSize) / 2;
+
+                    g2d.drawImage(itemImg, itemX, itemY - 3, itemSize, itemSize, null);
+                }
+            }
+        }
+    }
+    
+    private void drawAllNotifications(Graphics2D g2d) {
+        for (NotificationRequest req : notificationQueue) {
+            drawCookedNotification(g2d, req.x, req.y, req.device);
+        }
+    }
 
     private void drawProgressBar(Graphics2D g2d, int x, int y, float percentage, Color color) {
         int barWidth = TILE_SIZE - 20;
