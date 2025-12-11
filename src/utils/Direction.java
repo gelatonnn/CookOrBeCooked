@@ -5,7 +5,6 @@ public enum Direction {
     DOWN(0, 1),
     LEFT(-1, 0),
     RIGHT(1, 0),
-    // Tambahin ENUM buat diagonal
     UP_LEFT(-1, -1),
     UP_RIGHT(1, -1),
     DOWN_LEFT(-1, 1),
@@ -17,5 +16,20 @@ public enum Direction {
     Direction(int dx, int dy) {
         this.dx = dx;
         this.dy = dy;
+    }
+
+    public double getXComponent() {
+        // Normalize diagonal vectors
+        if (dx != 0 && dy != 0) {
+            return dx * 0.7071;
+        }
+        return dx;
+    }
+
+    public double getYComponent() {
+        if (dx != 0 && dy != 0) {
+            return dy * 0.7071;
+        }
+        return dy;
     }
 }
