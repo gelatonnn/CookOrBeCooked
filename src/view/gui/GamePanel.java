@@ -25,6 +25,10 @@ public class GamePanel extends JPanel implements Observer {
 
     private record NotificationRequest(int x, int y, items.core.CookingDevice device) {}
 
+    private final java.util.List<NotificationRequest> notificationQueue = new java.util.ArrayList<>();
+
+    private record NotificationRequest(int x, int y, items.core.CookingDevice device) {}
+
     public GamePanel(GameEngine engine) {
         this.engine = engine;
         int w = engine.getWorld().getWidth();
@@ -94,6 +98,16 @@ public class GamePanel extends JPanel implements Observer {
                         }
                     }
                 }
+
+                if (tile instanceof WalkableTile wt && wt.getItem() != null) {
+                    int itemSize = 40; 
+                    int offset = (TILE_SIZE - itemSize) / 2; 
+                
+                    drawItem(g2d, px + offset, py + offset, wt.getItem(), itemSize);
+            }
+            }
+        }
+    }
 
                 if (tile instanceof WalkableTile wt && wt.getItem() != null) {
                     int itemSize = 40; 
@@ -217,6 +231,15 @@ public class GamePanel extends JPanel implements Observer {
             }
         }
     }
+    
+    
+    private void drawCookingIndicator(Graphics2D g2d, int x, int y, int size) {
+        g2d.setColor(Color.WHITE);
+        g2d.fillRect(x, y - 5, size, 5);
+        g2d.setColor(Color.RED);
+        g2d.fillRect(x, y - 5, (int) (size * (System.currentTimeMillis() % 1000) / 1000.0), 7);
+    }
+
 
     private void drawCookingIndicator(Graphics2D g2d, int x, int y, int size) {
         g2d.setColor(Color.WHITE);
@@ -325,6 +348,74 @@ public class GamePanel extends JPanel implements Observer {
             if (c.getActionProgress() > 0) {
                 drawProgressBar(g2d, px, py - 10, c.getActionProgress(), Color.GREEN);
             }
+        }
+    }
+
+
+    private void drawProgressBar(Graphics2D g2d, int x, int y, float percentage, Color color) {
+        int barWidth = TILE_SIZE - 20;
+        int barHeight = 8;
+        int screenX = x + 10;
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(screenX, y, barWidth, barHeight);
+        g2d.setColor(color);
+        g2d.fillRect(screenX + 1, y + 1, (int) ((barWidth - 2) * percentage), barHeight - 2);
+    }
+
+    private void drawCookedNotification(Graphics2D g2d, int x, int y, CookingDevice device) {
+        // 1. Cek validasi: Panci kosong?
+        if (device.getContents().isEmpty())
+            return;
+
+        // 2. Ambil item pertama
+        items.core.Item firstItem = (items.core.Item) device.getContents().get(0);
+        items.core.ItemState state = firstItem.getState();
+
+        // 3. Cek Status: HANYA gambar jika sudah COOKED atau BURNED
+        if (state == items.core.ItemState.COOKED || state == items.core.ItemState.BURNED) {
+
+            BufferedImage cloud = SpriteLibrary.getInstance().getSprite("cloud");
+
+            if (cloud != null) {
+                int cloudSize = (int) (TILE_SIZE * 0.9);
+
+                int cloudX = x + (TILE_SIZE / 2);
+                int cloudY = y - (TILE_SIZE / 2);
+
+                int panelWidth = getWidth();
+                if (cloudX + cloudSize > panelWidth) {
+                    cloudX = panelWidth - cloudSize;
+                }
+
+                if (cloudY < 0) {
+                    cloudY = 0;
+                }
+
+                g2d.drawImage(cloud, cloudX, cloudY, cloudSize, cloudSize, null);
+
+                String spriteName = firstItem.getName().toLowerCase();
+                if (state == items.core.ItemState.COOKED)
+                    spriteName += "_cooked";
+                else if (state == items.core.ItemState.BURNED)
+                    spriteName += "_burned";
+
+                BufferedImage itemImg = SpriteLibrary.getInstance().getSprite(spriteName);
+
+                if (itemImg != null) {
+                    int itemSize = (int) (cloudSize * 0.55);
+
+                    int itemX = cloudX + (cloudSize - itemSize) / 2;
+                    int itemY = cloudY + (cloudSize - itemSize) / 2;
+
+                    g2d.drawImage(itemImg, itemX, itemY - 3, itemSize, itemSize, null);
+                }
+            }
+        }
+    }
+    
+    private void drawAllNotifications(Graphics2D g2d) {
+        for (NotificationRequest req : notificationQueue) {
+            drawCookedNotification(g2d, req.x, req.y, req.device);
         }
     }
 

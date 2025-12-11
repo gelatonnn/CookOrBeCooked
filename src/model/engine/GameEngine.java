@@ -1,5 +1,7 @@
 package model.engine;
 
+import items.core.Item;
+import items.core.ItemState;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -31,20 +33,9 @@ public class GameEngine {
     private boolean isRunning = false;
     private boolean finished = false;
 
-    // --- MOVEMENT SETTINGS ---
-    // Increased base speed (pixels per tick) for snappier feel.
-    // 3.0 px/tick * 60 ticks/sec = 180 px/sec (3 tiles/sec).
-    private static final double MOVEMENT_SPEED = 3.0;
-
-    // DASH SETTINGS
-    // 120 pixels total distance.
-    // Speed 10.0 px/tick -> 12 frames (0.2 sec).
-    private static final double DASH_SPEED = 10.0;
-    private static final double DASH_TOTAL_DIST = 120.0;
-
-    // THROW SETTINGS
-    private static final double THROW_DISTANCE = 3.5;
-    private static final double THROW_SPEED = 0.25;
+    private static final double MOVEMENT_SPEED = 0.075; // Adjusted for tick rate
+    private static final double THROW_MAX_DIST = 4;
+    private static final double THROW_SPEED = 0.2;
 
     public GameEngine(WorldMap world, OrderManager orders, int stageSeconds) {
         this.world = world;
