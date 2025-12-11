@@ -9,6 +9,8 @@ public class OrderManager {
     private final List<Order> active = new ArrayList<>();
     private final int max = 3; // Maksimal order di layar
     private int score = 0;
+    private int completedOrdersCount = 0; // TAMBAHAN
+    private int failedOrdersCount = 0;
     private ScheduledFuture<?> tickTask;
     
     // --- VARIABEL BARU UNTUK SPAWN ---
@@ -33,7 +35,8 @@ public class OrderManager {
 
         for (Order o : expired) {
             System.out.println("⏰ Order #" + o.getOrderId() + " EXPIRED!");
-            deductScore(30); 
+            deductScore(30);
+            failedOrdersCount++;
         }
         active.removeIf(Order::isExpired);
 
@@ -75,6 +78,7 @@ public class OrderManager {
                 addScore(total);
                 
                 active.remove(o);
+                completedOrdersCount++;
                 System.out.println("✅ Order completed!");
                 
                 // Opsional: Reset spawn timer agar order pengganti tidak muncul instan
@@ -85,6 +89,7 @@ public class OrderManager {
         }
         deductScore(10);
         System.out.println("❌ Wrong dish served!");
+        failedOrdersCount++;
         return false;
     }
 
@@ -94,4 +99,6 @@ public class OrderManager {
     public List<Order> getActiveOrders() { return new ArrayList<>(active); }
     public int getScore() { return score; }
     public void stop() { if (tickTask != null) tickTask.cancel(true); }
+    public int getCompletedCount() { return completedOrdersCount; }
+    public int getFailedCount() { return failedOrdersCount; }
 }
