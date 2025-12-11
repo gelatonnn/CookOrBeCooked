@@ -16,15 +16,14 @@ public class Chef {
     private final String id;
     private final String name;
 
-
-    // Grid coordinates (integer) untuk interaksi stasiun
+    // Grid coordinates (integer) for station interaction
     private int x, y;
 
-    // Pixel coordinates (double) untuk gerakan halus (Top-Left)
+    // Pixel coordinates (double) for smooth movement (Top-Left)
     private double exactX, exactY;
 
-    private Direction direction; // Arah hadap (facing)
-    private Direction moveInput = null; // Arah input gerak (nullable jika diam)
+    private Direction direction; // Facing direction
+    private Direction moveInput = null; // Movement input
 
     private Item held;
     private ChefState state;
@@ -32,7 +31,7 @@ public class Chef {
 
     // --- DASH VARIABLES ---
     private long lastDashTime = 0;
-    private static final long DASH_COOLDOWN_MS = 1500; // Dikurangi sedikit biar enak
+    private static final long DASH_COOLDOWN_MS = 1500;
     private boolean isDashing = false;
     private double dashDistanceRemaining = 0;
     private Direction dashDirection;
@@ -77,10 +76,34 @@ public class Chef {
     // --- MOVEMENT INPUT ---
     public void setMoveInput(Direction dir) {
         this.moveInput = dir;
+        // Instantly update facing direction when input is received,
+        // independent of whether the chef actually moves (e.g. wall collision).
+        if (dir != null && !isBusy() && !isDashing) {
+            this.direction = dir;
+        }
     }
 
     public Direction getMoveInput() {
         return moveInput;
+    }
+
+    // Returns normalized vector (dx, dy) based on current direction
+    public double[] getFacingVector() {
+        double dx = 0, dy = 0;
+        double diag = 0.7071; // 1 / sqrt(2)
+
+        switch (direction) {
+            case UP -> dy = -1.0;
+            case DOWN -> dy = 1.0;
+            case LEFT -> dx = -1.0;
+            case RIGHT -> dx = 1.0;
+            case UP_LEFT -> { dx = -diag; dy = -diag; }
+            case UP_RIGHT -> { dx = diag; dy = -diag; }
+            case DOWN_LEFT -> { dx = -diag; dy = diag; }
+            case DOWN_RIGHT -> { dx = diag; dy = diag; }
+            default -> dy = 1.0;
+        }
+        return new double[]{dx, dy};
     }
 
     public void setPos(int x, int y) {
@@ -93,12 +116,11 @@ public class Chef {
     public void setExactPos(double x, double y) {
         this.exactX = x;
         this.exactY = y;
-        // PENTING: Koordinat grid ditentukan dari TITIK TENGAH (Center) Chef
+        // Grid coordinates determined from Center point
         this.x = (int) Math.floor(x + 0.5);
         this.y = (int) Math.floor(y + 0.5);
     }
 
-    // ... method move() lama dihapus atau dikosongkan karena logic pindah ke Engine ...
     public void move(int dx, int dy) { }
 
     // --- DASH LOGIC ---
@@ -113,10 +135,6 @@ public class Chef {
         this.dashDirection = dir;
         this.dashDistanceRemaining = distance;
         this.lastDashTime = System.currentTimeMillis();
-        // Reset action state visual
-        if (state instanceof IdleState || state instanceof MovingState) {
-            // Visual feedback handled by engine movement speed or trail later
-        }
     }
 
     public boolean isDashing() { return isDashing; }
