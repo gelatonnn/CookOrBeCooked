@@ -16,6 +16,7 @@ public class Chef {
     private final String id;
     private final String name;
 
+
     // Grid coordinates (integer) untuk interaksi stasiun
     private int x, y;
 

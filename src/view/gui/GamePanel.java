@@ -301,6 +301,8 @@ public class GamePanel extends JPanel implements Observer {
                 step
             );
 
+
+
             if (chefImg != null) {
                 g2d.drawImage(chefImg, px, py, TILE_SIZE, TILE_SIZE, null);
             } else {
