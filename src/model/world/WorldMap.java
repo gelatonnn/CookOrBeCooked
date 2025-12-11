@@ -23,26 +23,43 @@ public class WorldMap {
         setupMapResources();
 
         char[][] layout;
-        if (mapType == 1) {
-            layout = generateStaticLayout();
-        } else {
-            // Stage 2: 2 Ruangan (Medium)
-            // Stage 3: 3 Ruangan (Complex)
-            int roomCount = (mapType == 2) ? 2 : 3;
-            layout = generateRoomBasedLayout(roomCount);
-        }
+
+        // --- VALIDATION LOOP ---
+        // Ulangi generate sampai map valid (ada Assembly Station)
+        int attempts = 0;
+        do {
+            if (mapType == 1) {
+                layout = generateStaticLayout();
+            } else {
+                int roomCount = (mapType == 2) ? 2 : 3;
+                layout = generateRoomBasedLayout(roomCount);
+            }
+            attempts++;
+        } while (!isValidMap(layout) && attempts < 100);
 
         parseMap(layout);
     }
 
     public WorldMap() { this(3); }
 
+    // --- FIX 1: METHOD VALIDASI ---
+    // Memastikan minimal ada 1 Assembly Station ('A') di peta
+    private boolean isValidMap(char[][] layout) {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (layout[y][x] == 'A') return true;
+            }
+        }
+        System.out.println("⚠️ Map generation failed (No Assembly Station). Retrying...");
+        return false;
+    }
+
     // --- MAP TIPE 1: STATIC ---
     private char[][] generateStaticLayout() {
         String[] mapData = {
                 "XXXXXXXXXXXXXX",
                 "X............X",
-                "X.I.C.L.C.I..X",
+                "X.I.C.L.C.I.AX", // FIX 2: Tambahkan 'A' di pojok kanan atas
                 "X............X",
                 "X.R........R.X",
                 "X.V........V.X",
@@ -65,39 +82,34 @@ public class WorldMap {
         Random rand = new Random();
         List<Position> floors = new ArrayList<>();
 
-        // 2. Buat Ruangan Utama di Tengah (Wajib)
-        // Ukuran minimal 6x4 agar luas
+        // 2. Buat Ruangan Utama
         createRoom(layout, floors, width/2 - 3, height/2 - 2, 6, 4);
 
-        // 3. Tambah Ruangan Tambahan (Menempel pada ruangan utama)
+        // 3. Tambah Ruangan Tambahan
         for (int i = 0; i < roomAttempts; i++) {
-            // Pilih dinding acak dari lantai yang sudah ada untuk ditempel ruangan baru
             if (floors.isEmpty()) break;
             Position anchor = floors.get(rand.nextInt(floors.size()));
 
-            // Random ukuran ruangan tambahan (3x3 s/d 5x5)
             int rw = rand.nextInt(3) + 3;
             int rh = rand.nextInt(3) + 3;
 
-            // Coba expand ke 4 arah
             int dir = rand.nextInt(4);
             int rx = anchor.x, ry = anchor.y;
 
-            // Geser koordinat agar anchor menjadi titik sambung
             switch(dir) {
-                case 0 -> ry -= rh; // Atas
-                case 1 -> ry += 1;  // Bawah
-                case 2 -> rx -= rw; // Kiri
-                case 3 -> rx += 1;  // Kanan
+                case 0 -> ry -= rh;
+                case 1 -> ry += 1;
+                case 2 -> rx -= rw;
+                case 3 -> rx += 1;
             }
 
             createRoom(layout, floors, rx, ry, rw, rh);
         }
 
-        // 4. Tambahkan Kitchen Island (Pulau Meja) yang Rapi
+        // 4. Tambahkan Kitchen Island
         addStructuredIslands(layout, floors);
 
-        // 5. Identifikasi Dinding Perimeter (Hanya dinding yang nempel lantai)
+        // 5. Identifikasi Dinding Perimeter
         List<Position> wallSpots = new ArrayList<>();
         for (int y = 1; y < height - 1; y++) {
             for (int x = 1; x < width - 1; x++) {
@@ -107,23 +119,21 @@ public class WorldMap {
             }
         }
 
-        // 6. Tempatkan Station (Prioritaskan Dinding Pinggir)
+        // 6. Tempatkan Station
         placeStationsSmartly(layout, wallSpots);
 
-        // 7. Spawn Points (Cari area terbuka)
+        // 7. Spawn Points
         findSpawnPoints(layout, floors);
 
         return layout;
     }
 
     private void createRoom(char[][] layout, List<Position> floors, int x, int y, int w, int h) {
-        // Validasi agar tidak keluar peta (sisakan border 1 tile)
         if (x < 1) x = 1;
         if (y < 1) y = 1;
         if (x + w >= width - 1) w = width - 1 - x;
         if (y + h >= height - 1) h = height - 1 - y;
 
-        // Gali ruangan
         for (int i = y; i < y + h; i++) {
             for (int j = x; j < x + w; j++) {
                 if (layout[i][j] == 'X') {
@@ -136,11 +146,8 @@ public class WorldMap {
 
     private void addStructuredIslands(char[][] layout, List<Position> floors) {
         Random rand = new Random();
-        // Cari area 2x2 lantai kosong untuk ditaruh meja besar
-        // Scan area tengah peta
         for (int y = 3; y < height - 3; y++) {
             for (int x = 3; x < width - 3; x++) {
-                // Cek blok 3x3 (agar ada jalan di sekeliling pulau)
                 boolean areaClear = true;
                 for (int dy = -1; dy <= 2; dy++) {
                     for (int dx = -1; dx <= 2; dx++) {
@@ -149,15 +156,12 @@ public class WorldMap {
                 }
 
                 if (areaClear && rand.nextDouble() > 0.6) {
-                    // Buat pulau meja 2x2 atau 2x1
                     layout[y][x] = 'A';
                     layout[y][x+1] = 'A';
-                    // 50% chance jadi 2x2
                     if (rand.nextBoolean()) {
                         layout[y+1][x] = 'A';
                         layout[y+1][x+1] = 'A';
                     }
-                    // Skip beberapa langkah agar pulau tidak nempel
                     x += 3;
                 }
             }
@@ -165,36 +169,31 @@ public class WorldMap {
     }
 
     private void placeStationsSmartly(char[][] layout, List<Position> wallSpots) {
-        // Kelompokkan Station
+        // FIX 3: Tambahkan 'A' ke dalam daftar essential (Wajib)
         List<Character> essential = new ArrayList<>();
-        essential.add('L'); // Lucky Station
-        for (int i=0; i<5; i++) essential.add('I'); // Bahan
-        for (int i=0; i<4; i++) essential.add('R'); // Masak
-        essential.add('C'); essential.add('C'); essential.add('C'); // Potong
-        essential.add('W'); essential.add('W'); // Cuci
-        essential.add('S'); essential.add('S'); // Serve
-        essential.add('P'); // Piring
-        essential.add('T'); // Sampah
+        essential.add('A'); // <--- PENTING: Assembly Station Wajib Ada
+        essential.add('L');
+        for (int i=0; i<5; i++) essential.add('I');
+        for (int i=0; i<4; i++) essential.add('R');
+        essential.add('C'); essential.add('C'); essential.add('C');
+        essential.add('W'); essential.add('W');
+        essential.add('S'); essential.add('S');
+        essential.add('P');
+        essential.add('T');
 
-        // Acak urutan dinding agar tidak bias ke pojok kiri atas
         Collections.shuffle(wallSpots);
 
         // Isi station utama
         for (Character c : essential) {
             if (wallSpots.isEmpty()) break;
-
-            // Cari dinding yang punya akses lantai bagus
-            // Kita prioritaskan dinding lurus (bukan pojok mati)
             Position bestSpot = wallSpots.remove(0);
             layout[bestSpot.y][bestSpot.x] = c;
         }
 
-        // Sisa dinding yang kosong diubah menjadi Meja ('A') agar terlihat menyatu
-        // TAPI sisakan beberapa sebagai Tembok ('X') untuk variasi tekstur
+        // Isi sisa dinding
         Random rand = new Random();
         for (Position p : wallSpots) {
             if (layout[p.y][p.x] == 'X') {
-                // 70% jadi meja agar terlihat seperti dapur profesional yang penuh counter
                 if (rand.nextDouble() > 0.3) {
                     layout[p.y][p.x] = 'A';
                 }
@@ -203,14 +202,12 @@ public class WorldMap {
     }
 
     private void findSpawnPoints(char[][] layout, List<Position> floors) {
-        // Cari 2 titik lantai yang berjauhan
         List<Position> candidates = new ArrayList<>();
         for (Position p : floors) {
             if (layout[p.y][p.x] == '.') candidates.add(p);
         }
 
         if (candidates.size() >= 2) {
-            // Ambil ujung awal dan ujung akhir list (karena floors terisi urut saat digging)
             layout[candidates.get(0).y][candidates.get(0).x] = 'V';
             layout[candidates.get(candidates.size()-1).y][candidates.get(candidates.size()-1).x] = 'V';
         }
@@ -223,9 +220,6 @@ public class WorldMap {
         if (layout[y][x+1] == '.') return true;
         return false;
     }
-
-    // ... (Setup resources, Parse map, dan Getters TETAP SAMA) ...
-    // Pastikan metode setupMapResources, parseMap, dan getter-getter lainnya tidak dihapus/diubah logic-nya.
 
     private void setupMapResources() {
         ingredientQueue.clear();

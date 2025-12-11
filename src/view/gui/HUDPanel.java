@@ -11,16 +11,13 @@ import view.Observer;
 
 public class HUDPanel extends JPanel implements Observer {
     private final GameEngine engine;
-
-    // Geser sedikit ke kiri (lebih dekat ke tombol Help) agar ruang tengah lebih luas
     private final int INFO_OFFSET_X = 240;
-
     private Font pixelFont;
     private Font pixelFontSmall;
 
     public HUDPanel(GameEngine engine, Runnable onExitClicked) {
         this.engine = engine;
-        int mapWidth = engine.getWorld().getWidth() * 60; // 840 px
+        int mapWidth = engine.getWorld().getWidth() * 60;
 
         // Load Font
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 12f);
@@ -35,13 +32,21 @@ public class HUDPanel extends JPanel implements Observer {
         // 1. Recipe
         JButton btnRecipe = createPixelButton("RECIPE", new Color(41, 173, 255));
         btnRecipe.setBounds(10, 15, 110, 40);
-        btnRecipe.addActionListener(e -> showModelessDialog("RECIPE BOOK", getRecipeContent()));
+        // FIX: Kembalikan fokus ke game setelah dialog ditutup
+        btnRecipe.addActionListener(e -> {
+            showModelessDialog("RECIPE BOOK", getRecipeContent());
+            this.getParent().requestFocusInWindow();
+        });
         this.add(btnRecipe);
 
         // 2. Help
         JButton btnHelp = createPixelButton("HELP", new Color(0, 228, 54));
         btnHelp.setBounds(130, 15, 100, 40);
-        btnHelp.addActionListener(e -> showModelessDialog("HOW TO PLAY", getHelpContent()));
+        // FIX: Kembalikan fokus ke game setelah dialog ditutup
+        btnHelp.addActionListener(e -> {
+            showModelessDialog("HOW TO PLAY", getHelpContent());
+            this.getParent().requestFocusInWindow();
+        });
         this.add(btnHelp);
 
         // 3. Exit
@@ -53,6 +58,11 @@ public class HUDPanel extends JPanel implements Observer {
 
             if (confirm == JOptionPane.YES_OPTION) {
                 if (onExitClicked != null) onExitClicked.run();
+            } else {
+                // --- FIX UTAMA DISINI ---
+                // Jika user pilih NO, paksa fokus kembali ke Parent (GamePanelContainer)
+                // agar keyboard controller aktif lagi.
+                this.getParent().requestFocusInWindow();
             }
         });
         this.add(btnExit);
@@ -121,13 +131,18 @@ public class HUDPanel extends JPanel implements Observer {
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // --- FIX PENTING: Mencegah tombol mencuri fokus keyboard ---
+        btn.setFocusable(false);
+        // -----------------------------------------------------------
+
         return btn;
     }
 
     private void showModelessDialog(String title, String content) {
         Window parentWindow = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(parentWindow, title);
-        dialog.setModal(false);
+        dialog.setModal(true); // Ubah jadi true agar game pause saat baca help
 
         JTextArea textArea = new JTextArea(content);
         textArea.setEditable(false);
@@ -211,7 +226,7 @@ public class HUDPanel extends JPanel implements Observer {
 
     private void drawScore(Graphics2D g) {
         int score = engine.getOrders().getScore();
-        int xPos = INFO_OFFSET_X; // Rata kiri dengan Timer
+        int xPos = INFO_OFFSET_X;
 
         g.setColor(new Color(255, 204, 170));
         g.setFont(pixelFontSmall);
@@ -225,24 +240,21 @@ public class HUDPanel extends JPanel implements Observer {
     private void drawOrders(Graphics2D g) {
         List<Order> orders = engine.getOrders().getActiveOrders();
 
-        int startX = getWidth() - 130; // Mulai dari sebelah kiri tombol Exit (120 + 10)
+        int startX = getWidth() - 130;
         int y = 10;
 
-        // --- FIX: PERKECIL KARTU AGAR MUAT 3 ---
-        int cardWidth = 115; // Sebelumnya 130
+        int cardWidth = 115;
         int cardHeight = 60;
-        int gap = 5;         // Sebelumnya 10
+        int gap = 5;
 
         for (Order o : orders) {
             startX -= (cardWidth + gap);
 
-            // Cek Overlap: Batas aman adalah INFO_OFFSET_X + lebar teks timer/score (~80px)
-            // Jadi batas aman sekitar x = 320
             if (startX < (INFO_OFFSET_X + 80)) {
                 break;
             }
 
-            // 1. Kartu Order
+            // Kartu
             g.setColor(new Color(255, 241, 232));
             g.fillRect(startX, y, cardWidth, cardHeight);
 
@@ -250,9 +262,9 @@ public class HUDPanel extends JPanel implements Observer {
             g.setStroke(new BasicStroke(3));
             g.drawRect(startX, y, cardWidth, cardHeight);
 
-            // 2. Icon
+            // Icon
             int iconSize = 24;
-            int iconX = startX + cardWidth - iconSize - 5; // Margin dikit
+            int iconX = startX + cardWidth - iconSize - 5;
 
             try {
                 String spriteName = o.getRecipe().getName().toLowerCase();
@@ -262,19 +274,19 @@ public class HUDPanel extends JPanel implements Observer {
                 }
             } catch (Exception e) {}
 
-            // 3. Nama
+            // Nama
             g.setColor(Color.BLACK);
-            g.setFont(pixelFontSmall.deriveFont(6f)); // Font lebih kecil (6pt) agar muat
+            g.setFont(pixelFontSmall.deriveFont(6f));
 
             String name = o.getRecipe().getName().toUpperCase().replace("PASTA ", "");
-            if (name.length() > 9) name = name.substring(0, 9); // Potong nama jika kepanjangan
+            if (name.length() > 9) name = name.substring(0, 9);
 
             g.drawString(name, startX + 5, y + 25);
 
-            // 4. Bar Waktu
+            // Bar Waktu
             int maxTime = 90;
             int timeLeft = o.getTimeLeft();
-            int maxBarWidth = cardWidth - 10; // Margin 5px kiri-kanan
+            int maxBarWidth = cardWidth - 10;
             int currentBarWidth = (int) ((double) timeLeft / maxTime * maxBarWidth);
 
             Color barColor;
@@ -282,16 +294,13 @@ public class HUDPanel extends JPanel implements Observer {
             else if (timeLeft > 15) barColor = new Color(255, 163, 0);
             else barColor = new Color(255, 0, 77);
 
-            // Background Bar
             g.setColor(new Color(100, 100, 100));
             g.fillRect(startX + 5, y + 38, maxBarWidth, 10);
 
-            // Isi Bar
             g.setColor(barColor);
             if (currentBarWidth < 0) currentBarWidth = 0;
             g.fillRect(startX + 5, y + 38, currentBarWidth, 10);
 
-            // Border Bar
             g.setColor(Color.BLACK);
             g.setStroke(new BasicStroke(2));
             g.drawRect(startX + 5, y + 38, maxBarWidth, 10);
