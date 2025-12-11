@@ -269,13 +269,11 @@ public class GamePanel extends JPanel implements Observer {
         for (GameEngine.Projectile p : projectiles) {
             int x = (int) (p.getX() * TILE_SIZE);
             int y = (int) (p.getY() * TILE_SIZE);
-            int size = (int) (TILE_SIZE * 0.5); // Slightly smaller in air
+            int size = (int) (TILE_SIZE * 0.5);
 
-            // Add shadow
             g2d.setColor(new Color(0, 0, 0, 100));
             g2d.fillOval(x + 10, y + 40, size, size / 3);
 
-            // Draw item with a slight arc offset could be nice, but simple linear is fine
             drawItem(g2d, x + (TILE_SIZE - size) / 2, y + (TILE_SIZE - size) / 2 - 10, p.getItem(), size);
         }
     }
@@ -287,11 +285,10 @@ public class GamePanel extends JPanel implements Observer {
         for (int i = 0; i < chefs.size(); i++) {
             Chef c = chefs.get(i);
 
-            // USE EXACT PIXEL COORDINATES from Model
             int px = (int) (c.getExactX() * TILE_SIZE);
             int py = (int) (c.getExactY() * TILE_SIZE);
 
-            int step = (int)(System.currentTimeMillis() / 200) % 2; // Simple animation loop
+            int step = (int)(System.currentTimeMillis() / 200) % 2; 
 
             BufferedImage chefImg = sprites.getChefSprite(
                 i, 
@@ -311,8 +308,6 @@ public class GamePanel extends JPanel implements Observer {
             }
 
             g2d.setColor(new Color(255, 255, 255, 50));
-            // Adjust direction indicator logic to use new Double positions logic roughly
-            // Actually it just needs px/py
             int dirX = px + TILE_SIZE / 2 + (c.getDirection().dx * (TILE_SIZE/3)) - 5;
             int dirY = py + TILE_SIZE / 2 + (c.getDirection().dy * (TILE_SIZE/3)) - 5;
             g2d.fillOval(dirX, dirY, 10, 10);
@@ -399,6 +394,6 @@ public class GamePanel extends JPanel implements Observer {
 
     @Override
     public void update() {
-        // No longer relying on this for render loop, but kept for logic events if needed
+        repaint();
     }
 }
