@@ -15,24 +15,22 @@ public class HUDPanel extends JPanel implements Observer {
     private Font pixelFont;
     private Font pixelFontSmall;
 
+    // Simpan referensi tombol agar bisa dipindah saat resize
+    private JButton btnExit;
+
     public HUDPanel(GameEngine engine, Runnable onExitClicked) {
         this.engine = engine;
-        int mapWidth = engine.getWorld().getWidth() * 60;
 
-        // Load Font
+        // Font
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 12f);
         this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 8f);
 
-        this.setPreferredSize(new Dimension(mapWidth, 80));
         this.setBackground(new Color(30, 30, 30));
-        this.setLayout(null);
-
-        // --- TOMBOL ---
+        this.setLayout(null); // Absolute positioning
 
         // 1. Recipe
         JButton btnRecipe = createPixelButton("RECIPE", new Color(41, 173, 255));
         btnRecipe.setBounds(10, 15, 110, 40);
-        // FIX: Kembalikan fokus ke game setelah dialog ditutup
         btnRecipe.addActionListener(e -> {
             showModelessDialog("RECIPE BOOK", getRecipeContent());
             this.getParent().requestFocusInWindow();
@@ -42,7 +40,6 @@ public class HUDPanel extends JPanel implements Observer {
         // 2. Help
         JButton btnHelp = createPixelButton("HELP", new Color(0, 228, 54));
         btnHelp.setBounds(130, 15, 100, 40);
-        // FIX: Kembalikan fokus ke game setelah dialog ditutup
         btnHelp.addActionListener(e -> {
             showModelessDialog("HOW TO PLAY", getHelpContent());
             this.getParent().requestFocusInWindow();
@@ -50,8 +47,9 @@ public class HUDPanel extends JPanel implements Observer {
         this.add(btnHelp);
 
         // 3. Exit
-        JButton btnExit = createPixelButton("EXIT", new Color(255, 0, 77));
-        btnExit.setBounds(mapWidth - 120, 15, 100, 40);
+        btnExit = createPixelButton("EXIT", new Color(255, 0, 77));
+        // Posisi awal, nanti diupdate di doLayout
+        btnExit.setBounds(800, 15, 100, 40);
         btnExit.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Quit to Main Menu?", "Exit Game", JOptionPane.YES_NO_OPTION);
@@ -59,14 +57,22 @@ public class HUDPanel extends JPanel implements Observer {
             if (confirm == JOptionPane.YES_OPTION) {
                 if (onExitClicked != null) onExitClicked.run();
             } else {
-                // --- FIX UTAMA DISINI ---
-                // Jika user pilih NO, paksa fokus kembali ke Parent (GamePanelContainer)
-                // agar keyboard controller aktif lagi.
                 this.getParent().requestFocusInWindow();
             }
         });
         this.add(btnExit);
     }
+
+    // --- FIX LAYOUT SAAT FULL SCREEN ---
+    @Override
+    public void doLayout() {
+        super.doLayout();
+        // Update posisi tombol Exit agar selalu di pojok kanan layar
+        if (btnExit != null) {
+            btnExit.setBounds(getWidth() - 120, 15, 100, 40);
+        }
+    }
+    // -----------------------------------
 
     private Font loadPixelFont(String path, float size) {
         try {
@@ -131,18 +137,14 @@ public class HUDPanel extends JPanel implements Observer {
         btn.setFocusPainted(false);
         btn.setContentAreaFilled(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // --- FIX PENTING: Mencegah tombol mencuri fokus keyboard ---
         btn.setFocusable(false);
-        // -----------------------------------------------------------
-
         return btn;
     }
 
     private void showModelessDialog(String title, String content) {
         Window parentWindow = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(parentWindow, title);
-        dialog.setModal(true); // Ubah jadi true agar game pause saat baca help
+        dialog.setModal(true);
 
         JTextArea textArea = new JTextArea(content);
         textArea.setEditable(false);
@@ -215,10 +217,8 @@ public class HUDPanel extends JPanel implements Observer {
         else g.setColor(Color.WHITE);
 
         int xPos = INFO_OFFSET_X;
-
         g.setFont(pixelFontSmall);
         g.drawString("TIME", xPos, 20);
-
         g.setFont(pixelFont);
         String text = String.format("%02d:%02d", time / 60, time % 60);
         g.drawString(text, xPos, 35);
@@ -227,11 +227,9 @@ public class HUDPanel extends JPanel implements Observer {
     private void drawScore(Graphics2D g) {
         int score = engine.getOrders().getScore();
         int xPos = INFO_OFFSET_X;
-
         g.setColor(new Color(255, 204, 170));
         g.setFont(pixelFontSmall);
         g.drawString("SCORE", xPos, 55);
-
         g.setColor(new Color(255, 236, 39));
         g.setFont(pixelFont);
         g.drawString(String.valueOf(score), xPos, 70);
@@ -242,19 +240,16 @@ public class HUDPanel extends JPanel implements Observer {
 
         int startX = getWidth() - 130;
         int y = 10;
-
         int cardWidth = 115;
         int cardHeight = 60;
         int gap = 5;
 
         for (Order o : orders) {
             startX -= (cardWidth + gap);
-
             if (startX < (INFO_OFFSET_X + 80)) {
                 break;
             }
 
-            // Kartu
             g.setColor(new Color(255, 241, 232));
             g.fillRect(startX, y, cardWidth, cardHeight);
 
@@ -262,28 +257,21 @@ public class HUDPanel extends JPanel implements Observer {
             g.setStroke(new BasicStroke(3));
             g.drawRect(startX, y, cardWidth, cardHeight);
 
-            // Icon
             int iconSize = 24;
             int iconX = startX + cardWidth - iconSize - 5;
 
             try {
                 String spriteName = o.getRecipe().getName().toLowerCase();
                 Image icon = SpriteLibrary.getInstance().getSprite(spriteName);
-                if (icon != null) {
-                    g.drawImage(icon, iconX, y + 8, iconSize, iconSize, null);
-                }
+                if (icon != null) g.drawImage(icon, iconX, y + 8, iconSize, iconSize, null);
             } catch (Exception e) {}
 
-            // Nama
             g.setColor(Color.BLACK);
             g.setFont(pixelFontSmall.deriveFont(6f));
-
             String name = o.getRecipe().getName().toUpperCase().replace("PASTA ", "");
             if (name.length() > 9) name = name.substring(0, 9);
-
             g.drawString(name, startX + 5, y + 25);
 
-            // Bar Waktu
             int maxTime = 90;
             int timeLeft = o.getTimeLeft();
             int maxBarWidth = cardWidth - 10;

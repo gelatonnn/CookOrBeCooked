@@ -20,12 +20,8 @@ public class Main {
     private static JPanel gameContainerPanel;
     private static GameEngine engine;
 
-    // PROGRESS TRACKER (Level 1 terbuka default)
     private static int unlockedStage = 1;
     private static boolean isCurrentGameMultiplayer = false;
-
-    private static final int WINDOW_WIDTH = 800;
-    private static final int WINDOW_HEIGHT = 600;
 
     public static void main(String[] args) {
         ItemRegistryInit.registerAll();
@@ -38,9 +34,9 @@ public class Main {
     private static void setupMainWindow() {
         window = new JFrame("CookOrBeCooked");
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        window.setMinimumSize(new Dimension(800,600));
+        window.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        window.setUndecorated(true);
         window.setResizable(true);
-        window.setLocationRelativeTo(null);
         cardLayout = new CardLayout();
         mainContainer = new JPanel(cardLayout);
         window.add(mainContainer);
@@ -49,27 +45,25 @@ public class Main {
     private static void showHomeScreen() {
         AssetManager.getInstance().playBGM("bgm_menu");
         HomePanel homePanel = new HomePanel(
-                () -> showStageSelect(false), // Singleplayer
-                () -> showStageSelect(true)   // Multiplayer
+                () -> showStageSelect(false),
+                () -> showStageSelect(true)
         );
         mainContainer.add(homePanel, "HOME_SCREEN");
         cardLayout.show(mainContainer, "HOME_SCREEN");
         window.setVisible(true);
     }
 
-    // -- PANEL STAGE SELECT --
     private static void showStageSelect(boolean isMultiplayer) {
         isCurrentGameMultiplayer = isMultiplayer;
         StageSelectPanel stagePanel = new StageSelectPanel(
                 unlockedStage,
-                (config) -> initAndStartGame(config), // onStageSelected
-                () -> cardLayout.show(mainContainer, "HOME_SCREEN") // onBack
+                (config) -> initAndStartGame(config),
+                () -> cardLayout.show(mainContainer, "HOME_SCREEN")
         );
         mainContainer.add(stagePanel, "STAGE_SELECT");
         cardLayout.show(mainContainer, "STAGE_SELECT");
     }
 
-    // Start Game dengan Config
     private static void initAndStartGame(GameConfig config) {
         AssetManager.getInstance().playBGM("bgm_game");
 
@@ -78,14 +72,13 @@ public class Main {
         WorldMap world = new WorldMap();
         OrderManager orders = new OrderManager(false);
 
-        // Buat engine dengan config stage yang dipilih
         engine = new GameEngine(world, orders, config);
 
         engine.setOnGameEnd(() -> {
-            boolean win = engine.isWin();
+            boolean win = false;
+
             int finalScore = orders.getScore();
 
-            // LOGIC UNLOCK LEVEL
             if (win) {
                 if (config.stageName.equals("Stage 1") && unlockedStage < 2) unlockedStage = 2;
                 else if (config.stageName.equals("Stage 2") && unlockedStage < 3) unlockedStage = 3;
@@ -94,7 +87,6 @@ public class Main {
             SwingUtilities.invokeLater(() -> showGameOverScreen(finalScore, win));
         });
 
-        // Spawn Logic
         List<Position> spawns = world.getSpawnPoints();
         int x1 = 2, y1 = 3;
         int x2 = 11, y2 = 6;
@@ -107,35 +99,31 @@ public class Main {
         Chef c1 = new Chef("c1", name1, x1, y1);
         Chef c2 = new Chef("c2", name2, x2, y2);
 
-        // SELALU tambahkan kedua chef ke engine
         engine.addChef(c1);
         engine.addChef(c2);
 
         GameController controller = new GameController(engine, isCurrentGameMultiplayer);
-        gameContainerPanel = new JPanel(new BorderLayout());
-        GamePanel gamePanel = new GamePanel(engine);
 
-        HUDPanel hudPanel = new HUDPanel(engine, () -> {
+        // --- PERUBAHAN: HAPUS HUDPanel, Pindah Logic Exit ke GamePanel ---
+        gameContainerPanel = new JPanel(new BorderLayout());
+
+        GamePanel gamePanel = new GamePanel(engine, () -> {
             stopGame();
             AssetManager.getInstance().playBGM("bgm_menu");
-            showStageSelect(isCurrentGameMultiplayer); // Back to Stage Select
-
-            window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-            window.setLocationRelativeTo(null);
+            showStageSelect(isCurrentGameMultiplayer);
         });
 
         engine.addObserver(gamePanel);
-        engine.addObserver(hudPanel);
 
-        gameContainerPanel.add(hudPanel, BorderLayout.NORTH);
+        // Tambahkan GamePanel langsung ke Center (Tanpa HUD Panel di North)
         gameContainerPanel.add(gamePanel, BorderLayout.CENTER);
+        // ------------------------------------------------------------------
 
-        setupKeyListener(gameContainerPanel, controller);
+        setupKeyListener(gamePanel, controller);
 
         mainContainer.add(gameContainerPanel, "GAME_SCREEN");
         cardLayout.show(mainContainer, "GAME_SCREEN");
-        window.pack();
-        window.setLocationRelativeTo(null);
+
         gameContainerPanel.requestFocusInWindow();
 
         new Thread(engine::start).start();
@@ -144,10 +132,8 @@ public class Main {
     private static void setupKeyListener(JPanel panel, GameController controller) {
         panel.setFocusable(true);
         panel.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) { controller.keyPressed(e); }
-            @Override
-            public void keyReleased(KeyEvent e) { controller.keyReleased(e); }
+            @Override public void keyPressed(KeyEvent e) { controller.keyPressed(e); }
+            @Override public void keyReleased(KeyEvent e) { controller.keyReleased(e); }
         });
     }
 
@@ -155,17 +141,11 @@ public class Main {
         AssetManager.getInstance().stopBGM();
         stopGame();
 
-        window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-        window.setLocationRelativeTo(null);
-
         GameOverPanel gameOverPanel = new GameOverPanel(finalScore, isWin, (Runnable) () -> {
             AssetManager.getInstance().playBGM("bgm_menu");
             showStageSelect(isCurrentGameMultiplayer);
-
-            window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-            window.setLocationRelativeTo(null);
         });
-        
+
         mainContainer.add(gameOverPanel, "GAME_OVER_SCREEN");
         cardLayout.show(mainContainer, "GAME_OVER_SCREEN");
     }
