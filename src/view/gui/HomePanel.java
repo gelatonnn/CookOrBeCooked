@@ -4,71 +4,130 @@ import java.awt.*;
 import javax.swing.*;
 
 public class HomePanel extends JPanel {
-    // Runnable adalah "tugas" yang akan dijalankan saat tombol Play ditekan
-    private final Runnable onPlayClicked;
+    private final Runnable onStartSingle;
+    private final Runnable onStartMulti;
 
-    public HomePanel(Runnable onPlayClicked) {
-        this.onPlayClicked = onPlayClicked;
+    public HomePanel(Runnable onStartSingle, Runnable onStartMulti) {
+        this.onStartSingle = onStartSingle;
+        this.onStartMulti = onStartMulti;
+        
+        setLayout(new GridBagLayout());
+        setBackground(new Color(30, 30, 30));
 
-        // Setup Tampilan Dasar
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS)); // Layout vertikal
-        this.setBackground(new Color(30, 30, 30)); // Latar belakang gelap
-        // Beri jarak (padding) di sekeliling panel
-        this.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.insets = new Insets(10, 0, 5, 0); // Jarak antar elemen
 
-        // 1. Judul Game
-        JLabel titleLabel = new JLabel("Nimonscooked");
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 64));
-        titleLabel.setForeground(new Color(255, 215, 0)); // Warna Emas
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        // --- TITLE ---
+        JLabel title = new JLabel("NIMONSCOOKED");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 48));
+        title.setForeground(Color.WHITE);
+        add(title, gbc);
 
-        // 2. Tombol Play
-        JButton playButton = createStyledButton("PLAY GAME");
-        playButton.addActionListener(e -> startGame());
+        JLabel subtitle = new JLabel("Map Type B: Pasta");
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        subtitle.setForeground(Color.LIGHT_GRAY);
+        gbc.gridy++;
+        gbc.insets = new Insets(0, 0, 30, 0); // Jarak agak jauh ke tombol
+        add(subtitle, gbc);
 
-        // 3. Tombol Exit
-        JButton exitButton = createStyledButton("EXIT");
-        exitButton.addActionListener(e -> System.exit(0)); // Keluar aplikasi
+        // --- BUTTONS ---
+        gbc.insets = new Insets(10, 0, 10, 0); // Reset jarak
 
-        // Menambahkan komponen ke panel dengan jarak (rigid area)
-        this.add(Box.createVerticalGlue()); // Dorong ke tengah vertikal
-        this.add(titleLabel);
-        this.add(Box.createRigidArea(new Dimension(0, 50))); // Jarak 50px
-        this.add(playButton);
-        this.add(Box.createRigidArea(new Dimension(0, 20))); // Jarak 20px
-        this.add(exitButton);
-        this.add(Box.createVerticalGlue()); // Dorong ke tengah vertikal
-    }
+        // 1. Singleplayer
+        gbc.gridy++;
+        JButton btnSingle = createButton("SINGLE PLAYER (Switch Chef)");
+        btnSingle.addActionListener(e -> {
+            if (onStartSingle != null) onStartSingle.run();
+        });
+        add(btnSingle, gbc);
 
-    private void startGame() {
-        System.out.println("Starting Game...");
-        // Jalankan tugas yang diberikan oleh Main.java (yaitu: ganti layar & mulai engine)
-        if (onPlayClicked != null) {
-            onPlayClicked.run();
-        }
-    }
+        // 2. Multiplayer
+        gbc.gridy++;
+        JButton btnMulti = createButton("MULTIPLAYER (Local Co-op)");
+        btnMulti.setBackground(new Color(255, 140, 0)); // Warna Oranye agar beda
+        btnMulti.addActionListener(e -> {
+            if (onStartMulti != null) onStartMulti.run();
+        });
+        add(btnMulti, gbc);
 
-    // Helper method untuk membuat tombol yang terlihat lebih bagus
-    private JButton createStyledButton(String text) {
-        JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        button.setMaximumSize(new Dimension(300, 60)); // Ukuran tetap
-        button.setBackground(new Color(70, 130, 180)); // Biru Steel
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false); // Hilangkan kotak fokus saat diklik
-        button.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Ubah kursor jadi tangan
+        // 3. How to Play (Tetap Ada)
+        gbc.gridy++;
+        JButton btnHelp = createButton("HOW TO PLAY");
+        btnHelp.setBackground(new Color(46, 204, 113)); // Warna Hijau
+        btnHelp.addActionListener(e -> showModelessDialog("Cara Bermain", getHelpContent()));
+        add(btnHelp, gbc);
 
-        // Efek Hover Sederhana
-        button.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(100, 149, 237)); // Lebih terang saat hover
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(new Color(70, 130, 180)); // Kembali normal
+        // 4. Exit (Tetap Ada)
+        gbc.gridy++;
+        JButton btnExit = createButton("EXIT GAME");
+        btnExit.setBackground(new Color(200, 60, 60)); // Warna Merah
+        btnExit.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this, 
+                "Keluar dari permainan?", "Exit", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                System.exit(0);
             }
         });
-        return button;
+        add(btnExit, gbc);
+    }
+
+    private JButton createButton(String text) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        btn.setBackground(new Color(100, 149, 237));
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setPreferredSize(new Dimension(320, 45)); // Ukuran tombol konsisten
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    // --- Helper Dialog (Sama seperti di HUDPanel) ---
+    private void showModelessDialog(String title, String content) {
+        Window parentWindow = SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentWindow, title);
+        dialog.setModal(true); // Modal true agar fokus ke help dulu
+        
+        JTextArea textArea = new JTextArea(content);
+        textArea.setEditable(false);
+        textArea.setMargin(new Insets(10, 10, 10, 10));
+        textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        
+        dialog.add(new JScrollPane(textArea));
+        dialog.setSize(400, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    private String getHelpContent() {
+        return """
+            === CARA BERMAIN NIMONSCOOKED ===
+            
+            [MODE SINGLE PLAYER]
+            W, A, S, D  : Gerak Chef
+            E           : Interaksi (Potong/Cuci)
+            F           : Ambil / Taruh (Otomatis)
+            T           : Lempar
+            C / TAB     : Ganti Chef
+            
+            [MODE MULTIPLAYER]
+            Player 1 (Kiri):
+               Gerak    : W, A, S, D
+               Interaksi: V
+               Ambil/Taruh: B
+               Lempar   : F
+            
+            Player 2 (Kanan):
+               Gerak    : Panah (Arrow Keys)
+               Interaksi: K
+               Ambil/Taruh: L
+               Lempar   : ; (Titik Koma)
+            
+            [TUJUAN]
+            Masak pesanan sesuai resep dan sajikan 
+            sebelum waktu habis!
+            """;
     }
 }

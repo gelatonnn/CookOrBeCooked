@@ -3,7 +3,6 @@ package model.engine;
 import java.util.ArrayList;
 import java.util.List;
 import model.chef.Chef;
-import model.chef.states.IdleState;
 import model.orders.OrderManager;
 import model.world.Tile;
 import model.world.WorldMap;
@@ -20,6 +19,7 @@ public class GameEngine {
     private final GameClock clock;
     private final List<Chef> chefs;
     private final List<Observer> observers = new ArrayList<>();
+    private Runnable onGameEnd;
 
     private boolean isRunning = false;
     private boolean finished = false;
@@ -42,6 +42,10 @@ public class GameEngine {
 
     public List<Chef> getChefs() {
         return new ArrayList<>(chefs);
+    }
+
+    public void setOnGameEnd(Runnable onGameEnd) {
+        this.onGameEnd = onGameEnd;
     }
 
     // --- GAME LOOP ---
@@ -83,8 +87,15 @@ public class GameEngine {
         clock.tick();
         orders.tick();
 
-        if (clock.isOver()) {
-            System.out.println("TIME'S UP!");
+        // LOGIKA GAME OVER OTOMATIS
+        if (clock.isOver() && isRunning) {
+            System.out.println("TIME'S UP! Game Ending...");
+            stop(); // Matikan loop engine
+            
+            // Panggil callback jika ada
+            if (onGameEnd != null) {
+                onGameEnd.run();
+            }
         }
     }
 
@@ -118,6 +129,8 @@ public class GameEngine {
             return;
         }
 
+        view.gui.AssetManager.getInstance().playSound("dash");
+
         System.out.println("Chef triggered Dash!");
         Direction dir = chef.getDirection();
 
@@ -146,6 +159,7 @@ public class GameEngine {
             if (wt.getItem() != null && chef.getHeldItem() == null) {
                 chef.setHeldItem(wt.pick());
                 chef.changeState(new model.chef.states.CarryingState());
+                view.gui.AssetManager.getInstance().playSound("pickup");
                 System.out.println("Picked up " + chef.getHeldItem().getName() + " from floor.");
             }
         }
@@ -158,7 +172,7 @@ public class GameEngine {
         if (st == null) return;
 
         if (st instanceof stations.ServingStation) {
-            processServing(chef);
+            processServing(chef, st);
             return;
         }
 
@@ -172,7 +186,7 @@ public class GameEngine {
         if (st == null) return;
 
         if (st instanceof stations.ServingStation) {
-            processServing(chef);
+            processServing(chef, st);
             return;
         }
 
@@ -182,6 +196,7 @@ public class GameEngine {
     public void throwItem(Chef chef) {
         if (chef.isBusy() || chef.getHeldItem() == null) return;
 
+        view.gui.AssetManager.getInstance().playSound("throw");
         // FIX (Retained): Throw item onto the map
         Position p = chef.getPos();
         Direction d = chef.getDirection();
@@ -206,22 +221,42 @@ public class GameEngine {
         chef.throwItem(world.getWallMask());
     }
 
-    private void processServing(Chef chef) {
+    // Update method ini di GameEngine.java
+    private void processServing(Chef chef, Station station) {
         if (chef.getHeldItem() == null) return;
 
+        // Pastikan item adalah Dish (bukan ingredient mentah)
         if (chef.getHeldItem() instanceof items.dish.DishBase dish) {
-            model.recipes.DishType type = dish.getRecipe().getType();
-            boolean success = orders.submitDish(type);
+            
+            // 1. Cek validitas order
+            boolean success = orders.submitDish(dish.getRecipe().getType());
+
+            // 2. Apapun hasilnya (Sukses/Gagal), makanan harus HILANG dari tangan chef
+            // Sesuai spec: "dimakan Kak Jendra (Hilang)"
+            chef.setHeldItem(null); 
+            chef.changeState(new model.chef.states.IdleState());
 
             if (success) {
-                System.out.println("✅ ORDER COMPLETED! +Points");
-                chef.setHeldItem(null);
-                chef.changeState(new IdleState());
+                System.out.println("✅ ORDER COMPLETED!");
+                view.gui.AssetManager.getInstance().playSound("serve");
             } else {
-                System.out.println("❌ WRONG ORDER! Penalty");
+                System.out.println("❌ WRONG ORDER! Dish discarded.");
+                view.gui.AssetManager.getInstance().playSound("trash"); // Sound effect fail
             }
-        } else {
-            System.out.println("⚠️ Item ini bukan masakan jadi (Dish)!");
+
+            // 3. Munculkan Dirty Plate (Logic Gameplay Anda)
+            // Baik sukses atau gagal, piring kotor harus tetap dikembalikan
+            if (station instanceof stations.ServingStation ss) {
+                // Cek apakah station kosong sebelum menaruh piring kotor
+                if (ss.peek() == null) {
+                    ss.receiveDirtyPlate();
+                    System.out.println("🍽️ Dirty plate appeared at Serving Station");
+                } else {
+                    // Jika station penuh (misal spam serving), piring kotor hilang (dianulir)
+                    // atau bisa ditambahkan logika antrian piring kotor jika mau lebih kompleks
+                    System.out.println("⚠️ Serving station full, dirty plate lost.");
+                }
+            }
         }
     }
 

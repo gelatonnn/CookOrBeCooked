@@ -1,7 +1,7 @@
 package controller.commands;
 
-import model.engine.GameEngine;
 import model.chef.Chef;
+import model.engine.GameEngine;
 import model.world.WorldMap;
 
 public class ThrowCommand implements Command {

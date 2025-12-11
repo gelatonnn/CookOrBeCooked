@@ -1,42 +1,37 @@
 package stations;
 
 import items.core.Item;
+import items.utensils.DirtyPlate;
 import items.utensils.Plate;
-import items.core.ItemState;
 
 public class WashingStation extends BaseStation {
+    
     @Override
-    public String getName() { return "Washing Station"; }
+    public String getName() {
+        return "Washing Station"; 
+    }
 
     @Override
     public boolean canPlace(Item item) {
-        if (item instanceof Plate plate) {
-            return !plate.isClean();
-        }
-        return false;
+        // FIX: Izinkan DirtyPlate DAN Plate biasa (bersih/kotor)
+        // Ini penting agar saat selesai mencuci, piring bersih bisa ditaruh kembali di sini.
+        return item instanceof DirtyPlate || item instanceof Plate;
     }
 
     @Override
     public boolean place(Item item) {
         if (!canPlace(item)) {
-            if (item instanceof Plate plate && plate.isClean()) {
-                System.out.println("❌ This plate is already clean!");
-            } else {
-                System.out.println("❌ Only dirty plates can be washed here!");
-            }
+            System.out.println("❌ Washing Station: Hanya menerima piring!");
             return false;
         }
-
-        System.out.println("📍 Dirty plate placed in washing station");
-        return super.place(item);
-    }
-
-    @Override
-    public Item pick() {
-        Item item = super.pick();
-        if (item instanceof Plate plate && plate.isClean()) {
-            System.out.println("✅ Picked up clean plate");
+        
+        // Debug info
+        String status = "Bersih";
+        if (item instanceof DirtyPlate || (item instanceof Plate p && !p.isClean())) {
+            status = "Kotor";
         }
-        return item;
+        System.out.println("🍽️ Piring (" + status + ") diletakkan di Washing Station.");
+        
+        return super.place(item);
     }
 }

@@ -2,7 +2,6 @@ package model.chef.states;
 
 import items.core.Item;
 import items.core.Preparable;
-import items.core.CookingDevice;
 import items.utensils.Plate;
 import model.chef.*;
 import stations.Station;
@@ -31,6 +30,7 @@ public class CarryingState implements ChefState {
         // Special handling for Assembly/Plating
         if (st.getName().toLowerCase().contains("assembly")) {
             handlePlating(chef, st, held);
+            view.gui.AssetManager.getInstance().playSound("place");
             return;
         }
 
@@ -48,6 +48,7 @@ public class CarryingState implements ChefState {
         if (st.place(held)) {
             chef.setHeldItem(null);
             chef.changeState(new IdleState());
+            view.gui.AssetManager.getInstance().playSound("place");
             System.out.println("✅ Placed " + held.getName() + " on " + st.getName());
         }
     }

@@ -1,41 +1,41 @@
 package view.gui;
 
+import java.awt.*;
+import java.util.List;
+import javax.swing.*;
 import model.engine.GameEngine;
 import model.orders.Order;
 import view.Observer;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
-
 public class HUDPanel extends JPanel implements Observer {
     private final GameEngine engine;
-    private final int INFO_OFFSET_X = 360; 
+    private final int INFO_OFFSET_X = 240; 
 
     public HUDPanel(GameEngine engine, Runnable onExitClicked) {
         this.engine = engine;
-        this.setPreferredSize(new Dimension(800, 80));
-        this.setBackground(new Color(40, 40, 40));
-        this.setLayout(null); 
+        int mapWidth = engine.getWorld().getWidth() * 60;
 
-        // --- 1. Tombol Recipe ---
+        this.setPreferredSize(new Dimension(mapWidth, 80));
+        this.setBackground(new Color(40, 40, 40));
+        this.setLayout(null);
+
+        // Tombol Recipe
         JButton btnRecipe = createSmallButton("Recipe");
         btnRecipe.setBounds(10, 10, 100, 30); 
         btnRecipe.addActionListener(e -> showModelessDialog("Recipe Book", getRecipeContent()));
         this.add(btnRecipe);
 
-        // --- 2. Tombol How To Play ---
+        // Tombol Help
         JButton btnHelp = createSmallButton("Help");
         btnHelp.setBounds(120, 10, 100, 30);
         btnHelp.addActionListener(e -> showModelessDialog("How to Play", getHelpContent()));
         this.add(btnHelp);
 
-        // --- 3. Tombol Exit ---
+        // Tombol Exit
         JButton btnExit = createSmallButton("Exit");
         btnExit.setBounds(10, 45, 210, 25); 
         btnExit.setBackground(new Color(200, 60, 60)); 
         btnExit.addActionListener(e -> {
-            // Khusus Exit tetap pakai Modal (Blocking) karena mau keluar
             int confirm = JOptionPane.showConfirmDialog(this, 
                 "Are you sure you want to quit to Main Menu?", 
                 "Exit Game", JOptionPane.YES_NO_OPTION);
@@ -47,19 +47,12 @@ public class HUDPanel extends JPanel implements Observer {
         this.add(btnExit);
     }
 
-    // --- Helper untuk membuat JDialog Non-Modal (Game Tetap Jalan) ---
     private void showModelessDialog(String title, String content) {
-        // Cari Window utama (JFrame) sebagai parent
         Window parentWindow = SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(parentWindow, title);
-        
-        // PENTING 1: Set Modal ke FALSE agar game tidak berhenti
         dialog.setModal(false); 
-        
-        // PENTING 2: Agar dialog tidak mencuri fokus keyboard (WASD tetap jalan di game)
         dialog.setFocusableWindowState(false); 
 
-        // Isi konten teks
         JTextArea textArea = new JTextArea(content);
         textArea.setEditable(false);
         textArea.setMargin(new Insets(10, 10, 10, 10));
@@ -67,7 +60,7 @@ public class HUDPanel extends JPanel implements Observer {
         
         dialog.add(new JScrollPane(textArea));
         dialog.setSize(400, 300);
-        dialog.setLocationRelativeTo(this); // Muncul di tengah
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
 
@@ -88,18 +81,31 @@ public class HUDPanel extends JPanel implements Observer {
 
     private String getHelpContent() {
         return """
-            CONTROLS:
-            [W, A, S, D] : Move Chef
-            [P] : Pick Up Item
-            [E] : Interact / Use Station
-            [O] : Place Item Down
-            [T] : Throw Item
-            [TAB] : Switch Chef
+            === CARA BERMAIN NIMONSCOOKED ===
             
-            TIPS:
-            - Masak Pasta di Boiling Pot (Panci).
-            - Masak Daging/Ikan di Frying Pan (Wajan).
-            - Jangan lupa angkat sebelum GOSONG!
+            [MODE SINGLE PLAYER]
+            W, A, S, D  : Gerak Chef
+            E           : Interaksi (Potong/Cuci)
+            F           : Ambil / Taruh (Otomatis)
+            T           : Lempar
+            C / TAB     : Ganti Chef
+            
+            [MODE MULTIPLAYER]
+            Player 1 (Kiri):
+               Gerak    : W, A, S, D
+               Interaksi: V
+               Ambil/Taruh: B
+               Lempar   : F
+            
+            Player 2 (Kanan):
+               Gerak    : Panah (Arrow Keys)
+               Interaksi: K
+               Ambil/Taruh: L
+               Lempar   : ; (Titik Koma)
+            
+            [TUJUAN]
+            Masak pesanan sesuai resep dan sajikan 
+            sebelum waktu habis!
             """;
     }
 
@@ -109,11 +115,7 @@ public class HUDPanel extends JPanel implements Observer {
         btn.setBackground(new Color(100, 149, 237));
         btn.setForeground(Color.WHITE);
         btn.setFocusPainted(false);
-        
-        // PENTING 3: Tombol tidak boleh fokus, agar WASD langsung jalan 
-        // tanpa harus klik peta lagi setelah klik tombol.
         btn.setFocusable(false); 
-        
         btn.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
@@ -146,7 +148,7 @@ public class HUDPanel extends JPanel implements Observer {
 
     private void drawScore(Graphics2D g) {
         int score = engine.getOrders().getScore();
-        int xPos = INFO_OFFSET_X + 150;
+        int xPos = INFO_OFFSET_X + 110;
 
         g.setColor(new Color(255, 215, 0)); 
         g.setFont(new Font("Segoe UI", Font.BOLD, 32));
@@ -158,29 +160,72 @@ public class HUDPanel extends JPanel implements Observer {
         g.drawString("SCORE", xPos + 2, 20);
     }
 
+    // --- FIX BAGIAN INI ---
     private void drawOrders(Graphics2D g) {
         List<Order> orders = engine.getOrders().getActiveOrders();
         int startX = getWidth() - 20;
         int y = 10;
-        int cardWidth = 140;
+
+        int cardWidth = 110;
         int cardHeight = 60;
 
         for (Order o : orders) {
             startX -= (cardWidth + 10);
+            
+            // 1. Gambar Kotak Kartu
             g.setColor(new Color(240, 240, 240));
             g.fillRoundRect(startX, y, cardWidth, cardHeight, 15, 15);
-            g.setColor(Color.BLACK);
-            g.setFont(new Font("Segoe UI", Font.BOLD, 14));
-            String name = o.getRecipe().getName();
-            if (name.length() > 14) name = name.substring(0, 14) + "..";
-            g.drawString(name, startX + 10, y + 25);
+            
+            // 2. Icon Makanan (Jika ada)
+            int iconSize = 24; // Perkecil icon jadi 24px (sebelumnya 30)
+            int iconX = startX + cardWidth - iconSize - 5; // Posisi Icon di Kanan
+
             try {
                 String spriteName = o.getRecipe().getName().toLowerCase();
                 Image icon = SpriteLibrary.getInstance().getSprite(spriteName);
-                if (icon != null) g.drawImage(icon, startX + cardWidth - 40, y + 20, 32, 32, null);
-            } catch (Exception e) {}
-            g.setColor(new Color(50, 200, 50));
-            g.fillRect(startX + 10, y + 45, cardWidth - 50, 6);
+                if (icon != null) {
+                    g.drawImage(icon, iconX, y + 5, iconSize, iconSize, null);
+                }
+            } catch (Exception e) {
+            }
+
+            // 3. Teks Nama Makanan
+            g.setColor(Color.BLACK);
+            g.setFont(new Font("Segoe UI", Font.BOLD, 13));
+            
+            String name = o.getRecipe().getName().toUpperCase();
+            
+            if (name.length() > 9) {
+                name = name.substring(0, 9) + "..";
+            }
+            
+            g.drawString(name, startX + 8, y + 22);
+            
+
+            // --- 4. BAR WAKTU DINAMIS ---
+            int maxTime = 90; // Sesuai setting OrderManager di Main.java (90 detik)
+            int timeLeft = o.getTimeLeft();
+            
+            // Hitung lebar bar agar pas di dalam kartu (padding 10px kiri kanan)
+            int maxBarWidth = cardWidth - 20; 
+            int currentBarWidth = (int) ((double) timeLeft / maxTime * maxBarWidth);
+            
+            // Warna berubah sesuai urgensi
+            if (timeLeft > 30) g.setColor(new Color(46, 204, 113)); // Hijau
+            else if (timeLeft > 15) g.setColor(new Color(241, 196, 15)); // Kuning
+            else g.setColor(new Color(231, 76, 60)); // Merah
+
+            // Gambar Bar Background (Abu-abu tipis)
+            g.setColor(new Color(200, 200, 200));
+            g.fillRect(startX + 10, y + 40, maxBarWidth, 8);
+
+            // Gambar Bar Waktu (Berwarna)
+            if (timeLeft > 30) g.setColor(new Color(46, 204, 113));
+            else if (timeLeft > 15) g.setColor(new Color(241, 196, 15));
+            else g.setColor(new Color(231, 76, 60));
+            
+            if (currentBarWidth < 0) currentBarWidth = 0;
+            g.fillRect(startX + 10, y + 40, currentBarWidth, 8);
         }
     }
 
