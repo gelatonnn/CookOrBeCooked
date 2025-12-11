@@ -81,7 +81,7 @@ public class HomePanel extends JPanel {
         };
 
         btn.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        btn.setPreferredSize(new Dimension(320, 50));
+        btn.setPreferredSize(new Dimension(320, 55));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);

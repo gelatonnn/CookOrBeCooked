@@ -158,7 +158,7 @@ public class Main {
         window.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         window.setLocationRelativeTo(null);
 
-        GameOverPanel gameOverPanel = new GameOverPanel(finalScore, (Runnable) () -> {
+        GameOverPanel gameOverPanel = new GameOverPanel(finalScore, isWin, (Runnable) () -> {
             AssetManager.getInstance().playBGM("bgm_menu");
             showStageSelect(isCurrentGameMultiplayer);
 
