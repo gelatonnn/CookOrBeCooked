@@ -1,6 +1,8 @@
 package view.gui;
 
 import java.awt.*;
+import java.io.IOException;
+import java.io.InputStream;
 import model.engine.EffectManager.EffectType;
 
 public class SpinOverlay {
@@ -8,9 +10,9 @@ public class SpinOverlay {
     private float scrollY = 0;
     private float speed = 0;
     private final int BOX_SIZE = 120; // Tinggi per item
-    
+
     private final EffectType[] reel = EffectType.values();
-    
+
     private enum State { ACCELERATE, SPINNING, DECELERATE, SNAPPING, SHOW_RESULT, FINISHED }
     private State state = State.FINISHED;
     private EffectType target;
@@ -18,8 +20,30 @@ public class SpinOverlay {
 
     private long spinStartTime;
     private long resultStartTime;
-    private final long SPIN_DURATION_FAST = 3000; 
-    private final long RESULT_DURATION = 2500; 
+    private final long SPIN_DURATION_FAST = 3000;
+    private final long RESULT_DURATION = 2500;
+
+    private Font pixelFont;
+    private Font pixelFontLarge;
+    private Font pixelFontSmall;
+
+    public SpinOverlay() {
+        // Load Fonts di Constructor
+        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 12f);
+        this.pixelFontLarge = loadPixelFont("/resources/fonts/PressStart2P.ttf", 20f);
+        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 8f);
+    }
+
+    private Font loadPixelFont(String path, float size) {
+        try {
+            InputStream is = getClass().getResourceAsStream(path);
+            if (is == null) return new Font("Monospaced", Font.BOLD, (int)size);
+            Font font = Font.createFont(Font.TRUETYPE_FONT, is);
+            return font.deriveFont(size);
+        } catch (FontFormatException | IOException e) {
+            return new Font("Monospaced", Font.BOLD, (int)size);
+        }
+    }
 
     public void start(EffectType target, Runnable onFinish) {
         this.active = true;
@@ -29,7 +53,7 @@ public class SpinOverlay {
         this.speed = 0;
         this.state = State.ACCELERATE;
         this.spinStartTime = System.currentTimeMillis();
-        
+
         AssetManager.getInstance().playSound("spin");
     }
 
@@ -44,22 +68,20 @@ public class SpinOverlay {
                 if (speed >= 50.0f) state = State.SPINNING;
             }
             case SPINNING -> {
-                if (elapsed > SPIN_DURATION_FAST) { 
+                if (elapsed > SPIN_DURATION_FAST) {
                     state = State.DECELERATE;
                 }
             }
             case DECELERATE -> {
-                speed *= 0.96f; 
+                speed *= 0.96f;
                 if (speed < 20.0f) {
-                    // Cek jarak ke target untuk mulai snapping
                     int targetIndex = getTargetIndex();
                     float targetY = targetIndex * BOX_SIZE;
                     float currentPosInReel = scrollY % (reel.length * BOX_SIZE);
-                    
-                    float dist = targetY - currentPosInReel;
-                    if (dist < 0) dist += (reel.length * BOX_SIZE); // Wrap logic
 
-                    // Mulai snapping jika sudah dekat dan pelan
+                    float dist = targetY - currentPosInReel;
+                    if (dist < 0) dist += (reel.length * BOX_SIZE);
+
                     if (dist < 150 && speed < 15.0f) {
                         state = State.SNAPPING;
                     }
@@ -70,23 +92,18 @@ public class SpinOverlay {
                 float currentMod = scrollY % totalHeight;
                 int targetIndex = getTargetIndex();
                 float targetY = targetIndex * BOX_SIZE;
-                
+
                 float diff = targetY - currentMod;
-                // Logika wrap-around agar mencari jalan terdekat
                 if (diff < -totalHeight / 2f) diff += totalHeight;
                 if (diff > totalHeight / 2f) diff -= totalHeight;
-                
-                // Gerakan halus ke titik target
-                scrollY += diff * 0.15f; 
-                
-                // Jika sudah sangat dekat (kurang dari 1 pixel), paksa berhenti
+
+                scrollY += diff * 0.15f;
+
                 if (Math.abs(diff) < 1.0f) {
-                    scrollY = targetY; // Kunci posisi visual
-                    
+                    scrollY = targetY;
                     state = State.SHOW_RESULT;
                     resultStartTime = System.currentTimeMillis();
-                    
-                    AssetManager.getInstance().stopBGM(); 
+                    AssetManager.getInstance().stopBGM();
                     AssetManager.getInstance().playSound("win");
                 }
             }
@@ -98,7 +115,7 @@ public class SpinOverlay {
                 }
             }
         }
-        
+
         if (state != State.SNAPPING && state != State.SHOW_RESULT) {
             scrollY += speed;
         }
@@ -114,8 +131,13 @@ public class SpinOverlay {
     public void draw(Graphics2D g2d, int screenWidth, int screenHeight) {
         if (!active) return;
 
-        g2d.setColor(new Color(0, 0, 0, 180));
+        // Overlay Gelap Pixelated
+        g2d.setColor(new Color(0, 0, 0, 200));
         g2d.fillRect(0, 0, screenWidth, screenHeight);
+
+        // Setup Rendering Hints
+        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
         int cx = screenWidth / 2;
         int cy = screenHeight / 2;
@@ -128,34 +150,43 @@ public class SpinOverlay {
     }
 
     private void drawSlotMachine(Graphics2D g2d, int cx, int cy) {
-        int w = 220;
-        int h = 220;
+        int w = 240;
+        int h = 240;
+        int border = 10;
 
-        // Frame
-        g2d.setColor(new Color(218, 165, 32));
-        g2d.fillRoundRect(cx - w/2 - 10, cy - h/2 - 10, w + 20, h + 20, 25, 25);
+        // 1. Frame Luar (Emas Retro)
+        g2d.setColor(new Color(255, 163, 0)); // Oranye Emas
+        g2d.fillRect(cx - w/2 - border, cy - h/2 - border, w + border*2, h + border*2);
+
+        // Border Hitam Tebal
+        g2d.setColor(Color.BLACK);
+        g2d.setStroke(new BasicStroke(4));
+        g2d.drawRect(cx - w/2 - border, cy - h/2 - border, w + border*2, h + border*2);
+
+        // Highlight/Shadow Frame
+        g2d.setColor(new Color(255, 236, 39)); // Highlight Kuning
+        g2d.fillRect(cx - w/2 - border, cy - h/2 - border, w + border*2, 4);
+        g2d.setColor(new Color(171, 82, 54)); // Shadow Coklat
+        g2d.fillRect(cx - w/2 - border, cy + h/2 + border - 4, w + border*2, 4);
+
+        // 2. Jendela Slot (Putih)
         g2d.setColor(Color.WHITE);
         g2d.fillRect(cx - w/2, cy - h/2, w, h);
-        
-        // Clip Area (Agar gambar tidak keluar kotak)
+        g2d.setColor(Color.BLACK);
+        g2d.drawRect(cx - w/2, cy - h/2, w, h);
+
+        // --- GAMBAR REEL ---
         Shape oldClip = g2d.getClip();
         g2d.setClip(cx - w/2, cy - h/2, w, h);
 
         int totalReelHeight = reel.length * BOX_SIZE;
         float renderY = scrollY % totalReelHeight;
 
-        // --- FIX VISUAL LOOP ---
-        // Render dari index minus agar yang dari atas terlihat masuk
         for (int i = -reel.length; i < reel.length * 2; i++) {
-            // Handle index negatif agar tetap valid (0..length-1)
             int index = (i % reel.length + reel.length) % reel.length;
             EffectType type = reel[index];
-            
-            // FIX POSISI: Hapus offset -BOX_SIZE/2f yang bikin meleset
-            // Rumus: Titik Tengah + (Urutan * Ukuran) - Posisi Scroll Saat Ini
             float itemY = cy + (i * BOX_SIZE) - renderY;
-            
-            // Skip jika jauh diluar layar (Optimization)
+
             if (itemY < cy - h || itemY > cy + h) continue;
 
             drawEffectIcon(g2d, type, cx, (int)itemY, 90);
@@ -163,95 +194,117 @@ public class SpinOverlay {
 
         g2d.setClip(oldClip);
 
-        // Garis Penunjuk (Merah)
-        g2d.setColor(new Color(220, 20, 60));
-        g2d.setStroke(new BasicStroke(4));
-        g2d.drawLine(cx - w/2, cy, cx + w/2, cy); // Garis pas di tengah
-        
-        // Teks Header
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        // 3. Garis Penunjuk (Segitiga Merah Pixel)
+        g2d.setColor(new Color(255, 0, 77)); // Merah Pixel
+
+        // Kiri
+        int[] xL = {cx - w/2 - 20, cx - w/2, cx - w/2 - 20};
+        int[] yL = {cy - 10, cy, cy + 10};
+        g2d.fillPolygon(xL, yL, 3);
+
+        // Kanan
+        int[] xR = {cx + w/2 + 20, cx + w/2, cx + w/2 + 20};
+        int[] yR = {cy - 10, cy, cy + 10};
+        g2d.fillPolygon(xR, yR, 3);
+
+        // Garis Tengah Transparan
+        g2d.setColor(new Color(255, 0, 77, 100));
+        g2d.drawLine(cx - w/2, cy, cx + w/2, cy);
+
+        // 4. Teks Judul
+        g2d.setColor(new Color(255, 204, 170)); // Krem
+        g2d.setFont(pixelFontLarge);
         String txt = "LUCKY SPIN!";
-        g2d.drawString(txt, cx - g2d.getFontMetrics().stringWidth(txt)/2, cy - h/2 - 30);
+        g2d.drawString(txt, cx - g2d.getFontMetrics().stringWidth(txt)/2, cy - h/2 - 40);
     }
 
     private void drawResultCard(Graphics2D g2d, int cx, int cy) {
-        int cardW = 550; // Lebar kartu diperbesar
-        int cardH = 320;
+        int cardW = 600;
+        int cardH = 350;
+        int border = 6;
 
-        // Background Putih
+        // 1. Kartu Background (Putih)
         g2d.setColor(Color.WHITE);
-        g2d.fillRoundRect(cx - cardW/2, cy - cardH/2, cardW, cardH, 30, 30);
-        
-        // Border Emas
-        g2d.setColor(new Color(255, 215, 0)); 
-        g2d.setStroke(new BasicStroke(5));
-        g2d.drawRoundRect(cx - cardW/2, cy - cardH/2, cardW, cardH, 30, 30);
+        g2d.fillRect(cx - cardW/2, cy - cardH/2, cardW, cardH);
 
-        // Header
-        g2d.setColor(new Color(40, 40, 40));
-        g2d.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        String title = "Kamu Mendapatkan:";
+        // 2. Border Emas Tebal
+        g2d.setColor(new Color(255, 163, 0));
+        g2d.setStroke(new BasicStroke(border));
+        g2d.drawRect(cx - cardW/2, cy - cardH/2, cardW, cardH);
+
+        // 3. Border Luar Hitam
+        g2d.setColor(Color.BLACK);
+        g2d.setStroke(new BasicStroke(4));
+        g2d.drawRect(cx - cardW/2 - border/2, cy - cardH/2 - border/2, cardW + border, cardH + border);
+
+        // 4. Header "YOU GOT:"
+        g2d.setColor(new Color(41, 173, 255)); // Biru Muda
+        g2d.setFont(pixelFontLarge);
+        String title = "YOU GOT:";
         g2d.drawString(title, cx - g2d.getFontMetrics().stringWidth(title)/2, cy - 100);
 
-        // Icon Besar di Tengah
-        drawEffectIcon(g2d, target, cx, cy - 30, 100);
+        // 5. Icon Besar
+        drawEffectIcon(g2d, target, cx, cy - 20, 100);
 
-        // Nama Efek
+        // 6. Nama Efek
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        g2d.setFont(pixelFont);
         String name = target.name().replace("_", " ");
-        g2d.drawString(name, cx - g2d.getFontMetrics().stringWidth(name)/2, cy + 50);
+        g2d.drawString(name, cx - g2d.getFontMetrics().stringWidth(name)/2, cy + 60);
 
-        // Deskripsi Detail
+        // 7. Deskripsi (Font Kecil)
         g2d.setColor(Color.DARK_GRAY);
-        g2d.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        g2d.setFont(pixelFontSmall);
         String desc = getEffectDescription(target);
-        
-        // Text Wrapping sederhana (center align)
-        FontMetrics fm = g2d.getFontMetrics();
-        int descY = cy + 80;
-        // Jika teks kepanjangan, split manual (opsional, disini asumsi muat satu baris panjang)
-        g2d.drawString(desc, cx - fm.stringWidth(desc)/2, descY);
+        g2d.drawString(desc, cx - g2d.getFontMetrics().stringWidth(desc)/2, cy + 90);
     }
 
     private void drawEffectIcon(Graphics2D g, EffectType type, int x, int y, int size) {
         Color c = switch(type) {
-            case FLASH -> new Color(255, 223, 0);   
-            case DRUNK -> new Color(138, 43, 226);  
-            case DOUBLE_MONEY -> new Color(0, 200, 83); 
-            case HELLS_KITCHEN -> new Color(213, 0, 0); 
-            case MAGIC_SPONGE -> new Color(0, 176, 255); 
+            case FLASH -> new Color(255, 236, 39);   // Kuning PICO-8
+            case DRUNK -> new Color(131, 118, 156);  // Ungu PICO-8
+            case DOUBLE_MONEY -> new Color(0, 228, 54); // Hijau PICO-8
+            case HELLS_KITCHEN -> new Color(255, 0, 77); // Merah PICO-8
+            case MAGIC_SPONGE -> new Color(41, 173, 255); // Biru PICO-8
         };
-        
-        // Kotak Warna
+
+        // Kotak Warna Dasar
         g.setColor(c);
-        g.fillRoundRect(x - size/2, y - size/2, size, size, 15, 15);
+        g.fillRect(x - size/2, y - size/2, size, size);
+
+        // Border Hitam
         g.setColor(Color.BLACK);
-        g.setStroke(new BasicStroke(2));
-        g.drawRoundRect(x - size/2, y - size/2, size, size, 15, 15);
-        
+        g.setStroke(new BasicStroke(4));
+        g.drawRect(x - size/2, y - size/2, size, size);
+
+        // Efek Bevel (Highlight & Shadow)
+        g.setColor(new Color(255, 255, 255, 100));
+        g.fillRect(x - size/2 + 4, y - size/2 + 4, size - 8, 4); // Highlight Atas
+
         // Simbol Unicode
         g.setColor(Color.BLACK);
-        g.setFont(new Font("Segoe UI Emoji", Font.BOLD, size/2));
+        // Pakai font monospaced biasa untuk simbol unicode karena font pixel mungkin gak support emoji
+        g.setFont(new Font("Monospaced", Font.BOLD, size/2));
+
         String symbol = switch(type) {
             case FLASH -> "⚡";
-            case DRUNK -> "🥴";
+            case DRUNK -> "😵";
             case DOUBLE_MONEY -> "$";
             case HELLS_KITCHEN -> "🔥";
             case MAGIC_SPONGE -> "✨";
         };
+
         FontMetrics fm = g.getFontMetrics();
         g.drawString(symbol, x - fm.stringWidth(symbol)/2, y + fm.getAscent()/2 - 5);
     }
 
     private String getEffectDescription(EffectType type) {
         return switch(type) {
-            case FLASH -> "Kecepatan lari meningkat & Dash tanpa cooldown! (15s)";
-            case DRUNK -> "Oops! Kontrol arah chef menjadi terbalik. (10s)";
-            case DOUBLE_MONEY -> "Cuan Time! Setiap pesanan bernilai 2x lipat. (20s)";
-            case HELLS_KITCHEN -> "Bencana! Satu masakan yang sedang dimasak langsung GOSONG.";
-            case MAGIC_SPONGE -> "Cling! Semua piring kotor di peta menjadi bersih seketika.";
+            case FLASH -> "SPEED UP & NO DASH COOLDOWN! (15s)";
+            case DRUNK -> "OOPS! CONTROLS ARE INVERTED. (10s)";
+            case DOUBLE_MONEY -> "DOUBLE SCORE FOR EVERY ORDER! (20s)";
+            case HELLS_KITCHEN -> "OH NO! ONE DISH IS INSTANTLY BURNED.";
+            case MAGIC_SPONGE -> "MAGIC! ALL DIRTY PLATES ARE CLEANED.";
         };
     }
 }

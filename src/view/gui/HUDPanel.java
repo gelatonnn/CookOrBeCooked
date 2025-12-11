@@ -12,16 +12,15 @@ import view.Observer;
 public class HUDPanel extends JPanel implements Observer {
     private final GameEngine engine;
 
-    // --- UBAH POSISI INFO ---
-    // Tombol Help berakhir di x=230. Kita beri jarak 20px.
-    private final int INFO_OFFSET_X = 250;
+    // Geser sedikit ke kiri (lebih dekat ke tombol Help) agar ruang tengah lebih luas
+    private final int INFO_OFFSET_X = 240;
 
     private Font pixelFont;
     private Font pixelFontSmall;
 
     public HUDPanel(GameEngine engine, Runnable onExitClicked) {
         this.engine = engine;
-        int mapWidth = engine.getWorld().getWidth() * 60;
+        int mapWidth = engine.getWorld().getWidth() * 60; // 840 px
 
         // Load Font
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 12f);
@@ -45,7 +44,7 @@ public class HUDPanel extends JPanel implements Observer {
         btnHelp.addActionListener(e -> showModelessDialog("HOW TO PLAY", getHelpContent()));
         this.add(btnHelp);
 
-        // 3. Exit (Ujung Kanan)
+        // 3. Exit
         JButton btnExit = createPixelButton("EXIT", new Color(255, 0, 77));
         btnExit.setBounds(mapWidth - 120, 15, 100, 40);
         btnExit.addActionListener(e -> {
@@ -186,7 +185,6 @@ public class HUDPanel extends JPanel implements Observer {
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
-        // Border Bawah HUD
         g2d.setColor(Color.BLACK);
         g2d.setStroke(new BasicStroke(4));
         g2d.drawLine(0, getHeight(), getWidth(), getHeight());
@@ -198,18 +196,14 @@ public class HUDPanel extends JPanel implements Observer {
 
     private void drawTimer(Graphics2D g) {
         int time = engine.getClock().getTimeRemaining();
-
-        if (time <= 30) g.setColor(new Color(255, 0, 77)); // Merah
+        if (time <= 30) g.setColor(new Color(255, 0, 77));
         else g.setColor(Color.WHITE);
 
         int xPos = INFO_OFFSET_X;
 
-        // Baris 1: TIME
-        // Label Kecil di atas
         g.setFont(pixelFontSmall);
         g.drawString("TIME", xPos, 20);
 
-        // Angka Besar di bawah Label
         g.setFont(pixelFont);
         String text = String.format("%02d:%02d", time / 60, time % 60);
         g.drawString(text, xPos, 35);
@@ -217,40 +211,34 @@ public class HUDPanel extends JPanel implements Observer {
 
     private void drawScore(Graphics2D g) {
         int score = engine.getOrders().getScore();
+        int xPos = INFO_OFFSET_X; // Rata kiri dengan Timer
 
-        // X Posisi SAMA dengan Timer (agar rata kiri vertikal)
-        int xPos = INFO_OFFSET_X;
-
-        // Baris 2: SCORE (Di bawah Timer)
-
-        // Label Kecil
-        g.setColor(new Color(255, 204, 170)); // Krem
+        g.setColor(new Color(255, 204, 170));
         g.setFont(pixelFontSmall);
-        // Y = 55 (Di bawah angka timer yg y=35)
         g.drawString("SCORE", xPos, 55);
 
-        // Angka Score
-        g.setColor(new Color(255, 236, 39)); // Kuning
+        g.setColor(new Color(255, 236, 39));
         g.setFont(pixelFont);
-        // Y = 70
         g.drawString(String.valueOf(score), xPos, 70);
     }
 
     private void drawOrders(Graphics2D g) {
         List<Order> orders = engine.getOrders().getActiveOrders();
 
-        int startX = getWidth() - 140;
+        int startX = getWidth() - 130; // Mulai dari sebelah kiri tombol Exit (120 + 10)
         int y = 10;
-        int cardWidth = 130;
+
+        // --- FIX: PERKECIL KARTU AGAR MUAT 3 ---
+        int cardWidth = 115; // Sebelumnya 130
         int cardHeight = 60;
+        int gap = 5;         // Sebelumnya 10
 
         for (Order o : orders) {
-            startX -= (cardWidth + 10);
+            startX -= (cardWidth + gap);
 
-            // --- CEK OVERLAP ---
-            // Jika posisi kartu sudah menabrak area Score/Timer (x < 350),
-            // berhenti menggambar agar tidak tumpang tindih.
-            if (startX < (INFO_OFFSET_X + 90)) {
+            // Cek Overlap: Batas aman adalah INFO_OFFSET_X + lebar teks timer/score (~80px)
+            // Jadi batas aman sekitar x = 320
+            if (startX < (INFO_OFFSET_X + 80)) {
                 break;
             }
 
@@ -264,7 +252,7 @@ public class HUDPanel extends JPanel implements Observer {
 
             // 2. Icon
             int iconSize = 24;
-            int iconX = startX + cardWidth - iconSize - 8;
+            int iconX = startX + cardWidth - iconSize - 5; // Margin dikit
 
             try {
                 String spriteName = o.getRecipe().getName().toLowerCase();
@@ -276,17 +264,17 @@ public class HUDPanel extends JPanel implements Observer {
 
             // 3. Nama
             g.setColor(Color.BLACK);
-            g.setFont(pixelFontSmall.deriveFont(7f));
+            g.setFont(pixelFontSmall.deriveFont(6f)); // Font lebih kecil (6pt) agar muat
 
             String name = o.getRecipe().getName().toUpperCase().replace("PASTA ", "");
-            if (name.length() > 10) name = name.substring(0, 10);
+            if (name.length() > 9) name = name.substring(0, 9); // Potong nama jika kepanjangan
 
-            g.drawString(name, startX + 8, y + 25);
+            g.drawString(name, startX + 5, y + 25);
 
             // 4. Bar Waktu
             int maxTime = 90;
             int timeLeft = o.getTimeLeft();
-            int maxBarWidth = cardWidth - 20;
+            int maxBarWidth = cardWidth - 10; // Margin 5px kiri-kanan
             int currentBarWidth = (int) ((double) timeLeft / maxTime * maxBarWidth);
 
             Color barColor;
@@ -294,16 +282,19 @@ public class HUDPanel extends JPanel implements Observer {
             else if (timeLeft > 15) barColor = new Color(255, 163, 0);
             else barColor = new Color(255, 0, 77);
 
+            // Background Bar
             g.setColor(new Color(100, 100, 100));
-            g.fillRect(startX + 10, y + 38, maxBarWidth, 10);
+            g.fillRect(startX + 5, y + 38, maxBarWidth, 10);
 
+            // Isi Bar
             g.setColor(barColor);
             if (currentBarWidth < 0) currentBarWidth = 0;
-            g.fillRect(startX + 10, y + 38, currentBarWidth, 10);
+            g.fillRect(startX + 5, y + 38, currentBarWidth, 10);
 
+            // Border Bar
             g.setColor(Color.BLACK);
             g.setStroke(new BasicStroke(2));
-            g.drawRect(startX + 10, y + 38, maxBarWidth, 10);
+            g.drawRect(startX + 5, y + 38, maxBarWidth, 10);
         }
     }
 
