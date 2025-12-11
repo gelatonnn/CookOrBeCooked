@@ -4,12 +4,8 @@ import java.awt.*;
 import javax.swing.*;
 
 public class HomePanel extends JPanel {
-    private final Runnable onStartSingle;
-    private final Runnable onStartMulti;
 
     public HomePanel(Runnable onStartSingle, Runnable onStartMulti) {
-        this.onStartSingle = onStartSingle;
-        this.onStartMulti = onStartMulti;
         
         setLayout(new GridBagLayout());
         setBackground(new Color(30, 30, 30));

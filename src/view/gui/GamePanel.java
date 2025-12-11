@@ -61,6 +61,7 @@ public class GamePanel extends JPanel implements Observer {
         notificationQueue.clear();
         drawWorld(g2d);
         drawChefs(g2d);
+        drawProjectiles(g2d);
         drawAllNotifications(g2d);
         spinOverlay.draw((Graphics2D)g, getWidth(), getHeight());
     }
@@ -262,6 +263,23 @@ public class GamePanel extends JPanel implements Observer {
         }
     }
 
+
+    private void drawProjectiles(Graphics2D g2d) {
+        List<GameEngine.Projectile> projectiles = engine.getProjectiles();
+        for (GameEngine.Projectile p : projectiles) {
+            int x = (int) (p.getX() * TILE_SIZE);
+            int y = (int) (p.getY() * TILE_SIZE);
+            int size = (int) (TILE_SIZE * 0.5); // Slightly smaller in air
+
+            // Add shadow
+            g2d.setColor(new Color(0, 0, 0, 100));
+            g2d.fillOval(x + 10, y + 40, size, size / 3);
+
+            // Draw item with a slight arc offset could be nice, but simple linear is fine
+            drawItem(g2d, x + (TILE_SIZE - size) / 2, y + (TILE_SIZE - size) / 2 - 10, p.getItem(), size);
+        }
+    }
+    
     private void drawChefs(Graphics2D g2d) {
         SpriteLibrary sprites = SpriteLibrary.getInstance();
         List<Chef> chefs = engine.getChefs();
