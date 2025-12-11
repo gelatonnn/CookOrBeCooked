@@ -11,30 +11,25 @@ import model.recipes.RecipeBook;
 import stations.Station;
 import utils.Direction;
 import utils.Position;
+import model.engine.EffectManager;
 
 public class Chef {
     private final String id;
     private final String name;
 
-    // Grid coordinates (integer) untuk interaksi stasiun
+    // Grid coordinates (integer) for interactions
     private int x, y;
 
-    // Pixel coordinates (double) untuk gerakan halus (Top-Left)
+    // Pixel coordinates (double) for smooth movement
     private double exactX, exactY;
 
-    private Direction direction; // Arah hadap (facing)
-    private Direction moveInput = null; // Arah input gerak (nullable jika diam)
-
+    private Direction direction;
     private Item held;
     private ChefState state;
     private ChefAction currentAction;
 
-    // --- DASH VARIABLES ---
     private long lastDashTime = 0;
-    private static final long DASH_COOLDOWN_MS = 1500; // Dikurangi sedikit biar enak
-    private boolean isDashing = false;
-    private double dashDistanceRemaining = 0;
-    private Direction dashDirection;
+    private static final long DASH_COOLDOWN_MS = 2000;
 
     public Chef(String id, String name, int x, int y) {
         this.id = id;
@@ -52,7 +47,7 @@ public class Chef {
         this("chef_" + System.currentTimeMillis(), "Chef", x, y);
     }
 
-    // Getters
+    // --- GETTERS ---
     public String getId() { return id; }
     public String getName() { return name; }
     public Position getPos() { return new Position(x, y); }
@@ -68,19 +63,10 @@ public class Chef {
     public Item getHeldItem() { return held; }
     public boolean hasItem() { return held != null; }
 
-    // Setters
+    // --- SETTERS ---
     public void setDirection(Direction dir) { this.direction = dir; }
     public void setCurrentAction(ChefAction action) { this.currentAction = action; }
     public void setHeldItem(Item item) { this.held = item; }
-
-    // --- MOVEMENT INPUT ---
-    public void setMoveInput(Direction dir) {
-        this.moveInput = dir;
-    }
-
-    public Direction getMoveInput() {
-        return moveInput;
-    }
 
     public void setPos(int x, int y) {
         this.x = x;
@@ -92,49 +78,26 @@ public class Chef {
     public void setExactPos(double x, double y) {
         this.exactX = x;
         this.exactY = y;
-        // PENTING: Koordinat grid ditentukan dari TITIK TENGAH (Center) Chef
+        // Update grid position based on center
         this.x = (int) Math.floor(x + 0.5);
         this.y = (int) Math.floor(y + 0.5);
     }
 
-    // ... method move() lama dihapus atau dikosongkan karena logic pindah ke Engine ...
-    public void move(int dx, int dy) { }
+    public void move(int dx, int dy) {
+        // Logic handled by GameEngine now, kept for interface compatibility
+    }
 
     // --- DASH LOGIC ---
     public boolean canDash() {
-        if (isDashing) return false;
-        if (model.engine.EffectManager.getInstance().isFlash()) return true;
+        if (EffectManager.getInstance().isFlash()) return true;
         return System.currentTimeMillis() - lastDashTime >= DASH_COOLDOWN_MS;
     }
 
-    public void startDash(Direction dir, double distance) {
-        this.isDashing = true;
-        this.dashDirection = dir;
-        this.dashDistanceRemaining = distance;
+    public void registerDash() {
         this.lastDashTime = System.currentTimeMillis();
-        // Reset action state visual
-        if (state instanceof IdleState || state instanceof MovingState) {
-            // Visual feedback handled by engine movement speed or trail later
-        }
     }
 
-    public boolean isDashing() { return isDashing; }
-
-    public void updateDash(double distanceCovered) {
-        this.dashDistanceRemaining -= distanceCovered;
-        if (this.dashDistanceRemaining <= 0) {
-            this.isDashing = false;
-            this.dashDistanceRemaining = 0;
-        }
-    }
-
-    public void stopDash() {
-        this.isDashing = false;
-        this.dashDistanceRemaining = 0;
-    }
-
-    public Direction getDashDirection() { return dashDirection; }
-
+    // --- STATE & INTERACTION ---
     public void changeState(ChefState s) {
         this.state = s;
         if (s instanceof IdleState) currentAction = ChefAction.IDLE;
@@ -165,8 +128,6 @@ public class Chef {
                 st.pick();
                 device.addIngredient(prep);
                 System.out.println("Added " + ((Item)prep).getName() + " to " + ((Item)device).getName());
-            } else {
-                System.out.println("Alat masak ini tidak menerima bahan tersebut!");
             }
             return;
         }
@@ -180,30 +141,18 @@ public class Chef {
                 if (match == DishType.PASTA_MARINARA) setHeldItem(new PastaMarinara());
                 else if (match == DishType.PASTA_BOLOGNESE) setHeldItem(new PastaBolognese());
                 else if (match == DishType.PASTA_FRUTTI_DI_MARE) setHeldItem(new PastaFruttiDiMare());
-                System.out.println("Plating Complete via Pick: " + match);
             }
             return;
         }
-
-        System.out.println("Tangan penuh! Tidak bisa mengambil " + itemOnStation.getName());
     }
 
     public void tryPlaceTo(Station st) {
         Item itemOnStation = st.peek();
 
         if (held instanceof CookingDevice device && itemOnStation instanceof Plate plate) {
-            if (!plate.isClean()) {
-                System.out.println("❌ Gagal: Piring kotor!");
-                return;
-            }
-            if (device.getContents().isEmpty()) {
-                System.out.println("❌ Gagal: Alat masak kosong!");
-                return;
-            }
+            if (!plate.isClean() || device.getContents().isEmpty()) return;
 
-            System.out.println("Menuang isi " + ((Item)device).getName() + " ke Piring...");
             view.gui.AssetManager.getInstance().playSound("place");
-
             for (Preparable ingredient : device.getContents()) {
                 plate.addIngredient(ingredient);
             }
@@ -220,13 +169,9 @@ public class Chef {
                 if (finalDish != null) {
                     st.pick();
                     st.place(finalDish);
-                    System.out.println("✨ Plating Berhasil: " + match);
                     view.gui.AssetManager.getInstance().playSound("serve");
                 }
-            } else {
-                System.out.println("⚠️ Bahan dituang, tapi belum jadi menu lengkap.");
             }
-
             device.clearContents();
             return;
         }
@@ -258,15 +203,15 @@ public class Chef {
                 currentAction == ChefAction.WASHING;
     }
 
-    @Override
-    public String toString() {
-        return name + " at (" + exactX + "," + exactY + ") facing " + direction;
-    }
-
     public float getActionProgress() {
         if (state instanceof BusyCuttingState cuttingState) {
             return (float) cuttingState.getProgress() / cuttingState.getMaxProgress();
         }
         return 0f;
+    }
+
+    @Override
+    public String toString() {
+        return name + " at (" + exactX + "," + exactY + ") facing " + direction;
     }
 }
