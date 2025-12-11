@@ -3,7 +3,7 @@ package view.gui;
 import items.core.*;
 import items.utensils.Plate;
 import java.awt.*;
-import java.awt.geom.Point2D; // IMPORT BARU
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +24,10 @@ public class GamePanel extends JPanel implements Observer {
     private final SpinOverlay spinOverlay = new SpinOverlay();
     
     private final Map<Chef, Point2D.Double> chefRenderPositions = new HashMap<>();
+
+    private final java.util.List<NotificationRequest> notificationQueue = new java.util.ArrayList<>();
+
+    private record NotificationRequest(int x, int y, items.core.CookingDevice device) {}
     
     private int animationTick = 0;
     private final float MOVEMENT_SPEED = 0.3f; 
@@ -39,19 +43,14 @@ public class GamePanel extends JPanel implements Observer {
 
         model.engine.EffectManager.getInstance().setOnSpinStart(() -> {
             
-            // Ambil target hasil
             model.engine.EffectManager.EffectType target = 
                 model.engine.EffectManager.getInstance().getPendingEffect();
             
-            // Mulai animasi
             spinOverlay.start(target, () -> {
-                // Callback saat animasi selesai: Terapkan efeknya!
                 model.engine.EffectManager.getInstance().applyPendingEffect(engine);
             });
         });
         
-        // Memulai Timer khusus untuk animasi visual (60 FPS)
-        // Ini terpisah dari GameLoop logic agar animasi tetap halus
         new Timer(16, e -> {
             updateVisuals();
             spinOverlay.update();
@@ -59,7 +58,6 @@ public class GamePanel extends JPanel implements Observer {
         }).start();
     }
 
-    // Method baru untuk menghitung posisi halus (LERP) dan animasi
     private void updateVisuals() {
         // 1. Update Timer Animasi
         animationTick++;
@@ -70,14 +68,11 @@ public class GamePanel extends JPanel implements Observer {
             double targetX = c.getX() * TILE_SIZE;
             double targetY = c.getY() * TILE_SIZE;
 
-            // Ambil posisi visual saat ini, atau inisialisasi jika belum ada
             if (!chefRenderPositions.containsKey(c)) {
                 chefRenderPositions.put(c, new Point2D.Double(targetX, targetY));
             }
             Point2D.Double currentPos = chefRenderPositions.get(c);
 
-            // RUMUS LERP (Linear Interpolation):
-            // Posisi Baru = Posisi Lama + (Jarak ke Target * Kecepatan)
             double newX = currentPos.x + (targetX - currentPos.x) * MOVEMENT_SPEED;
             double newY = currentPos.y + (targetY - currentPos.y) * MOVEMENT_SPEED;
 
@@ -99,8 +94,10 @@ public class GamePanel extends JPanel implements Observer {
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
+        notificationQueue.clear();
         drawWorld(g2d);
         drawChefs(g2d);
+        drawAllNotifications(g2d);
         spinOverlay.draw((Graphics2D)g, getWidth(), getHeight());
     }
 
@@ -150,16 +147,13 @@ public class GamePanel extends JPanel implements Observer {
     private void drawStation(Graphics2D g2d, int x, int y, Station station) {
         String name = station.getName().toLowerCase();
         
-        // --- UBAH BAGIAN INI ---
-        // Panggil method helper yang baru kita buat
         BufferedImage img = getStationSprite(name, station);
-        // -----------------------
 
-        //Gambar Station
+        // Gambar Station
         if (img != null) {
             g2d.drawImage(img, x, y, TILE_SIZE, TILE_SIZE, null);
         } else {
-            // Fallback jika gambar gagal dimuat
+            // Fallback
             g2d.setColor(Color.LIGHT_GRAY);
             g2d.fillRect(x, y, TILE_SIZE, TILE_SIZE);
             g2d.setColor(Color.BLACK);
@@ -167,35 +161,37 @@ public class GamePanel extends JPanel implements Observer {
             g2d.drawString("?", x + (TILE_SIZE/2) - 5, y + (TILE_SIZE/2) + 5);
         }
 
-        // Gambar Text Nama Station (Optional, untuk debug)
-        // g2d.setColor(Color.WHITE);
-        // g2d.drawString(station.getName(), x, y);
-
         // Gambar Item di Atas Station
         if (!(station instanceof stations.PlateStorage)) {
-            Item storedItem = station.peek();
+            items.core.Item storedItem = station.peek();
+            
             if (storedItem != null) {
                 int itemSize = (int)(TILE_SIZE * 0.6); 
-                // Offset agar item berada tepat di tengah station
-                int offset = (TILE_SIZE - itemSize) / 2;
                 
-                drawItem(g2d, x + offset, y + offset, storedItem, itemSize);
+                int offsetX = (TILE_SIZE - itemSize) / 2;
+                int offsetY = (TILE_SIZE - itemSize) / 2;
+                
+                if (station instanceof stations.CuttingStation) {
+                    offsetY -= 8;
+                    offsetX -= 5;
+                }
+                
+                drawItem(g2d, x + offsetX, y + offsetY, storedItem, itemSize);
+                
+                if (storedItem instanceof items.core.CookingDevice device) {
+                    notificationQueue.add(new NotificationRequest(x, y, device));
+                }
             }
         }
     }
 
-    // Tambahkan method ini di bagian bawah class GamePanel
     private BufferedImage getStationSprite(String name, Station station) {
         SpriteLibrary sprites = SpriteLibrary.getInstance();
 
-        // --- TAMBAHAN BARU: Lucky Station ---
         if (station instanceof stations.LuckyStation) {
-            // Pastikan Anda sudah punya sprite bernama "lucky_station" di sprites.png
-            // Jika belum ada, gunakan fallback ke "crate" atau "counter" sementara
             BufferedImage img = sprites.getSprite("lucky_station");
             return (img != null) ? img : sprites.getSprite("crate_mystery"); 
         }
-        // ------------------------------------
 
         if (station instanceof IngredientStorage) {
             if (name.contains("pasta")) return sprites.getSprite("crate_pasta");
@@ -214,14 +210,13 @@ public class GamePanel extends JPanel implements Observer {
         if (name.contains("plate")) return sprites.getSprite("plate storage");
         if (name.contains("assembly")) return sprites.getSprite("assembly station");
 
-        return sprites.getSprite("counter"); // Default sprite
+        return sprites.getSprite("counter"); 
     }
 
     private void drawItem(Graphics2D g2d, int x, int y, Item item, int size) {
         SpriteLibrary sprites = SpriteLibrary.getInstance();
         String spriteName = item.getName().toLowerCase();
         
-        // -- Status Item --
         spriteName += switch (item.getState()) {
             case COOKED -> "_cooked";
             case BURNED -> "_burned";
@@ -234,14 +229,12 @@ public class GamePanel extends JPanel implements Observer {
             case CookingDevice dev -> {
                 String devClassName = dev.getClass().getSimpleName().toLowerCase();
                 if (devClassName.contains("pot")) {
-                    // PERUBAHAN DISINI: Cek apakah sedang masak?
                     if (dev.isCooking()) {
-                        spriteName = "pot_cooking"; // Panci ada airnya
+                        spriteName = "pot_cooking"; 
                     } else {
-                        spriteName = "boiling pot"; // Panci kosong
+                        spriteName = "boiling pot"; 
                     }
                 } else if (devClassName.contains("pan")) {
-                    // Opsional: Lakukan hal yang sama untuk Frying Pan jika ada sprite "pan_cooking"
                     if (dev.isCooking()) {
                         spriteName = "pan_cooking";
                     } else {
@@ -261,7 +254,7 @@ public class GamePanel extends JPanel implements Observer {
             g2d.drawImage(img, x, y, size, size, null);
             
             if (item instanceof Plate || item instanceof CookingDevice) {
-                drawContainerContents(g2d, x, y, item, size); // Kirim size baru
+                drawContainerContents(g2d, x, y, item, size); 
             }
 
             if (isCooking) {
@@ -289,28 +282,24 @@ public class GamePanel extends JPanel implements Observer {
             int offsetY = 0;
             int i = 0;
             
-            // Ukuran ingredient kecil (misal 40% dari ukuran wadah)
             int ingSize = (int)(parentSize * 0.45); 
 
             for (Preparable p : contents) {
                 if (p instanceof Item item) {
-                    // ... (logika nama sprite tetap sama) ...
                     String ingName = item.getName().toLowerCase();
 
                     ingName += switch (item.getState()) {
                     case COOKED -> "_cooked";
                     case BURNED -> "_burned";
-                    case CHOPPED -> "_chopped"; // Jika ingin menampilkan potongan di piring
+                    case CHOPPED -> "_chopped"; 
                     default -> "";
                 };
 
                     BufferedImage ingImg = SpriteLibrary.getInstance().getSprite(ingName);
                     
                     if (ingImg != null) {
-                        // Offset sedikit agar terlihat masuk ke dalam panci/piring
                         int padding = (int)(parentSize * 0.2); 
                         g2d.drawImage(ingImg, x + padding + offsetX, y + padding + offsetY, ingSize, ingSize, null);
-                        // Geser posisi untuk item berikutnya agar tidak menumpuk total
                         offsetX += (ingSize / 2);
                         if (i % 2 == 1) { 
                             offsetX = 5;
@@ -330,24 +319,17 @@ public class GamePanel extends JPanel implements Observer {
         for (int i = 0; i < chefs.size(); i++) {
             Chef c = chefs.get(i);
             
-            // Ambil posisi visual dari Map (Interpolated Position)
             Point2D.Double renderPos = chefRenderPositions.get(c);
             
-            // Fallback jika belum ada di map (misal frame pertama)
             int px = (renderPos != null) ? (int) renderPos.x : c.getX() * TILE_SIZE;
             int py = (renderPos != null) ? (int) renderPos.y : c.getY() * TILE_SIZE;
 
-            // Hitung kecepatan animasi
-            // Jika sedang bergerak (jarak visual vs logic jauh), animasi cepat
-            // Jika diam, animasi lambat
             boolean isMoving = false;
             if (renderPos != null) {
                 double dist = Math.abs(renderPos.x - c.getX() * TILE_SIZE) + Math.abs(renderPos.y - c.getY() * TILE_SIZE);
                 isMoving = dist > 5.0; 
             }
             
-            // step dibagi 10 biar tidak terlalu cepat kedipnya
-            // Jika bergerak, speed animasi lebih cepat (dibagi 5)
             int step = animationTick / (isMoving ? 5 : 15); 
 
             BufferedImage chefImg = sprites.getChefSprite(
@@ -355,7 +337,7 @@ public class GamePanel extends JPanel implements Observer {
                 c.getDirection().name(), 
                 c.getHeldItem() != null,
                 c.isBusy(),
-                step // Parameter baru
+                step
             );
 
             // Gambar Chef
@@ -373,16 +355,15 @@ public class GamePanel extends JPanel implements Observer {
             int dirY = py + TILE_SIZE / 2 + (c.getDirection().dy * (TILE_SIZE/3)) - 5;
             g2d.fillOval(dirX, dirY, 10, 10);
 
-            // Draw Held Item (Item melayang mengikuti posisi halus chef)
+            // Draw Held Item 
             if (c.getHeldItem() != null) {
-                // Item melayang di atas kepala (offset Y dikurangi)
                 int itemSize = (int)(TILE_SIZE * 0.5);
                 int itemX = px + (TILE_SIZE - itemSize) / 2;
                 int itemY = py - (itemSize / 2); 
                 drawItem(g2d, itemX, itemY, c.getHeldItem(), itemSize); 
             }
 
-            // Draw Progress Bar (Misal sedang memotong)
+            // Draw Progress Bar
             if (c.getActionProgress() > 0) {
                 drawProgressBar(g2d, px, py - 10, c.getActionProgress(), Color.GREEN);
             }
@@ -392,15 +373,72 @@ public class GamePanel extends JPanel implements Observer {
     private void drawProgressBar(Graphics2D g2d, int x, int y, float percentage, Color color) {
         int barWidth = TILE_SIZE - 20;
         int barHeight = 8;
-        int screenX = x + 10; // Center bar horizontally
+        int screenX = x + 10; 
 
-        // Background Bar (Hitam/Abu)
+        // Background Bar 
         g2d.setColor(Color.BLACK);
         g2d.fillRect(screenX, y, barWidth, barHeight);
-        
-        // Foreground Bar (Progress)
+
+        // Foreground Bar 
         g2d.setColor(color);
-        g2d.fillRect(screenX + 1, y + 1, (int)((barWidth - 2) * percentage), barHeight - 2);
+        g2d.fillRect(screenX + 1, y + 1, (int) ((barWidth - 2) * percentage), barHeight - 2);
+    }
+
+    private void drawCookedNotification(Graphics2D g2d, int x, int y, CookingDevice device) {
+        // 1. Cek validasi: Panci kosong?
+        if (device.getContents().isEmpty())
+            return;
+
+        // 2. Ambil item pertama
+        items.core.Item firstItem = (items.core.Item) device.getContents().get(0);
+        items.core.ItemState state = firstItem.getState();
+
+        // 3. Cek Status: HANYA gambar jika sudah COOKED atau BURNED
+        if (state == items.core.ItemState.COOKED || state == items.core.ItemState.BURNED) {
+
+            BufferedImage cloud = SpriteLibrary.getInstance().getSprite("cloud");
+
+            if (cloud != null) {
+                int cloudSize = (int) (TILE_SIZE * 0.9);
+
+                int cloudX = x + (TILE_SIZE / 2);
+                int cloudY = y - (TILE_SIZE / 2);
+
+                int panelWidth = getWidth();
+                if (cloudX + cloudSize > panelWidth) {
+                    cloudX = panelWidth - cloudSize;
+                }
+
+                if (cloudY < 0) {
+                    cloudY = 0;
+                }
+
+                g2d.drawImage(cloud, cloudX, cloudY, cloudSize, cloudSize, null);
+
+                String spriteName = firstItem.getName().toLowerCase();
+                if (state == items.core.ItemState.COOKED)
+                    spriteName += "_cooked";
+                else if (state == items.core.ItemState.BURNED)
+                    spriteName += "_burned";
+
+                BufferedImage itemImg = SpriteLibrary.getInstance().getSprite(spriteName);
+
+                if (itemImg != null) {
+                    int itemSize = (int) (cloudSize * 0.55);
+
+                    int itemX = cloudX + (cloudSize - itemSize) / 2;
+                    int itemY = cloudY + (cloudSize - itemSize) / 2;
+
+                    g2d.drawImage(itemImg, itemX, itemY - 3, itemSize, itemSize, null);
+                }
+            }
+        }
+    }
+    
+    private void drawAllNotifications(Graphics2D g2d) {
+        for (NotificationRequest req : notificationQueue) {
+            drawCookedNotification(g2d, req.x, req.y, req.device);
+        }
     }
 
     @Override
