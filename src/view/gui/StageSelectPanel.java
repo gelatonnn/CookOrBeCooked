@@ -51,7 +51,7 @@ public class StageSelectPanel extends JPanel {
         JButton btnStage1 = createStageButton("STAGE 1: EASY", "TARGET: 3 ORDERS",
                 new Color(41, 173, 255),
                 true,
-                () -> onStageSelected.accept(new GameConfig("Stage 1", 240, 1, 3, 0, false)));
+                () -> onStageSelected.accept(new GameConfig("Stage 1", 240, 3, 3, 0, false)));
         container.add(btnStage1);
 
         container.add(Box.createRigidArea(new Dimension(0, 15))); // Jarak antar tombol
@@ -61,7 +61,7 @@ public class StageSelectPanel extends JPanel {
         JButton btnStage2 = createStageButton("STAGE 2: MEDIUM", "TARGET: 4 ORDERS",
                 new Color(255, 163, 0),
                 isS2Unlocked,
-                () -> onStageSelected.accept(new GameConfig("Stage 2", 270, 2, 4, 0, false)));
+                () -> onStageSelected.accept(new GameConfig("Stage 2", 270, 3, 4, 0, false)));
         container.add(btnStage2);
 
         container.add(Box.createRigidArea(new Dimension(0, 15)));

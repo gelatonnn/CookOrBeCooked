@@ -12,7 +12,7 @@ public class GameOverPanel extends JPanel {
     private Font pixelFont;
     
     public GameOverPanel(int finalScore, boolean isWin, Runnable onBackToMenu) {
-        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 30f);
+        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 24f);
         
         String bgPath = isWin ? "/resources/StageClearBackground.png" : "/resources/GameOverBackground.png";
         loadBackground(bgPath);
