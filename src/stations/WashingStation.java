@@ -13,6 +13,7 @@ public class WashingStation extends BaseStation {
 
     @Override
     public boolean canPlace(Item item) {
+        if (storedItem != null) return false;
         return item instanceof DirtyPlate || item instanceof Plate;
     }
 
