@@ -6,15 +6,19 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import items.core.Item;
 import items.core.ItemState;
+import items.core.Preparable;
 import model.chef.Chef;
 import model.orders.OrderManager;
 import model.world.Tile;
 import model.world.WorldMap;
+import model.world.tiles.StationTile;
 import model.world.tiles.WalkableTile;
+import model.world.tiles.WalkableTile.DroppedItem;
 import stations.Station;
 import utils.Direction;
 import utils.Position;
 import view.Observer;
+import view.gui.AssetManager;
 
 public class GameEngine {
     private static GameEngine instance;
@@ -24,64 +28,50 @@ public class GameEngine {
     private final List<Chef> chefs;
     private final List<Observer> observers = new ArrayList<>();
 
-    // PROJECTILE SYSTEM
+    private final GameConfig config;
     private final List<Projectile> projectiles = new CopyOnWriteArrayList<>();
-
     private Runnable onGameEnd;
     private boolean isRunning = false;
     private boolean finished = false;
+    private boolean isWin = false;
 
-    // --- MOVEMENT SETTINGS ---
-    // Increased base speed (pixels per tick) for snappier feel.
-    // 3.0 px/tick * 60 ticks/sec = 180 px/sec (3 tiles/sec).
     private static final double MOVEMENT_SPEED = 3.0;
-
-    // DASH SETTINGS
-    // 120 pixels total distance.
-    // Speed 10.0 px/tick -> 12 frames (0.2 sec).
     private static final double DASH_SPEED = 10.0;
     private static final double DASH_TOTAL_DIST = 120.0;
 
-    // THROW SETTINGS
-    private static final double THROW_DISTANCE = 3.5;
-    private static final double THROW_SPEED = 0.25;
+    // Physics Constants
+    private static final double CHEF_SIZE = 0.6;
+    private static final double ITEM_SIZE = 0.4;
+    private static final double THROW_DISTANCE = 4.0;
+    private static final double THROW_SPEED_PPS = 8.0;
+    private static final double THROW_ARC_HEIGHT = 0.6;
+    private static final double BOUNCE_DURATION = 0.3;
+    private static final double BOUNCE_DISTANCE = 0.5;
 
-    public GameEngine(WorldMap world, OrderManager orders, int stageSeconds) {
+    public GameEngine(WorldMap world, OrderManager orders, GameConfig config) {
         this.world = world;
         this.orders = orders;
-        this.clock = new GameClock(stageSeconds);
+        this.config = config;
+        this.clock = new GameClock(config.stageTimeSeconds);
         this.chefs = new ArrayList<>();
         instance = this;
     }
 
-    public static GameEngine getInstance() {
-        return instance;
-    }
+    public static GameEngine getInstance() { return instance; }
 
-    public void addChef(Chef chef) {
-        chefs.add(chef);
-    }
-
-    public List<Chef> getChefs() {
-        return new ArrayList<>(chefs);
-    }
-
-    public List<Projectile> getProjectiles() {
-        return projectiles;
-    }
-
-    public void setOnGameEnd(Runnable onGameEnd) {
-        this.onGameEnd = onGameEnd;
-    }
+    public void addChef(Chef chef) { chefs.add(chef); }
+    public List<Chef> getChefs() { return new ArrayList<>(chefs); }
+    public List<Projectile> getProjectiles() { return projectiles; }
+    public void setOnGameEnd(Runnable onGameEnd) { this.onGameEnd = onGameEnd; }
+    public boolean isWin() { return isWin; }
+    public GameConfig getConfig() { return config; }
 
     public void start() {
         isRunning = true;
-
         long lastTime = System.nanoTime();
-        double amountOfTicks = 60;
+        double amountOfTicks = config.fps;
         double ns = 1000000000 / amountOfTicks;
         double delta = 0;
-
         long lastTimerCheck = System.currentTimeMillis();
 
         while (isRunning) {
@@ -90,7 +80,7 @@ public class GameEngine {
             lastTime = now;
 
             while (delta >= 1) {
-                updatePhysics(); // Update fisika setiap tick (60 FPS)
+                updatePhysics();
                 notifyObservers();
                 delta--;
             }
@@ -99,7 +89,6 @@ public class GameEngine {
                 lastTimerCheck += 1000;
                 tick();
             }
-
             try { Thread.sleep(2); } catch (InterruptedException e) {}
         }
     }
@@ -112,69 +101,77 @@ public class GameEngine {
     public void tick() {
         clock.tick();
         orders.tick();
-
-        if (clock.isOver() && isRunning) {
-            System.out.println("TIME'S UP! Game Ending...");
-            stop();
-            if (onGameEnd != null) {
-                onGameEnd.run();
-            }
+        if (orders.getFailedCount() >= config.maxFailedStreak) { finishGame(false); return; }
+        if (config.isSurvival) {
+            if (clock.isOver()) finishGame(orders.getScore() >= config.minScore);
+        } else {
+            if (orders.getCompletedCount() >= config.targetOrders) { finishGame(true); return; }
+            if (clock.isOver()) finishGame(false);
         }
     }
 
-    // --- PHYSICS & MOVEMENT ---
+    private void finishGame(boolean win) {
+        this.isWin = win;
+        stop();
+        if (onGameEnd != null) onGameEnd.run();
+    }
 
     private void updatePhysics() {
-        // 1. Update Projectiles (Flying Items)
         Iterator<Projectile> it = projectiles.iterator();
         while (it.hasNext()) {
             Projectile p = it.next();
-            if (p.update()) {
-                projectiles.remove(p);
+            if (p.update()) projectiles.remove(p);
+        }
+        for (Chef chef : chefs) updateChefPosition(chef);
+    }
+
+    // --- SHARED HELPER ---
+    private boolean isSpaceFree(double cx, double cy, double radius) {
+        Position p = new Position((int)cx, (int)cy);
+        Tile t = world.getTile(p);
+        if (t instanceof WalkableTile wt) {
+            for (DroppedItem di : wt.getItems()) {
+                if (dist(di.x, di.y, cx, cy) < (di.item.getSize() + radius) * 0.8) return false;
             }
         }
+        return true;
+    }
 
-        // 2. Update Chefs Movement
-        for (Chef chef : chefs) {
-            updateChefPosition(chef);
-        }
+    private double dist(double x1, double y1, double x2, double y2) {
+        return Math.sqrt(Math.pow(x2-x1, 2) + Math.pow(y2-y1, 2));
+    }
+
+    // --- CHEF MOVEMENT ---
+    public void moveChef(Chef chef, Direction dir) {
+        moveChefWithCollision(chef, dir, MOVEMENT_SPEED);
     }
 
     private void updateChefPosition(Chef chef) {
         if (chef.isBusy()) return;
 
-        // --- DASHING LOGIC ---
+        double speed = 0;
+        Direction moveDir = null;
+
         if (chef.isDashing()) {
-            double moveDist = DASH_SPEED;
-            moveChef(chef, chef.getDashDirection(), moveDist);
-            chef.updateDash(moveDist);
-            return; // Skip normal movement while dashing
+            speed = DASH_SPEED;
+            moveDir = chef.getDashDirection();
+            chef.updateDash(speed);
+        } else {
+            moveDir = chef.getMoveInput();
+            if (moveDir != null) {
+                speed = MOVEMENT_SPEED;
+                if (EffectManager.getInstance().isFlash()) speed *= 1.5;
+                chef.setDirection(moveDir);
+            }
         }
 
-        // --- NORMAL MOVEMENT LOGIC ---
-        Direction inputDir = chef.getMoveInput();
-        if (inputDir != null) {
-            // Apply speed buff if FLASH effect is active
-            double speed = MOVEMENT_SPEED;
-            if (EffectManager.getInstance().isFlash()) {
-                speed *= 1.5;
-            }
-
-            chef.setDirection(inputDir); // Always face movement direction
-            moveChef(chef, inputDir, speed);
-
-            // Set animation state
-            if (!(chef.getState() instanceof model.chef.states.MovingState) &&
-                    !(chef.getState() instanceof model.chef.states.CarryingState)) {
-                // Keep current state (Idle/Carrying) logic but visually valid
-            }
+        if (moveDir != null && speed > 0) {
+            moveChefWithCollision(chef, moveDir, speed);
         }
     }
 
-    public void moveChef(Chef chef, Direction dir, double speed) {
+    private void moveChefWithCollision(Chef chef, Direction dir, double speed) {
         double dx = 0, dy = 0;
-
-        // Normalize diagonal speed
         double diagonalFactor = 0.7071;
 
         switch (dir) {
@@ -188,253 +185,367 @@ public class GameEngine {
             case DOWN_RIGHT -> { dx = speed * diagonalFactor; dy = speed * diagonalFactor; }
         }
 
-        // Apply Movement (X Axis)
-        double nextX = chef.getExactX() + dx / 60.0; // Convert pixel speed to tile units
-        if (isValidPosition(nextX, chef.getExactY())) {
-            chef.setExactPos(nextX, chef.getExactY());
-        } else {
-            // Hit Wall X -> Stop Dash if dashing
-            if (chef.isDashing()) chef.stopDash();
+        double speedPerTick = 1.0 / 60.0;
+
+        double nextExactX = chef.getExactX() + dx * speedPerTick;
+        if (!checkAABBCollision(nextExactX, chef.getExactY(), CHEF_SIZE)) {
+            chef.setExactPos(nextExactX, chef.getExactY());
+        } else if (chef.isDashing()) {
+            chef.stopDash();
         }
 
-        // Apply Movement (Y Axis)
-        double nextY = chef.getExactY() + dy / 60.0; // Convert pixel speed to tile units
-        if (isValidPosition(chef.getExactX(), nextY)) {
-            chef.setExactPos(chef.getExactX(), nextY);
-        } else {
-            // Hit Wall Y -> Stop Dash if dashing
-            if (chef.isDashing()) chef.stopDash();
+        double nextExactY = chef.getExactY() + dy * speedPerTick;
+        if (!checkAABBCollision(chef.getExactX(), nextExactY, CHEF_SIZE)) {
+            chef.setExactPos(chef.getExactX(), nextExactY);
+        } else if (chef.isDashing()) {
+            chef.stopDash();
         }
     }
 
-    // Overload for legacy calls (if any)
-    public void moveChef(Chef chef, Direction dir) {
-        moveChef(chef, dir, MOVEMENT_SPEED);
-    }
+    private boolean checkAABBCollision(double tlx, double tly, double size) {
+        double minX = tlx + (1.0 - size) / 2.0;
+        double minY = tly + (1.0 - size) / 2.0;
+        double maxX = minX + size;
+        double maxY = minY + size;
 
-    private boolean isValidPosition(double topLx, double topLy) {
-        // Collision Box Padding (smaller box for smoother cornering)
-        double padding = 0.25;
+        int startTileX = (int) Math.floor(minX);
+        int endTileX = (int) Math.floor(maxX - 0.001);
+        int startTileY = (int) Math.floor(minY);
+        int endTileY = (int) Math.floor(maxY - 0.001);
 
-        double left = topLx + padding;
-        double right = topLx + 1.0 - padding;
-        double top = topLy + padding;
-        double bottom = topLy + 1.0 - padding;
-
-        return isWalkablePixel(left, top) &&
-                isWalkablePixel(right, top) &&
-                isWalkablePixel(left, bottom) &&
-                isWalkablePixel(right, bottom);
-    }
-
-    private boolean isWalkablePixel(double x, double y) {
-        int tileX = (int) Math.floor(x);
-        int tileY = (int) Math.floor(y);
-        Position p = new Position(tileX, tileY);
-        if (!world.inBounds(p)) return false;
-        return world.getTile(p).isWalkable();
+        for (int y = startTileY; y <= endTileY; y++) {
+            for (int x = startTileX; x <= endTileX; x++) {
+                Position p = new Position(x, y);
+                if (!world.inBounds(p)) return true;
+                if (!world.getTile(p).isWalkable()) return true;
+            }
+        }
+        return false;
     }
 
     public void dashChef(Chef chef) {
         if (chef.isBusy() || !chef.canDash()) return;
-
-        // Cek arah dash (prioritas input gerak, kalau diam pakai arah hadap)
         Direction dashDir = chef.getMoveInput();
         if (dashDir == null) dashDir = chef.getDirection();
-
-        view.gui.AssetManager.getInstance().playSound("dash");
-
-        // Start smooth dash state
+        AssetManager.getInstance().playSound("dash");
         chef.startDash(dashDir, DASH_TOTAL_DIST);
-
-        // Visual effect managed by Chef state/Animation
     }
 
-    // --- THROW MECHANIC ---
-
+    // --- THROWING LOGIC ---
     public void throwItem(Chef chef) {
         if (chef.isBusy() || chef.getHeldItem() == null) return;
-
         Item item = chef.getHeldItem();
 
-        // Rule: Hanya bisa melempar bahan mentah/uncooked
-        if (item.getState() == ItemState.COOKED || item.getState() == ItemState.BURNED) {
-            System.out.println("❌ Cannot throw cooked food!");
+        if (!(item instanceof Preparable) || item.getState() == ItemState.COOKED || item.getState() == ItemState.BURNED) {
+            System.out.println("❌ Can only throw uncooked ingredients!");
             return;
         }
 
-        view.gui.AssetManager.getInstance().playSound("throw");
+        AssetManager.getInstance().playSound("throw");
 
-        // Posisi awal lemparan (Center of Chef)
         double startX = chef.getExactX() + 0.5;
         double startY = chef.getExactY() + 0.5;
-        double dirX = 0, dirY = 0;
 
-        switch (chef.getDirection()) {
-            case UP -> dirY = -1;
-            case DOWN -> dirY = 1;
-            case LEFT -> dirX = -1;
-            case RIGHT -> dirX = 1;
-            default -> { dirY = 1; }
-        }
+        double[] vec = chef.getFacingVector();
+        double dirX = vec[0];
+        double dirY = vec[1];
 
-        // Raycast untuk memvalidasi lintasan
-        double checkStep = 0.2;
-        double finalDist = 0;
-        boolean hitWall = false;
+        // Target selalu full distance (4 tiles), collision ditangani Projectile saat update
+        double targetX = startX + dirX * THROW_DISTANCE;
+        double targetY = startY + dirY * THROW_DISTANCE;
 
-        for (double d = 0; d <= THROW_DISTANCE; d += checkStep) {
-            double tx = startX + dirX * d;
-            double ty = startY + dirY * d;
-
-            // Cek apakah titik ini tembok
-            if (!isWalkablePixel(tx, ty)) {
-                hitWall = true;
-                // Mundur sedikit dari tembok agar item tidak masuk ke dalam tembok
-                finalDist = Math.max(0, d - 0.7);
-                break;
-            }
-            finalDist = d;
-        }
-
-        double targetX = startX + dirX * finalDist;
-        double targetY = startY + dirY * finalDist;
-
-        // Offset target kembali ke Top-Left untuk rendering projectile
         projectiles.add(new Projectile(chef, item, startX - 0.5, startY - 0.5, targetX - 0.5, targetY - 0.5));
-
         chef.setHeldItem(null);
         chef.changeState(new model.chef.states.IdleState());
-        System.out.println(chef.getName() + " threw " + item.getName() + "!");
     }
 
     // --- PROJECTILE CLASS ---
-
     public class Projectile {
         Chef thrower;
         Item item;
-        double x, y; // Top-Left coordinate
-        double targetX, targetY;
-        double totalDist;
-        double traveled;
+        enum State { FLYING, BOUNCING }
+        State state = State.FLYING;
+
+        double startX, startY, targetX, targetY;
+        double currentX, currentY;
+
+        long startTime;
+        double duration;
+
+        double bounceStartX, bounceStartY, bounceTargetX, bounceTargetY;
+        long bounceStartTime;
 
         public Projectile(Chef thrower, Item item, double sx, double sy, double tx, double ty) {
             this.thrower = thrower;
             this.item = item;
-            this.x = sx;
-            this.y = sy;
-            this.targetX = tx;
-            this.targetY = ty;
-            this.traveled = 0;
-            this.totalDist = Math.sqrt(Math.pow(tx - sx, 2) + Math.pow(ty - sy, 2));
+            this.startX = sx; this.startY = sy;
+            this.targetX = tx; this.targetY = ty;
+            this.currentX = sx; this.currentY = sy;
+
+            double dist = Math.sqrt(Math.pow(tx - sx, 2) + Math.pow(ty - sy, 2));
+            this.duration = dist / THROW_SPEED_PPS;
+            if (this.duration < 0.1) this.duration = 0.1;
+
+            this.startTime = System.nanoTime();
         }
 
-        public double getX() { return x; }
-        public double getY() { return y; }
-        public Item getItem() { return item; }
-
         public boolean update() {
-            if (totalDist == 0) return true;
+            if (state == State.FLYING) return updateFlying();
+            else if (state == State.BOUNCING) return updateBouncing();
+            return true;
+        }
 
-            double move = THROW_SPEED;
-            if (traveled + move > totalDist) move = totalDist - traveled;
+        private boolean updateFlying() {
+            long now = System.nanoTime();
+            double elapsed = (now - startTime) / 1_000_000_000.0;
+            double t = Math.min(1.0, elapsed / duration);
 
-            double ratio = move / totalDist; // Simplifikasi linear
-            // Interpolasi posisi
-            double dx = targetX - (x + (targetX - x) * (traveled / totalDist)); // Delta sisa
+            double nextX = startX + (targetX - startX) * t;
+            double nextY = startY + (targetY - startY) * t;
 
-            // Update posisi manual berdasarkan vektor arah
-            double vecX = (targetX - x) / (totalDist - traveled) * move;
-            // Koreksi matematika sederhana: LERP
-            double nextRatio = (traveled + move) / totalDist;
-            double nextX = x + (targetX - x) * (move / (totalDist - traveled));
-            double nextY = y + (targetY - y) * (move / (totalDist - traveled));
+            double centerX = nextX + 0.5;
+            double centerY = nextY + 0.5;
 
-            x = nextX;
-            y = nextY;
-            traveled += move;
-
-            // Cek Collision dengan Chef lain (CATCH)
-            double centerX = x + 0.5;
-            double centerY = y + 0.5;
-
+            // 1. Catching
             for (Chef c : chefs) {
-                if (c != thrower && !c.hasItem()) {
-                    double cCenterX = c.getExactX() + 0.5;
-                    double cCenterY = c.getExactY() + 0.5;
-
-                    double dist = Math.sqrt(Math.pow(cCenterX - centerX, 2) + Math.pow(cCenterY - centerY, 2));
-                    if (dist < 0.7) { // Radius tangkap
+                if (c != thrower && !c.hasItem() && !c.isDashing()) {
+                    if (dist(c.getExactX() + 0.5, c.getExactY() + 0.5, centerX, centerY) < 0.6) {
                         c.setHeldItem(item);
-                        view.gui.AssetManager.getInstance().playSound("pickup");
-                        System.out.println(c.getName() + " CAUGHT " + item.getName() + "!");
-                        return true; // Hapus projectile
+                        AssetManager.getInstance().playSound("pickup");
+                        return true;
                     }
                 }
             }
 
-            // Sampai tujuan
-            if (Math.abs(traveled - totalDist) < 0.05) {
-                dropItem();
+            // 2. Mid-air Collision (HANYA Wall & Station, ITEM DILEWATI)
+            // Item yang ada di lantai tidak menyebabkan tabrakan saat terbang
+            if (checkCollisionMidAir(nextX, nextY)) {
+                startBounce(currentX, currentY, nextX, nextY);
+                return false;
+            }
+
+            currentX = nextX;
+            currentY = nextY;
+
+            // 3. Arrival Logic
+            if (t >= 1.0) {
+                // Cek tabrakan pendaratan: Wall/Station ATAU Item lain
+                if (checkLandingCollision(currentX, currentY)) {
+                    // Pantul mundur sedikit
+                    startBounce(currentX, currentY, startX, startY); // bounce back to origin direction
+                    return false;
+                }
+
+                landItemAt(currentX, currentY);
                 return true;
             }
             return false;
         }
 
-        private void dropItem() {
-            // Drop di titik tengah projectile
-            int tileX = (int) Math.floor(x + 0.5);
-            int tileY = (int) Math.floor(y + 0.5);
-            Position gridPos = new Position(tileX, tileY);
+        // Mid-Air: Only AABB (Wall/Station), NO floor item check
+        private boolean checkCollisionMidAir(double tlx, double tly) {
+            return checkAABBCollision(tlx, tly, ITEM_SIZE);
+        }
+
+        // Landing: Check Wall/Station AND Space Free
+        private boolean checkLandingCollision(double tlx, double tly) {
+            if (checkAABBCollision(tlx, tly, ITEM_SIZE)) return true;
+
+            double cx = tlx + 0.5;
+            double cy = tly + 0.5;
+            return !isSpaceFree(cx, cy, item.getSize()); // Collision if space NOT free
+        }
+
+        private void startBounce(double currX, double currY, double hitX, double hitY) {
+            this.state = State.BOUNCING;
+            this.bounceStartTime = System.nanoTime();
+            this.bounceStartX = currX;
+            this.bounceStartY = currY;
+
+            // Logic pantul: mundur berlawanan arah tabrakan
+            double dx = currX - hitX;
+            double dy = currY - hitY;
+            double len = Math.sqrt(dx*dx + dy*dy);
+            if (len == 0) { dx = -1; len = 1; }
+
+            double ndx = dx / len;
+            double ndy = dy / len;
+
+            this.bounceTargetX = currX + ndx * BOUNCE_DISTANCE;
+            this.bounceTargetY = currY + ndy * BOUNCE_DISTANCE;
+
+            // Jika target pantul juga nabrak dinding, diam di tempat (safe)
+            if (checkAABBCollision(bounceTargetX, bounceTargetY, ITEM_SIZE)) {
+                this.bounceTargetX = currX;
+                this.bounceTargetY = currY;
+            }
+
+            AssetManager.getInstance().playSound("bump");
+        }
+
+        private boolean updateBouncing() {
+            long now = System.nanoTime();
+            double elapsed = (now - bounceStartTime) / 1_000_000_000.0;
+            double t = Math.min(1.0, elapsed / BOUNCE_DURATION);
+
+            currentX = bounceStartX + (bounceTargetX - bounceStartX) * t;
+            currentY = bounceStartY + (bounceTargetY - bounceStartY) * t;
+
+            if (t >= 1.0) {
+                landItemAt(currentX, currentY);
+                return true;
+            }
+            return false;
+        }
+
+        private void landItemAt(double tlx, double tly) {
+            double cx = tlx + 0.5;
+            double cy = tly + 0.5;
+
+            // Push out jika clipping dinding (meski harusnya sudah aman dari logic bounce)
+            if (checkAABBCollision(tlx, tly, ITEM_SIZE)) {
+                Position p = resolveCollision(cx, cy);
+                cx = p.x + 0.5;
+                cy = p.y + 0.5;
+            }
+
+            Position gridPos = new Position((int)cx, (int)cy);
+
+            Station st = world.getStationAt(gridPos);
+            if (st != null) {
+                if (st.peek() == null) {
+                    st.place(item);
+                    AssetManager.getInstance().playSound("place");
+                } else {
+                    scatterItem(cx, cy);
+                }
+                return;
+            }
 
             Tile t = world.getTile(gridPos);
             if (t instanceof WalkableTile wt) {
-                if (wt.getItem() == null) {
-                    wt.setItem(item);
+                if (isSpaceFree(cx, cy, item.getSize())) {
+                    wt.addItem(item, cx, cy);
                 } else {
-                    System.out.println("Floor occupied, item lost!");
+                    scatterItem(cx, cy);
                 }
             }
         }
-    }
 
-    // ... Bagian Interaksi tetap sama (gunakan int x,y dari chef) ...
-    public void pickAt(Chef chef, Position p) {
-        if (chef.isBusy()) return;
-        Station st = world.getStationAt(p);
-        if (st != null) {
-            chef.tryPickFrom(st);
-            return;
+        private Position resolveCollision(double cx, double cy) {
+            int tx = (int)cx;
+            int ty = (int)cy;
+            for(int y=ty-1; y<=ty+1; y++) {
+                for(int x=tx-1; x<=tx+1; x++) {
+                    Position p = new Position(x, y);
+                    if(world.inBounds(p) && world.getTile(p).isWalkable()) {
+                        return p;
+                    }
+                }
+            }
+            return new Position(tx, ty);
         }
-        Tile t = world.getTile(p);
-        if (t instanceof WalkableTile wt) {
-            if (wt.getItem() != null && chef.getHeldItem() == null) {
-                chef.setHeldItem(wt.pick());
-                chef.changeState(new model.chef.states.CarryingState());
-                view.gui.AssetManager.getInstance().playSound("pickup");
+
+        private void scatterItem(double cx, double cy) {
+            double[] angles = {0, 45, 90, 135, 180, 225, 270, 315};
+            double radius = 0.7;
+            for (double ang : angles) {
+                double rad = Math.toRadians(ang);
+                double nx = cx + Math.cos(rad) * radius;
+                double ny = cy + Math.sin(rad) * radius;
+                if (!checkAABBCollision(nx - 0.5, ny - 0.5, ITEM_SIZE) && isSpaceFree(nx, ny, item.getSize())) {
+                    Position np = new Position((int)nx, (int)ny);
+                    Tile nt = world.getTile(np);
+                    if (nt instanceof WalkableTile wt) {
+                        wt.addItem(item, nx, ny);
+                        return;
+                    }
+                }
             }
         }
+
+        public double getX() { return currentX; }
+        public double getY() {
+            if (state == State.BOUNCING) {
+                long now = System.nanoTime();
+                double t = Math.min(1.0, (now - bounceStartTime) / 1_000_000_000.0 / BOUNCE_DURATION);
+                double arc = Math.sin(t * Math.PI) * (THROW_ARC_HEIGHT * 0.4);
+                return currentY - arc;
+            }
+            long now = System.nanoTime();
+            double elapsed = (now - startTime) / 1_000_000_000.0;
+            double t = Math.min(1.0, elapsed / duration);
+            double arc = Math.sin(t * Math.PI) * THROW_ARC_HEIGHT;
+            return currentY - arc;
+        }
+        public Item getItem() { return item; }
     }
 
-    public void placeAt(Chef chef, Position p) {
+    // --- INTERACTION LOGIC ---
+    public void placeAt(Chef chef, Position ignored) {
         if (chef.isBusy()) return;
+
+        double[] vec = chef.getFacingVector();
+        double targetX = chef.getExactX() + 0.5 + vec[0] * 0.8;
+        double targetY = chef.getExactY() + 0.5 + vec[1] * 0.8;
+        Position p = new Position((int)targetX, (int)targetY);
+
         Station st = world.getStationAt(p);
-        if (st == null) return;
-        if (st instanceof stations.ServingStation) {
-            processServing(chef, st);
+        if (st != null) {
+            if (st instanceof stations.ServingStation) { processServing(chef, st); return; }
+            chef.tryPlaceTo(st);
             return;
         }
-        chef.tryPlaceTo(st);
+
+        // RULE CHANGE: Tidak bisa drop item ke lantai secara manual.
+        // Hanya bisa lewat Throw.
+        System.out.println("❌ Cannot drop item on floor. Use Throw!");
+    }
+
+    public void pickAt(Chef chef, Position ignored) {
+        if (chef.isBusy()) return;
+
+        double[] vec = chef.getFacingVector();
+        double pickX = chef.getExactX() + 0.5 + vec[0] * 0.6;
+        double pickY = chef.getExactY() + 0.5 + vec[1] * 0.6;
+        Position p = new Position((int)pickX, (int)pickY);
+
+        Station st = world.getStationAt(p);
+        if (st != null) { chef.tryPickFrom(st); return; }
+
+        // 1. Cek Depan
+        Tile t = world.getTile(p);
+        if (t instanceof WalkableTile wt) {
+            DroppedItem target = wt.pickNearest(pickX, pickY, 0.7);
+
+            // 2. Jika depan kosong, Cek Kaki (radius 0.5)
+            if (target == null) {
+                Position pCenter = new Position(chef.getX(), chef.getY());
+                Tile tCenter = world.getTile(pCenter);
+                if (tCenter instanceof WalkableTile wtCenter) {
+                    target = wtCenter.pickNearest(chef.getExactX() + 0.5, chef.getExactY() + 0.5, 0.5);
+                }
+            }
+
+            if (target != null && chef.getHeldItem() == null) {
+                // Remove dari tile asal
+                Position itemPos = new Position((int)target.x, (int)target.y);
+                Tile itemTile = world.getTile(itemPos);
+                if (itemTile instanceof WalkableTile wtOrigin) {
+                    wtOrigin.removeItem(target);
+                    chef.setHeldItem(target.item);
+                    chef.changeState(new model.chef.states.CarryingState());
+                    AssetManager.getInstance().playSound("pickup");
+                }
+            }
+        }
     }
 
     public void interactAt(Chef chef, Position p) {
         if (chef.isBusy()) return;
         Station st = world.getStationAt(p);
         if (st == null) {
-            if (st instanceof stations.ServingStation) {
-                processServing(chef, st);
-                return;
-            }
+            if (st instanceof stations.ServingStation) { processServing(chef, st); return; }
         }
         if (st != null) chef.tryInteract(st);
     }
@@ -445,17 +556,9 @@ public class GameEngine {
             boolean success = orders.submitDish(dish.getRecipe().getType());
             chef.setHeldItem(null);
             chef.changeState(new model.chef.states.IdleState());
-
-            if (success) {
-                System.out.println("✅ ORDER COMPLETED!");
-                view.gui.AssetManager.getInstance().playSound("serve");
-            } else {
-                System.out.println("❌ WRONG ORDER! Dish discarded.");
-                view.gui.AssetManager.getInstance().playSound("trash");
-            }
-            if (station instanceof stations.ServingStation ss) {
-                if (ss.peek() == null) ss.receiveDirtyPlate();
-            }
+            if (success) AssetManager.getInstance().playSound("serve");
+            else AssetManager.getInstance().playSound("trash");
+            if (station instanceof stations.ServingStation ss && ss.peek() == null) ss.receiveDirtyPlate();
         }
     }
 
