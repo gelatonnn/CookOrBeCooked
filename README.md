@@ -90,7 +90,7 @@ Game ini mendukung **Single Player** (dengan fitur ganti karakter) dan **Local M
 2.  Download "CookOrBeCooked.jar"
 3.  Double klik "CookOrBeCooked.jar" untuk memainkannya
 
-### Via GitHub Repository
+#### Via GitHub Repository
 1.  **Clone** repository ini atau download folder project.
 2.  Buka terminal di dalam folder project.
 3.  Jalankan perintah berikut menggunakan Gradle Wrapper:
