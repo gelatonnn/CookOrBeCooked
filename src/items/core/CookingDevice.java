@@ -13,4 +13,5 @@ public interface CookingDevice {
     void clearContents();
     boolean isCooking();
     default void forceBurn(){}
+    ItemState getState();
 }

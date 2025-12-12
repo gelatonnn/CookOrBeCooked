@@ -19,7 +19,27 @@ public class CookingStation extends BaseStation {
 
     @Override
     public boolean place(Item item) {
-        if (storedItem == null) return super.place(item);
+        // --- BAGIAN INI YANG DIPERBAIKI ---
+        if (storedItem == null) {
+            // 1. Coba taruh item dulu menggunakan logika parent
+            if (super.place(item)) {
+
+                // 2. Jika berhasil ditaruh, cek apakah itu CookingDevice
+                if (storedItem instanceof CookingDevice device) {
+                    // 3. Cek apakah ada isinya dan belum gosong
+                    // Jika ya, nyalakan kembali apinya (Resume Cooking)
+                    if (!device.getContents().isEmpty() &&
+                            device.getState() != items.core.ItemState.BURNED) {
+                        device.startCooking();
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+        // ----------------------------------
+
+        // Logika menaruh bahan ke dalam panci (tidak berubah)
         if (storedItem instanceof CookingDevice device && item instanceof Preparable prep) {
             if (device.canAccept(prep)) {
                 device.addIngredient(prep);
