@@ -106,6 +106,7 @@ public class SpinOverlay {
                     AssetManager.getInstance().stopBGM();
                     AssetManager.getInstance().playSound("win");
                 }
+                AssetManager.getInstance().playSound("bgm_game");
             }
             case SHOW_RESULT -> {
                 if (System.currentTimeMillis() - resultStartTime > RESULT_DURATION) {
