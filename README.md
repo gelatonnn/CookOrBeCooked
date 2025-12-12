@@ -1,8 +1,10 @@
 # 🍳 CookOrBeCooked
 
-![Game Banner](src/resources/CookOrBeCooked.png)
+<div align="center">
+  <img src="src/resources/CookOrBeCooked.png" width="400" alt="Game Banner" />
+</div>
 
-**CookOrBeCooked** adalah game simulasi memasak 2D yang seru dan *chaotic*, terinspirasi dari game populer *Overcooked*. Dibangun sepenuhnya menggunakan **Java Swing** dan **AWT**, game ini menantang pemain untuk menyiapkan bahan, memasak, dan menyajikan hidangan sebelum waktu habis!
+**CookOrBeCooked** adalah game simulasi memasak 2D yang, terinspirasi dari game *Overcooked*. Game ini menantang pemain untuk menyiapkan bahan, memasak, dan menyajikan hidangan sebelum waktu habis!
 
 Game ini mendukung **Single Player** (dengan fitur ganti karakter) dan **Local Multiplayer** (Co-op 2 Pemain).
 
@@ -92,7 +94,7 @@ Game ini menggunakan arsitektur **MVC (Model-View-Controller)**:
 * `src/controller`: Menangani input keyboard dan menerjemahkannya menjadi perintah (`Command Pattern`).
 ---
 
-Made by K02 - K
+### Meet The Team (K02 - K)
 1. 18224028	Muhammad Fariz Difa'urrahman
 2. 18224046	Muhammad Syauqi Azizi
 3. 18224060	R. Athalla Ananda Putra
