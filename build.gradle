@@ -18,6 +18,16 @@ application {
     mainClass = 'Main'
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'Main'
+    }
+    
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17 
     targetCompatibility = JavaVersion.VERSION_17
