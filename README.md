@@ -4,10 +4,21 @@
   <img src="src/resources/CookOrBeCooked.png" width="400" alt="Game Banner" />
 </div>
 
-**CookOrBeCooked** adalah game simulasi memasak 2D yang, terinspirasi dari game *Overcooked*. Game ini menantang pemain untuk menyiapkan bahan, memasak, dan menyajikan hidangan sebelum waktu habis!
+**CookOrBeCooked** adalah sebuah Project Tugas Besar IF2010 Object Oriented Programming dimana kami membuat game simulasi memasak 2D yang terinspirasi dari game *Overcooked*. Game ini menantang pemain untuk menyiapkan bahan, memasak, dan menyajikan hidangan sebelum waktu habis!
 
 Game ini mendukung **Single Player** (dengan fitur ganti karakter) dan **Local Multiplayer** (Co-op 2 Pemain).
 
+---
+## Meet The Team (K02 - K)
+
+| **No** | **Nama** | **NIM**  | **GitHub** |
+| ------ | ---------------------- | ------------- | ----------- |
+| 1      | Muhammad Fariz Difa'urrahman | 18224028      | [@UshiParty](https://github.com/UshiParty) |
+| 2      | Muhammad Syauqi Azizi        | 18224046      | [@jyy](https://github.com/0xjyy)
+| 3      | R. Athalla Ananda Putra      | 18224060      | [@AthallaAnanda](https://github.com/AthallaAnanda)
+| 4      | Francis Galton               | 18224072      | [@gelatonnn](https://github.com/gelatonnn) |
+
+**Asisten:** M Rifki Virziadeili Harisman
 ---
 
 ## ✨ Fitur Utama
@@ -52,7 +63,7 @@ Game ini mendukung **Single Player** (dengan fitur ganti karakter) dan **Local M
 | **Interaksi** | `V` | `K` |
 | **Ambil / Taruh** | `B` | `L` |
 | **Lempar** | `F` | `;` (Titik Koma) |
-| **Dash** | `Shift Kiri` | `Shift Kanan` |
+| **Dash** | `Shift Kiri` | `'` (Kutip) |
 
 ---
 
@@ -73,6 +84,12 @@ Game ini mendukung **Single Player** (dengan fitur ganti karakter) dan **Local M
 * **VS Code** atau **IntelliJ IDEA**.
 
 ### Instalasi & Run
+#### Via Release
+1.  Buka "Releases" dan carilah Versi terbaru
+2.  Download "CookOrBeCooked.jar"
+3.  Double klik "CookOrBeCooked.jar" untuk memainkannya
+
+### Via GitHub Repository
 1.  **Clone** repository ini atau download folder project.
 2.  Buka terminal di dalam folder project.
 3.  Jalankan perintah berikut menggunakan Gradle Wrapper:
@@ -93,9 +110,3 @@ Game ini menggunakan arsitektur **MVC (Model-View-Controller)**:
 * `src/view`: Rendering grafis menggunakan `Graphics2D`, GUI Panel (`HomePanel`, `GamePanel`), dan animasi sprite.
 * `src/controller`: Menangani input keyboard dan menerjemahkannya menjadi perintah (`Command Pattern`).
 ---
-
-### Meet The Team (K02 - K)
-1. 18224028	Muhammad Fariz Difa'urrahman
-2. 18224046	Muhammad Syauqi Azizi
-3. 18224060	R. Athalla Ananda Putra
-4. 18224072	Francis Galton
