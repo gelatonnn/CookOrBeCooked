@@ -2,8 +2,8 @@ package view.gui;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import javax.swing.*;
 
 public class HomePanel extends JPanel {
@@ -15,7 +15,7 @@ public class HomePanel extends JPanel {
         this.backgroundImage = AssetManager.getInstance().getMenuBackground();
 
         // Load font pixel (pastikan file ada)
-        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 10f);
+        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 22.5f);
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
@@ -27,16 +27,16 @@ public class HomePanel extends JPanel {
 
         // --- PENGATURAN JARAK ANTAR TOMBOL ---
         // Ubah angka '10' di bawah ini untuk mengatur jarak (makin besar makin jauh)
-        add(Box.createRigidArea(new Dimension(0, 3)));
+        add(Box.createRigidArea(new Dimension(0, 0)));
 
         // 2. MULTIPLAYER - Warna Orange Retro (PICO-8 Orange)
         addButton("MULTIPLAYER", new Color(255, 163, 0), onStartMulti);
-        add(Box.createRigidArea(new Dimension(0, 3)));
+        add(Box.createRigidArea(new Dimension(0, 0)));
 
         // 3. HOW TO PLAY - Warna Hijau Retro (PICO-8 Green)
         addButton("HOW TO PLAY", new Color(0, 228, 54),
                 () -> showModelessDialog("Cara Bermain", getHelpContent()));
-        add(Box.createRigidArea(new Dimension(0, 3)));
+        add(Box.createRigidArea(new Dimension(0, 0)));
 
         // 4. EXIT GAME - Warna Merah Retro (PICO-8 Red)
         addButton("EXIT GAME", new Color(255, 0, 77), () -> {
