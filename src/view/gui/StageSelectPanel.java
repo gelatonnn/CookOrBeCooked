@@ -56,7 +56,6 @@ public class StageSelectPanel extends JPanel {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setOpaque(false);
 
-        // Beri jarak kecil antar judul di background dan tombol pertama
         container.add(Box.createRigidArea(new Dimension(0, 20)));
 
         // --- STAGE 1: EASY (Index 0) ---
@@ -89,7 +88,6 @@ public class StageSelectPanel extends JPanel {
         container.add(Box.createRigidArea(new Dimension(0, 30)));
 
         // --- BACK BUTTON (Index 3) ---
-        // Saya menambahkan animasi juga di sini agar konsisten
         JButton btnBack = createSimpleButton("BACK TO MENU", new Color(255, 0, 77), 3);
         btnBack.addActionListener(e -> onBack.run());
 
@@ -100,13 +98,11 @@ public class StageSelectPanel extends JPanel {
 
         container.add(backWrapper);
 
-        // Tambahkan insets atas untuk mendorong seluruh grup tombol ke bawah
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(120, 0, 0, 0); // geser turun ~120px
+        gbc.insets = new Insets(120, 0, 0, 0);
         add(container, gbc);
     }
 
-    // Matikan timer saat panel dihancurkan/diganti
     @Override
     public void removeNotify() {
         super.removeNotify();
@@ -150,7 +146,6 @@ public class StageSelectPanel extends JPanel {
         }
     }
 
-    // Update: Tambahkan parameter 'int index'
     private JButton createStageButton(String title, String desc, Color baseColor, boolean unlocked, Runnable action, int index) {
         JButton btn = new JButton() {
             @Override
@@ -245,7 +240,6 @@ public class StageSelectPanel extends JPanel {
         return btn;
     }
 
-    // Update: Tambahkan parameter 'int index'
     private JButton createSimpleButton(String text, Color baseColor, int index) {
         JButton btn = new JButton(text) {
             @Override

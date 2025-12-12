@@ -42,11 +42,9 @@ public class HomePanel extends JPanel {
         // Load font pixel
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 22.5f);
 
-        // 1. SETUP TIMER ANIMASI (60 FPS)
-        // Timer ini akan memanggil repaint() setiap 16ms
         animationTimer = new Timer(16, e -> {
-            animationTime += 0.02f; // Kecepatan animasi
-            repaint(); // Gambar ulang panel beserta tombol-tombolnya
+            animationTime += 0.02f; 
+            repaint(); 
         });
         animationTimer.start();
 
@@ -61,7 +59,7 @@ public class HomePanel extends JPanel {
         // 4. ATUR JARAK DARI ATAS (Spacer)
         container.add(Box.createRigidArea(new Dimension(0, 120)));
 
-        // 5. TAMBAHKAN TOMBOL (Dengan Index untuk variasi animasi)
+        // 5. TAMBAHKAN TOMBOL
 
         // SINGLE PLAYER (Index 0)
         addButton(container, "SINGLE PLAYER", new Color(41, 173, 255), onStartSingle, 0);
@@ -87,7 +85,6 @@ public class HomePanel extends JPanel {
         add(container);
     }
 
-    // Perlu mematikan timer jika panel tidak digunakan (opsional tapi good practice)
     @Override
     public void removeNotify() {
         super.removeNotify();
@@ -96,7 +93,6 @@ public class HomePanel extends JPanel {
         }
     }
 
-    // Update method: Menambahkan parameter 'int index'
     private void addButton(JPanel parent, String text, Color baseColor, Runnable action, int index) {
         JButton btn = createStyledButton(text, baseColor, index);
         btn.addActionListener(e -> {
@@ -118,7 +114,6 @@ public class HomePanel extends JPanel {
         }
     }
 
-    // Update method: Menambahkan logika animasi di paintComponent
     private JButton createStyledButton(String text, Color baseColor, int index) {
         JButton btn = new JButton(text) {
             @Override
@@ -133,19 +128,14 @@ public class HomePanel extends JPanel {
                 int visualHeight = 75;
                 int marginY = (h - visualHeight) / 2;
 
-                // --- LOGIKA ANIMASI MELAYANG ---
-                // Amplitude: Seberapa jauh naik turunnya (4 pixel)
-                // Speed: Diatur oleh animationTime
-                // Phase: (index * 0.5) membuat tombol tidak bergerak serentak (efek gelombang)
                 double offsetY = Math.sin(animationTime + (index * 0.5)) * 4.0;
 
                 g2.translate(0, marginY + offsetY);
 
-                // Logika Warna saat ditekan
                 Color color = baseColor;
                 if (getModel().isPressed()) {
                     color = baseColor.darker();
-                    g2.translate(2, 2); // Efek tekan fisik
+                    g2.translate(2, 2); 
                 } else if (getModel().isRollover()) {
                     color = baseColor.brighter();
                 }
@@ -154,7 +144,7 @@ public class HomePanel extends JPanel {
                 g2.setColor(color);
                 g2.fillRect(0, 0, w, visualHeight);
 
-                // Efek Bevel (3D Highlight & Shadow ala Retro)
+                // Efek Bevel 
                 int stroke = 4;
 
                 // Border Luar Hitam
