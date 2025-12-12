@@ -151,6 +151,7 @@ public class Main {
     }
 
     private static void stopGame() {
+        model.engine.EffectManager.getInstance().resetEffects();
         if (engine != null) {
             engine.stop();
             engine = null;

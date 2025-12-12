@@ -5,15 +5,15 @@ import items.utensils.Plate;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import javax.swing.*;
 import model.chef.Chef;
 import model.engine.GameEngine;
 import model.orders.Order;
 import model.world.Tile;
+import java.io.InputStream;
 import model.world.WorldMap;
+import java.io.IOException;
 import model.world.tiles.*;
 import stations.*;
 import utils.Position;
@@ -24,12 +24,10 @@ public class GamePanel extends JPanel implements Observer {
     private final int TILE_SIZE = 60;
     private final SpinOverlay spinOverlay = new SpinOverlay();
 
-    // UI Elements
     private Font pixelFont;
     private Font pixelFontSmall;
     private JButton btnRecipe, btnHelp, btnExit;
 
-    // Layout Variables
     private int cx = 0;
     private int cy = 0;
     private double scale = 1.0;
@@ -39,18 +37,21 @@ public class GamePanel extends JPanel implements Observer {
 
     public GamePanel(GameEngine engine, Runnable onExitClicked) {
         this.engine = engine;
-        this.setBackground(new Color(20, 20, 25));
+        this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
         this.setLayout(null);
 
-        // Load Fonts
+        this.setFocusable(true);
+        this.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) { requestFocusInWindow(); }
+        });
+
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 14f);
         this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 9f);
 
-        // --- INIT TOMBOL ---
         initButtons(onExitClicked);
 
-        // Effect Listener
         model.engine.EffectManager.getInstance().setOnSpinStart(() -> {
             model.engine.EffectManager.EffectType target =
                     model.engine.EffectManager.getInstance().getPendingEffect();
@@ -66,16 +67,13 @@ public class GamePanel extends JPanel implements Observer {
     }
 
     private void initButtons(Runnable onExitClicked) {
-        // 1. Recipe
         btnRecipe = createPixelButton("RECIPE", new Color(41, 173, 255));
         btnRecipe.addActionListener(e -> {
             showModelessDialog("RECIPE BOOK", getRecipeContent());
-            // Paksa fokus balik ke game setelah dialog tutup
             this.requestFocusInWindow();
         });
         add(btnRecipe);
 
-        // 2. Help
         btnHelp = createPixelButton("HELP", new Color(0, 228, 54));
         btnHelp.addActionListener(e -> {
             showModelessDialog("CONTROLS", getHelpContent());
@@ -83,7 +81,6 @@ public class GamePanel extends JPanel implements Observer {
         });
         add(btnHelp);
 
-        // 3. Exit
         btnExit = createPixelButton("EXIT", new Color(255, 0, 77));
         btnExit.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
@@ -98,11 +95,9 @@ public class GamePanel extends JPanel implements Observer {
         add(btnExit);
     }
 
-    // --- POSISI TOMBOL BARU ---
     @Override
     public void doLayout() {
         super.doLayout();
-
         int frameW = getWidth();
         int frameH = getHeight();
         int mapW = engine.getWorld().getWidth() * TILE_SIZE;
@@ -111,27 +106,18 @@ public class GamePanel extends JPanel implements Observer {
         double s = Math.min((double)frameW / mapW, (double)frameH / mapH);
         int marginX = (int)((frameW - mapW * s) / 2);
 
-        // Pastikan ada margin kiri yg cukup
+        // Sidebar Kiri
         if (marginX > 130) {
             int btnW = 120;
             int btnH = 45;
-
-            // Posisi X di tengah margin kiri
             int btnX = (marginX - btnW) / 2;
 
-            // --- POSISI Y BARU ---
-
-            // Info Box (Timer/Score) tingginya sekitar 100px + margin atas 20px = 120px.
-            // Kita taruh tombol Recipe dan Help tepat di bawahnya.
-
-            int startY = 140; // 120 + 20px gap
+            // Geser tombol lebih ke bawah karena ada kotak Effect baru
+            int startY = 230;
 
             btnRecipe.setBounds(btnX, startY, btnW, btnH);
-            btnHelp.setBounds(btnX, startY + 60, btnW, btnH); // 45 (tinggi) + 15 (gap)
-
-            // Exit Button: Di Kiri Bawah (Bottom Left)
-            int bottomMargin = 40;
-            btnExit.setBounds(btnX, frameH - btnH - bottomMargin, btnW, btnH);
+            btnHelp.setBounds(btnX, startY + 60, btnW, btnH);
+            btnExit.setBounds(btnX, frameH - btnH - 40, btnW, btnH);
 
             setButtonsVisible(true);
         } else {
@@ -145,51 +131,6 @@ public class GamePanel extends JPanel implements Observer {
         btnExit.setVisible(visible);
     }
 
-    // --- BUTTON HELPER ---
-    private JButton createPixelButton(String text, Color baseColor) {
-        JButton btn = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-
-                Color color = baseColor;
-                if (getModel().isPressed()) {
-                    color = baseColor.darker();
-                    g2.translate(2, 2);
-                } else if (getModel().isRollover()) {
-                    color = baseColor.brighter();
-                }
-
-                int w = getWidth(); int h = getHeight(); int stroke = 3;
-                g2.setColor(color); g2.fillRect(0, 0, w, h);
-                g2.setColor(Color.BLACK); g2.setStroke(new BasicStroke(stroke)); g2.drawRect(stroke/2, stroke/2, w-stroke, h-stroke);
-
-                g2.setColor(new Color(255, 255, 255, 80)); g2.fillRect(stroke, stroke, w-stroke*2, 3);
-                g2.setColor(new Color(0, 0, 0, 50)); g2.fillRect(stroke, h-stroke-3, w-stroke*2, 3);
-
-                g2.setColor(Color.WHITE); g2.setFont(pixelFontSmall);
-                FontMetrics fm = g2.getFontMetrics();
-                int tx = (w - fm.stringWidth(getText()))/2;
-                int ty = (h - fm.getHeight())/2 + fm.getAscent();
-
-                g2.setColor(Color.BLACK); g2.drawString(getText(), tx+2, ty+2);
-                g2.setColor(Color.WHITE); g2.drawString(getText(), tx, ty);
-                g2.dispose();
-            }
-        };
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setContentAreaFilled(false);
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        // --- FIX UTAMA: Mencegah tombol mencuri fokus keyboard ---
-        btn.setFocusable(false);
-        // --------------------------------------------------------
-
-        return btn;
-    }
-
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -199,31 +140,23 @@ public class GamePanel extends JPanel implements Observer {
         g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 
-        // 1. SCALING
         int frameW = getWidth();
         int frameH = getHeight();
-        int mapW = engine.getWorld().getWidth() * TILE_SIZE;
-        int mapH = engine.getWorld().getHeight() * TILE_SIZE;
+        int mapPixelW = engine.getWorld().getWidth() * TILE_SIZE;
+        int mapPixelH = engine.getWorld().getHeight() * TILE_SIZE;
 
-        scale = Math.min((double)frameW / mapW, (double)frameH / mapH);
-        cx = (int)((frameW - mapW * scale) / 2);
-        cy = (int)((frameH - mapH * scale) / 2);
+        scale = Math.min((double)frameW / mapPixelW, (double)frameH / mapPixelH);
+        cx = (int)((frameW - mapPixelW * scale) / 2);
+        cy = (int)((frameH - mapPixelH * scale) / 2);
 
-        // 2. BACKGROUND & UI
-        drawBackgroundPattern(g2d, frameW, frameH);
+        drawBackgroundWallpaper(g2d, frameW, frameH);
 
-        if (cx > 50) {
-            drawLeftSidebarInfo(g2d);
-            drawRightSidebarOrders(g2d);
-        }
-
-        // 3. GAME WORLD
         AffineTransform oldAT = g2d.getTransform();
         g2d.translate(cx, cy);
         g2d.scale(scale, scale);
 
         Shape originalClip = g2d.getClip();
-        g2d.clipRect(0, 0, mapW, mapH);
+        g2d.clipRect(0, 0, mapPixelW, mapPixelH);
 
         notificationQueue.clear();
         drawWorld(g2d);
@@ -234,23 +167,52 @@ public class GamePanel extends JPanel implements Observer {
         g2d.setClip(originalClip);
         g2d.setTransform(oldAT);
 
-        // 4. OVERLAY
+        drawSidebarHUD(g2d, frameW, frameH, (int)(mapPixelW * scale));
+
+        if (cx > 50) {
+            drawLeftSidebarInfo(g2d);
+            drawRightSidebarOrders(g2d);
+        }
+
         spinOverlay.draw((Graphics2D)g, frameW, frameH);
 
         if (!isValid()) validate();
     }
 
-    private void drawBackgroundPattern(Graphics2D g2d, int w, int h) {
-        g2d.setColor(new Color(40, 30, 30));
+    private void drawBackgroundWallpaper(Graphics2D g2d, int w, int h) {
+        BufferedImage wallpaper = AssetManager.getInstance().getGameBackground();
+        if (wallpaper != null) {
+            g2d.drawImage(wallpaper, 0, 0, w, h, null);
+        } else {
+            g2d.setColor(new Color(20, 20, 25));
+            g2d.fillRect(0, 0, w, h);
+        }
+        g2d.setColor(new Color(0, 0, 0, 150));
         g2d.fillRect(0, 0, w, h);
-        g2d.setColor(new Color(50, 40, 40));
-        int patternSize = 40;
-        for (int y = 0; y < h; y += patternSize) {
-            for (int x = 0; x < w; x += patternSize) {
-                if ((x/patternSize + y/patternSize) % 2 == 0) {
-                    g2d.fillRect(x, y, patternSize, patternSize);
-                }
-            }
+    }
+
+    private void drawSidebarHUD(Graphics2D g2d, int w, int h, int mapScreenWidth) {
+        Color hudColor = new Color(0, 0, 0, 200);
+        g2d.setColor(hudColor);
+
+        if (cx > 0) {
+            g2d.fillRect(0, 0, cx, h);
+            g2d.setColor(new Color(255, 255, 255, 50));
+            g2d.fillRect(cx - 2, 0, 2, h);
+        }
+
+        int rightStart = cx + mapScreenWidth;
+        if (rightStart < w) {
+            g2d.setColor(hudColor);
+            g2d.fillRect(rightStart, 0, w - rightStart, h);
+            g2d.setColor(new Color(255, 255, 255, 50));
+            g2d.fillRect(rightStart, 0, 2, h);
+        }
+
+        if (cy > 0) {
+            g2d.setColor(hudColor);
+            g2d.fillRect(0, 0, w, cy);
+            g2d.fillRect(0, h - cy, w, cy);
         }
     }
 
@@ -258,33 +220,110 @@ public class GamePanel extends JPanel implements Observer {
         int boxX = cx / 2 - 60;
         if (boxX < 10) boxX = 10;
         int boxY = 20;
-        int boxW = 120;
-        int boxH = 100;
 
-        g2d.setColor(new Color(0, 0, 0, 150));
-        g2d.fillRoundRect(boxX, boxY, boxW, boxH, 10, 10);
         g2d.setColor(Color.WHITE);
-        g2d.setStroke(new BasicStroke(3));
-        g2d.drawRoundRect(boxX, boxY, boxW, boxH, 10, 10);
-
-        int time = engine.getClock().getTimeRemaining();
         g2d.setFont(pixelFontSmall);
-        g2d.setColor(new Color(200, 200, 200));
-        g2d.drawString("TIME", boxX + 10, boxY + 25);
+        g2d.drawString("STATUS", boxX, boxY);
 
-        g2d.setFont(pixelFont);
-        if (time <= 30) g2d.setColor(new Color(255, 0, 77));
-        else g2d.setColor(Color.WHITE);
-        String timeStr = String.format("%02d:%02d", time/60, time%60);
-        g2d.drawString(timeStr, boxX + 10, boxY + 45);
+        // 1. Timer Box
+        int startY = boxY + 15;
+        drawInfoBox(g2d, boxX, startY, "TIME",
+                String.format("%02d:%02d", engine.getClock().getTimeRemaining() / 60, engine.getClock().getTimeRemaining() % 60),
+                engine.getClock().getTimeRemaining() <= 30 ? new Color(255, 0, 77) : Color.WHITE);
 
-        g2d.setFont(pixelFontSmall);
-        g2d.setColor(new Color(200, 200, 200));
-        g2d.drawString("SCORE", boxX + 10, boxY + 70);
+        // 2. Score Box
+        int scoreY = startY + 60;
+        drawInfoBox(g2d, boxX, scoreY, "SCORE",
+                String.valueOf(engine.getOrders().getScore()),
+                new Color(255, 236, 39));
 
-        g2d.setFont(pixelFont);
-        g2d.setColor(new Color(255, 236, 39));
-        g2d.drawString(String.valueOf(engine.getOrders().getScore()), boxX + 10, boxY + 90);
+        // 3. EFFECT BUFF HUD (BARU)
+        drawActiveEffectHUD(g2d, boxX, scoreY + 60);
+    }
+
+    private void drawInfoBox(Graphics2D g, int x, int y, String label, String value, Color valueColor) {
+        g.setColor(new Color(30, 30, 30));
+        g.fillRect(x, y, 120, 50);
+        g.setColor(Color.WHITE);
+        g.setStroke(new BasicStroke(2)); // Border lebih tipis sedikit
+        g.drawRect(x, y, 120, 50);
+
+        // Label Kecil di pojok
+        g.setFont(pixelFontSmall.deriveFont(7f));
+        g.setColor(Color.LIGHT_GRAY);
+        g.drawString(label, x + 8, y + 15);
+
+        // Value Besar di tengah
+        g.setFont(pixelFont);
+        g.setColor(valueColor);
+        FontMetrics fm = g.getFontMetrics();
+        g.drawString(value, x + (120 - fm.stringWidth(value))/2, y + 38);
+    }
+
+    // --- LOGIKA HUD EFEK BARU ---
+    private void drawActiveEffectHUD(Graphics2D g2d, int x, int y) {
+        var em = model.engine.EffectManager.getInstance();
+
+        // Cek efek apa yang aktif
+        String symbol = "";
+        Color color = Color.GRAY;
+        long maxDuration = 1;
+        boolean isActive = false;
+
+        if (em.isFlash()) {
+            isActive = true;
+            symbol = "⚡"; // Petir
+            color = new Color(255, 236, 39); // Kuning
+            maxDuration = 15000;
+        } else if (em.isDrunk()) {
+            isActive = true;
+            symbol = "@"; // Spiral/Pusing
+            color = new Color(138, 43, 226); // Ungu
+            maxDuration = 10000;
+        } else if (em.isDoubleMoney()) {
+            isActive = true;
+            symbol = "$"; // Dolar
+            color = new Color(0, 228, 54); // Hijau
+            maxDuration = 20000;
+        }
+
+        if (isActive) {
+            long timeLeft = em.getTimeRemaining();
+            if (timeLeft <= 0) return; // Jangan gambar jika habis
+
+            // Kotak Container
+            g2d.setColor(new Color(30, 30, 30));
+            g2d.fillRect(x, y, 120, 50);
+            g2d.setColor(color); // Border warna efek
+            g2d.setStroke(new BasicStroke(2));
+            g2d.drawRect(x, y, 120, 50);
+
+            // Ikon Kotak Kecil
+            g2d.setColor(color);
+            g2d.fillRect(x + 10, y + 10, 30, 30);
+            g2d.setColor(Color.BLACK);
+            g2d.drawRect(x + 10, y + 10, 30, 30);
+
+            // Simbol di dalam ikon (Pake font biasa untuk simbol unicode aman)
+            g2d.setFont(new Font("Monospaced", Font.BOLD, 20));
+            g2d.drawString(symbol, x + 18, y + 32);
+
+            // Teks Waktu (XXs)
+            g2d.setFont(pixelFont);
+            g2d.setColor(Color.WHITE);
+            String timeStr = (timeLeft / 1000) + "s";
+            g2d.drawString(timeStr, x + 50, y + 28);
+
+            // Progress Bar Kecil
+            int barW = 60;
+            int barH = 6;
+            int fillW = (int)((timeLeft / (double)maxDuration) * barW);
+
+            g2d.setColor(Color.DARK_GRAY);
+            g2d.fillRect(x + 50, y + 34, barW, barH);
+            g2d.setColor(color);
+            g2d.fillRect(x + 50, y + 34, fillW, barH);
+        }
     }
 
     private void drawRightSidebarOrders(Graphics2D g2d) {
@@ -335,13 +374,44 @@ public class GamePanel extends JPanel implements Observer {
         g.setColor(Color.BLACK); g.setStroke(new BasicStroke(2)); g.drawRect(x + 8, y + 45, maxBarWidth, 8);
     }
 
+    private JButton createPixelButton(String text, Color baseColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+                Color color = baseColor;
+                if (getModel().isPressed()) { color = baseColor.darker(); g2.translate(2, 2); }
+                else if (getModel().isRollover()) { color = baseColor.brighter(); }
+
+                int w = getWidth(); int h = getHeight(); int stroke = 3;
+                g2.setColor(color); g2.fillRect(0, 0, w, h);
+                g2.setColor(Color.BLACK); g2.setStroke(new BasicStroke(stroke)); g2.drawRect(stroke/2, stroke/2, w-stroke, h-stroke);
+                g2.setColor(new Color(255, 255, 255, 80)); g2.fillRect(stroke, stroke, w-stroke*2, 3);
+                g2.setColor(new Color(0, 0, 0, 50)); g2.fillRect(stroke, h-stroke-3, w-stroke*2, 3);
+
+                g2.setColor(Color.WHITE); g2.setFont(pixelFontSmall);
+                FontMetrics fm = g2.getFontMetrics();
+                int tx = (w - fm.stringWidth(getText()))/2;
+                int ty = (h - fm.getHeight())/2 + fm.getAscent();
+                g2.setColor(Color.BLACK); g2.drawString(getText(), tx+2, ty+2);
+                g2.setColor(Color.WHITE); g2.drawString(getText(), tx, ty);
+                g2.dispose();
+            }
+        };
+        btn.setBorderPainted(false); btn.setFocusPainted(false); btn.setContentAreaFilled(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR)); btn.setFocusable(false);
+        return btn;
+    }
+
     private Font loadPixelFont(String path, float size) {
         try {
             InputStream is = getClass().getResourceAsStream(path);
             if (is == null) return new Font("Monospaced", Font.BOLD, (int)size);
             Font font = Font.createFont(Font.TRUETYPE_FONT, is);
             return font.deriveFont(size);
-        } catch (FontFormatException | IOException e) { return new Font("Monospaced", Font.BOLD, (int)size); }
+        } catch (Exception e) { return new Font("Monospaced", Font.BOLD, (int)size); }
     }
 
     private void showModelessDialog(String title, String content) {
@@ -368,8 +438,11 @@ public class GamePanel extends JPanel implements Observer {
             for (int x = 0; x < map.getWidth(); x++) {
                 Tile tile = map.getTile(new Position(x, y));
                 int px = x * TILE_SIZE; int py = y * TILE_SIZE;
+                if (tile instanceof WallTile && !map.getWallMask()[y][x]) continue;
+
                 g2d.setColor(new Color(139, 69, 19)); g2d.fillRect(px, py, TILE_SIZE, TILE_SIZE);
                 g2d.setColor(new Color(160, 82, 45)); g2d.drawRect(px, py, TILE_SIZE, TILE_SIZE);
+
                 if (!tile.isWalkable()) {
                     if (tile instanceof StationTile stTile) drawStation(g2d, px, py, stTile.getStation());
                     else {
@@ -395,8 +468,7 @@ public class GamePanel extends JPanel implements Observer {
             items.core.Item storedItem = station.peek();
             if (storedItem != null) {
                 int itemSize = (int)(TILE_SIZE * 0.6);
-                int offsetX = (TILE_SIZE - itemSize) / 2;
-                int offsetY = (TILE_SIZE - itemSize) / 2;
+                int offsetX = (TILE_SIZE - itemSize) / 2; int offsetY = (TILE_SIZE - itemSize) / 2;
                 if (station instanceof stations.CuttingStation) { offsetY -= 8; offsetX -= 5; }
                 drawItem(g2d, x + offsetX, y + offsetY, storedItem, itemSize);
                 if (storedItem instanceof items.core.CookingDevice device) notificationQueue.add(new NotificationRequest(x, y, device));
