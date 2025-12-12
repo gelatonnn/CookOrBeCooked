@@ -10,7 +10,9 @@ import java.awt.FontFormatException;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -22,7 +24,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.Timer; // Import Timer
+import javax.swing.Timer; 
 
 import model.engine.GameConfig;
 
@@ -43,7 +45,7 @@ public class StageSelectPanel extends JPanel {
 
         // 2. SETUP TIMER ANIMASI (60 FPS)
         animationTimer = new Timer(16, e -> {
-            animationTime += 0.05f;
+            animationTime += 0.02f;
             repaint();
         });
         animationTimer.start();
@@ -54,7 +56,8 @@ public class StageSelectPanel extends JPanel {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setOpaque(false);
 
-        container.add(Box.createRigidArea(new Dimension(0, 80)));
+        // Beri jarak kecil antar judul di background dan tombol pertama
+        container.add(Box.createRigidArea(new Dimension(0, 20)));
 
         // --- STAGE 1: EASY (Index 0) ---
         JButton btnStage1 = createStageButton("STAGE 1: EASY", "TARGET: 3 ORDERS",
@@ -97,7 +100,10 @@ public class StageSelectPanel extends JPanel {
 
         container.add(backWrapper);
 
-        add(container);
+        // Tambahkan insets atas untuk mendorong seluruh grup tombol ke bawah
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(120, 0, 0, 0); // geser turun ~120px
+        add(container, gbc);
     }
 
     // Matikan timer saat panel dihancurkan/diganti
@@ -153,9 +159,19 @@ public class StageSelectPanel extends JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
+                int w = getWidth();
+                int h = getHeight();
+                
+                int visualHeight = 75; 
+                int marginY = (h - visualHeight) / 2;
+
                 // --- ANIMASI SINE WAVE ---
                 double offsetY = Math.sin(animationTime + (index * 0.5)) * 4.0;
-                g2.translate(0, offsetY);
+                if (unlocked){
+                    g2.translate(0, marginY + offsetY);
+                } else {
+                    g2.translate(0, marginY);
+                }
 
                 Color color = unlocked ? baseColor : new Color(100, 100, 100);
 
@@ -166,35 +182,33 @@ public class StageSelectPanel extends JPanel {
                     color = baseColor.brighter();
                 }
 
-                int w = getWidth();
-                int h = getHeight();
                 int stroke = 4;
 
                 // Background
                 g2.setColor(color);
-                g2.fillRect(0, 0, w, h);
+                g2.fillRect(0, 0, w, visualHeight);
 
                 // Border Hitam
                 g2.setColor(Color.BLACK);
                 g2.setStroke(new BasicStroke(stroke));
-                g2.drawRect(stroke/2, stroke/2, w - stroke, h - stroke);
+                g2.drawRect(stroke/2, stroke/2, w - stroke, visualHeight - stroke);
 
                 // Highlight
                 g2.setColor(new Color(255, 255, 255, 80));
                 g2.fillRect(stroke, stroke, w - stroke*2, 4);
-                g2.fillRect(stroke, stroke, 4, h - stroke*2);
+                g2.fillRect(stroke, stroke, 4, visualHeight - stroke*2);
 
                 // Shadow
                 g2.setColor(new Color(0, 0, 0, 50));
-                g2.fillRect(stroke, h - stroke - 4, w - stroke*2, 4);
-                g2.fillRect(w - stroke - 4, stroke, 4, h - stroke*2);
+                g2.fillRect(stroke, visualHeight - stroke - 4, w - stroke*2, 4);
+                g2.fillRect(w - stroke - 4, stroke, 4, visualHeight - stroke*2);
 
                 // Text
                 g2.setColor(Color.WHITE);
                 g2.setFont(pixelFont);
                 FontMetrics fmTitle = g2.getFontMetrics();
                 int xTitle = (w - fmTitle.stringWidth(title)) / 2;
-                int yTitle = (h / 2);
+                int yTitle = (visualHeight / 2);
 
                 g2.setColor(Color.BLACK);
                 g2.drawString(title, xTitle + 2, yTitle + 2);
@@ -205,7 +219,7 @@ public class StageSelectPanel extends JPanel {
                 FontMetrics fmDesc = g2.getFontMetrics();
                 String drawDesc = unlocked ? desc : "(LOCKED)";
                 int xDesc = (w - fmDesc.stringWidth(drawDesc)) / 2;
-                int yDesc = (h / 2) + 15;
+                int yDesc = (visualHeight / 2) + 15;
 
                 g2.setColor(new Color(220, 220, 220));
                 g2.drawString(drawDesc, xDesc, yDesc);
@@ -214,8 +228,8 @@ public class StageSelectPanel extends JPanel {
             }
         };
 
-        btn.setPreferredSize(new Dimension(400,75));
-        btn.setMaximumSize(new Dimension(400,75));
+        btn.setPreferredSize(new Dimension(400,90));
+        btn.setMaximumSize(new Dimension(400,90));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
@@ -240,9 +254,14 @@ public class StageSelectPanel extends JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
+                int w = getWidth();
+                int h = getHeight();
+                int visualHeight = 45;
+                int marginY = (h - visualHeight) / 2;
+
                 // --- ANIMASI SINE WAVE ---
                 double offsetY = Math.sin(animationTime + (index * 0.5)) * 4.0;
-                g2.translate(0, offsetY);
+                g2.translate(0, marginY + offsetY);
 
                 Color color = baseColor;
                 if (getModel().isPressed()) {
@@ -252,30 +271,27 @@ public class StageSelectPanel extends JPanel {
                     color = baseColor.brighter();
                 }
 
-                int w = getWidth();
-                int h = getHeight();
                 int stroke = 3;
 
                 g2.setColor(color);
-                g2.fillRect(0, 0, w, h);
+                g2.fillRect(0, 0, w, visualHeight);
 
                 g2.setColor(Color.BLACK);
                 g2.setStroke(new BasicStroke(stroke));
-                g2.drawRect(stroke/2, stroke/2, w - stroke, h - stroke);
+                g2.drawRect(stroke/2, stroke/2, w - stroke, visualHeight - stroke);
 
                 g2.setColor(new Color(255, 255, 255, 80));
                 g2.fillRect(stroke, stroke, w - stroke*2, 3);
-                g2.fillRect(stroke, stroke, 3, h - stroke*2);
-
+                g2.fillRect(stroke, stroke, 3, visualHeight - stroke*2);
                 g2.setColor(new Color(0, 0, 0, 50));
-                g2.fillRect(stroke, h - stroke - 3, w - stroke*2, 3);
-                g2.fillRect(w - stroke - 3, stroke, 3, h - stroke*2);
+                g2.fillRect(stroke, visualHeight - stroke - 3, w - stroke*2, 3);
+                g2.fillRect(w - stroke - 3, stroke, 3, visualHeight - stroke*2);
 
                 g2.setColor(Color.WHITE);
                 g2.setFont(pixelFont);
                 FontMetrics fm = g2.getFontMetrics();
                 int x = (w - fm.stringWidth(getText())) / 2;
-                int y = (h - fm.getHeight()) / 2 + fm.getAscent();
+                int y = (visualHeight - fm.getHeight()) / 2 + fm.getAscent();
 
                 g2.setColor(Color.BLACK);
                 g2.drawString(getText(), x+2, y+2);
@@ -285,7 +301,7 @@ public class StageSelectPanel extends JPanel {
                 g2.dispose();
             }
         };
-        btn.setPreferredSize(new Dimension(300, 45));
+        btn.setPreferredSize(new Dimension(300, 60));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
