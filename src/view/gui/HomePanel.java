@@ -37,18 +37,15 @@ public class HomePanel extends JPanel {
         // Load font pixel
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 22.5f);
 
-        // 1. GUNAKAN GRIDBAGLAYOUT (Agar Container selalu di tengah layar)
+        // 1. GUNAKAN GRIDBAGLAYOUT 
         setLayout(new GridBagLayout());
 
-        // 2. BUAT CONTAINER (Untuk menampung tombol secara vertikal)
+        // 2. BUAT CONTAINER 
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setOpaque(false); // Transparan agar background terlihat
+        container.setOpaque(false);
 
         // 3. ATUR JARAK DARI ATAS (Spacer)
-        // Karena layout sekarang "Center", kita gunakan spacer ini untuk mendorong tombol 
-        // sedikit ke bawah agar tidak menutupi Logo Game di background.
-        // Nilai 150 - 200 biasanya pas untuk resolusi 800x600.
         container.add(Box.createRigidArea(new Dimension(0, 120)));
 
         // 4. TAMBAHKAN TOMBOL KE DALAM CONTAINER
@@ -77,14 +74,12 @@ public class HomePanel extends JPanel {
         add(container);
     }
 
-    // Method Helper yang diperbarui: Menerima 'parent' container
     private void addButton(JPanel parent, String text, Color baseColor, Runnable action) {
         JButton btn = createStyledButton(text, baseColor);
         btn.addActionListener(e -> {
             if (action != null) action.run();
         });
 
-        // Agar tombol berada di tengah-tengah Container (BoxLayout)
         btn.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         parent.add(btn);
@@ -107,7 +102,6 @@ public class HomePanel extends JPanel {
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
 
-                // 1. MATIKAN Antialiasing (Wajib untuk Pixel Art agar tajam)
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
@@ -115,7 +109,7 @@ public class HomePanel extends JPanel {
                 Color color = baseColor;
                 if (getModel().isPressed()) {
                     color = baseColor.darker();
-                    g2.translate(2, 2); // Efek tombol turun fisik
+                    g2.translate(2, 2); 
                 } else if (getModel().isRollover()) {
                     color = baseColor.brighter();
                 }
@@ -123,12 +117,12 @@ public class HomePanel extends JPanel {
                 int w = getWidth();
                 int h = getHeight();
 
-                // 2. Gambar Kotak Dasar
+                // Gambar Kotak Dasar
                 g2.setColor(color);
                 g2.fillRect(0, 0, w, h);
 
-                // 3. Efek Bevel (3D Highlight & Shadow ala Retro)
-                int stroke = 4; // Ketebalan border
+                // Efek Bevel (3D Highlight & Shadow ala Retro)
+                int stroke = 4;
 
                 // Border Luar Hitam
                 g2.setColor(Color.BLACK);
@@ -145,7 +139,7 @@ public class HomePanel extends JPanel {
                 g2.fillRect(stroke, h - stroke - 4, w - stroke*2, 4); 
                 g2.fillRect(w - stroke - 4, stroke, 4, h - stroke*2); 
 
-                // 4. Teks Putih
+                // Teks Putih
                 g2.setColor(Color.WHITE); 
                 g2.setFont(getFont());
 
@@ -153,11 +147,9 @@ public class HomePanel extends JPanel {
                 int x = (w - fm.stringWidth(getText())) / 2;
                 int y = (h - fm.getHeight()) / 2 + fm.getAscent();
 
-                // Bayangan Teks Hitam (Drop Shadow) agar lebih terbaca
                 g2.setColor(Color.BLACK);
                 g2.drawString(getText(), x + 2, y + 2);
 
-                // Teks Utama Putih
                 g2.setColor(Color.WHITE);
                 g2.drawString(getText(), x, y);
 
@@ -167,7 +159,6 @@ public class HomePanel extends JPanel {
 
         btn.setFont(pixelFont);
         btn.setPreferredSize(new Dimension(400,75));
-        // Set maximum size agar BoxLayout tidak melebarkan tombol secara paksa
         btn.setMaximumSize(new Dimension(400,75)); 
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);

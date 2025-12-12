@@ -130,13 +130,11 @@ public class GamePanel extends JPanel implements Observer {
         double s = Math.min((double)frameW / mapW, (double)frameH / mapH);
         int marginX = (int)((frameW - mapW * s) / 2);
 
-        // Sidebar Kiri
         if (marginX > 130) {
             int btnW = 120;
             int btnH = 45;
             int btnX = (marginX - btnW) / 2;
 
-            // Geser tombol lebih ke bawah karena ada kotak Effect baru
             int startY = 230;
 
             btnRecipe.setBounds(btnX, startY, btnW, btnH);
@@ -184,10 +182,9 @@ public class GamePanel extends JPanel implements Observer {
 
         notificationQueue.clear();
 
-        // Render urutan yang diperbaiki agar tidak saling tumpuk
-        drawWorld(g2d);       // Lantai, Dinding, Station, Item di Lantai
-        drawChefs(g2d);       // Chef
-        drawProjectiles(g2d); // Barang terbang
+        drawWorld(g2d);      
+        drawChefs(g2d);      
+        drawProjectiles(g2d); 
         drawAllNotifications(g2d);
 
         g2d.setClip(originalClip);
@@ -271,7 +268,7 @@ public class GamePanel extends JPanel implements Observer {
         g.setColor(new Color(30, 30, 30));
         g.fillRect(x, y, 120, 50);
         g.setColor(Color.WHITE);
-        g.setStroke(new BasicStroke(2)); // Border lebih tipis sedikit
+        g.setStroke(new BasicStroke(2)); 
         g.drawRect(x, y, 120, 50);
 
         // Label Kecil di pojok
@@ -290,7 +287,6 @@ public class GamePanel extends JPanel implements Observer {
     private void drawActiveEffectHUD(Graphics2D g2d, int x, int y) {
         var em = model.engine.EffectManager.getInstance();
 
-        // Cek efek apa yang aktif
         String symbol = "";
         Color color = Color.GRAY;
         long maxDuration = 1;
@@ -299,23 +295,23 @@ public class GamePanel extends JPanel implements Observer {
         if (em.isFlash()) {
             isActive = true;
             symbol = "⚡"; // Petir
-            color = new Color(255, 236, 39); // Kuning
+            color = new Color(255, 236, 39); 
             maxDuration = 15000;
         } else if (em.isDrunk()) {
             isActive = true;
-            symbol = "@"; // Spiral/Pusing
-            color = new Color(138, 43, 226); // Ungu
+            symbol = "@";
+            color = new Color(138, 43, 226);
             maxDuration = 10000;
         } else if (em.isDoubleMoney()) {
             isActive = true;
             symbol = "$"; // Dolar
-            color = new Color(0, 228, 54); // Hijau
+            color = new Color(0, 228, 54); 
             maxDuration = 20000;
         }
 
         if (isActive) {
             long timeLeft = em.getTimeRemaining();
-            if (timeLeft <= 0) return; // Jangan gambar jika habis
+            if (timeLeft <= 0) return; 
 
             // Kotak Container
             g2d.setColor(new Color(30, 30, 30));
@@ -330,11 +326,11 @@ public class GamePanel extends JPanel implements Observer {
             g2d.setColor(Color.BLACK);
             g2d.drawRect(x + 10, y + 10, 30, 30);
 
-            // Simbol di dalam ikon (Pake font biasa untuk simbol unicode aman)
+            // Simbol di dalam ikon 
             g2d.setFont(new Font("Monospaced", Font.BOLD, 20));
             g2d.drawString(symbol, x + 18, y + 32);
 
-            // Teks Waktu (XXs)
+            // Teks Waktu 
             g2d.setFont(pixelFont);
             g2d.setColor(Color.WHITE);
             String timeStr = (timeLeft / 1000) + "s";

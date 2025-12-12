@@ -1,20 +1,24 @@
 package view.gui;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.imageio.ImageIO;
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 
 public class AssetManager {
     private static AssetManager instance;
     
     // --- SPRITE & IMAGE VARS ---
     private BufferedImage spriteSheet;
-    private BufferedImage menuBackground; // [BARU]
+    private BufferedImage menuBackground; 
     private BufferedImage gameBackground;
     private final int SPRITE_SIZE = 102; 
     private final Map<String, BufferedImage> spriteCache = new HashMap<>();
@@ -35,10 +39,7 @@ public class AssetManager {
         return instance;
     }
 
-    // ============================
-    // BAGIAN GAMBAR (SPRITES)
-    // ============================
-
+    //Sprites
     private void loadSprites() {
         String[] paths = {
             "/resources/sprites.png", 
@@ -130,10 +131,7 @@ public class AssetManager {
         return spriteSheet;
     }
 
-    // ============================
-    // BAGIAN SUARA (AUDIO)
-    // ============================
-
+    //Audio
     private void loadSounds() {
         loadSound("bgm_menu", "/resources/sounds/bgm_menu.wav");
         loadSound("bgm_game", "/resources/sounds/bgm_game.wav");

@@ -1,5 +1,7 @@
 package model.engine;
 
+import java.util.Random;
+
 import items.core.CookingDevice;
 import items.core.Item;
 import items.utensils.DirtyPlate;
@@ -11,7 +13,6 @@ import model.world.tiles.StationTile;
 import model.world.tiles.WalkableTile;
 import stations.Station;
 import utils.TimerUtils;
-import java.util.Random;
 
 public class EffectManager {
     private static EffectManager instance;
@@ -24,10 +25,8 @@ public class EffectManager {
     private boolean isDrunkActive = false;
     private boolean isDoubleMoneyActive = false;
 
-    // Variabel Waktu
     private long effectEndTime = 0;
 
-    // Token Sesi
     private int sessionToken = 0;
 
     private Runnable onSpinStart;
@@ -51,10 +50,10 @@ public class EffectManager {
 
         System.out.println("🎰 Gacha Result Determined: " + pendingEffect);
 
-        if (onSpinStart != null) onSpinStart.run();
+        if (onSpinStart != null)
+            onSpinStart.run();
     }
-
-    // [PERBAIKAN ERROR] Menambahkan method ini agar LuckyStation.java tidak error
+    
     public void startGachaSequence() {
         startSpin();
     }
@@ -179,7 +178,6 @@ public class EffectManager {
         }
     }
 
-    // --- GETTERS ---
     public boolean isFlash() { return isFlashActive; }
     public boolean isDrunk() { return isDrunkActive; }
     public boolean isDoubleMoney() { return isDoubleMoneyActive; }

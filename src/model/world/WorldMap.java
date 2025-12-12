@@ -93,7 +93,6 @@ public class WorldMap {
         return layout;
     }
 
-    // --- ALGORITMA BARU: ORGANIC + CORNER FIX ---
     private char[][] generateOrganicLayout(int complexity) {
         char[][] layout = new char[height][width];
 
@@ -151,34 +150,24 @@ public class WorldMap {
         }
     }
 
-    // --- PERBAIKAN UTAMA DI SINI ---
     private void buildStrictBorder(char[][] layout, List<Position> stationSpots) {
         char[][] temp = new char[height][width];
         for(int y=0; y<height; y++) temp[y] = layout[y].clone();
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                if (layout[y][x] == ' ') { // Jika Void
-
-                    // Hitung berapa sisi LURUS yang menyentuh lantai
+                if (layout[y][x] == ' ') { 
                     int floorNeighbors = countCardinalFloorNeighbors(temp, x, y);
                     boolean diagonal = hasDiagonalFloor(temp, x, y);
 
                     if (floorNeighbors == 1) {
-                        // SEMPURNA: Hanya menyentuh 1 sisi lantai (Dinding Lurus)
-                        // Jadikan calon Station
                         layout[y][x] = '?';
                         stationSpots.add(new Position(x, y));
 
                     } else if (floorNeighbors >= 2) {
-                        // SUDUT DALAM: Menyentuh 2 sisi atau lebih (Bentuk L atau U)
-                        // JANGAN taruh station di sini (susah diakses).
-                        // Jadikan Tembok Mati.
                         layout[y][x] = 'X';
 
                     } else if (diagonal) {
-                        // SUDUT LUAR: Hanya menyentuh ujung diagonal
-                        // Jadikan Tembok Mati agar map tertutup.
                         layout[y][x] = 'X';
                     }
                 }
@@ -186,13 +175,12 @@ public class WorldMap {
         }
     }
 
-    // Hitung jumlah tetangga lantai (Atas+Bawah+Kiri+Kanan)
     private int countCardinalFloorNeighbors(char[][] grid, int x, int y) {
         int count = 0;
-        if (y > 0 && grid[y-1][x] == '.') count++; // Atas
-        if (y < height-1 && grid[y+1][x] == '.') count++; // Bawah
-        if (x > 0 && grid[y][x-1] == '.') count++; // Kiri
-        if (x < width-1 && grid[y][x+1] == '.') count++; // Kanan
+        if (y > 0 && grid[y-1][x] == '.') count++;
+        if (y < height-1 && grid[y+1][x] == '.') count++; 
+        if (x > 0 && grid[y][x-1] == '.') count++; 
+        if (x < width-1 && grid[y][x+1] == '.') count++; 
         return count;
     }
 
@@ -243,8 +231,6 @@ public class WorldMap {
             layout[p.y][p.x] = c;
         }
 
-        // Sisa '?' ubah jadi Meja ('A')
-        // Ini memastikan dinding yang lurus terisi meja, bukan tembok
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 if (layout[y][x] == '?') {

@@ -5,14 +5,14 @@ import items.core.ItemState;
 import items.core.Preparable;
 import model.chef.Chef;
 import model.chef.ChefState;
-import stations.Station; // Pastikan import IdleState benar
+import stations.Station;
 import utils.TimerUtils;
 import view.gui.AssetManager;
 
 public class BusyCuttingState implements ChefState {
     private final Station station;
     private int progress = 0;
-    private final int maxProgress = 3; // Butuh 3 detik
+    private final int maxProgress = 3; 
 
     public BusyCuttingState(Station station) {
         this.station = station;
@@ -20,7 +20,6 @@ public class BusyCuttingState implements ChefState {
 
     @Override
     public void enter(Chef chef) {
-        // Validasi: Cek apakah item bisa dipotong
         if (station.isOccupied()) {
             Item item = station.peek();
             
@@ -29,7 +28,6 @@ public class BusyCuttingState implements ChefState {
                 return;
             }
             
-            // Cek apakah sudah dipotong
             if (item.getState() != ItemState.RAW) {
                 cancelAction(chef, "Bahan sudah dipotong!");
                 return;
@@ -50,7 +48,6 @@ public class BusyCuttingState implements ChefState {
     }
 
     private void cutWithProgress(Chef chef) {
-        // Cek jika state sudah berubah (misal pemain memaksa gerak), stop timer
         if (!(chef.getState() instanceof BusyCuttingState)) return;
 
         if (progress >= maxProgress) {
@@ -70,7 +67,7 @@ public class BusyCuttingState implements ChefState {
 
     private void finishCutting(Chef chef) {
         if (station.isOccupied() && station.peek() instanceof Preparable p) {
-            p.chop(); // Ubah status jadi CHOPPED
+            p.chop();
             System.out.println("✅ Cutting complete!");
         }
         chef.changeState(new IdleState());
@@ -81,7 +78,6 @@ public class BusyCuttingState implements ChefState {
     @Override public void placeItem(Chef chef, Station st) {}
     @Override public void interact(Chef chef, Station st) {}
 
-    // --- GETTERS (Dibutuhkan oleh Chef.java untuk Progress Bar) ---
     public int getProgress() {
         return progress;
     }

@@ -1,15 +1,19 @@
 package items.utensils;
 
-import items.core.*;
-import items.ingredients.IngredientBase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+
+import items.core.CookingDevice;
+import items.core.Item;
+import items.core.ItemState;
+import items.core.Preparable;
+import items.ingredients.IngredientBase;
 import utils.TimerUtils;
 
 public class FryingPan extends UtensilBase implements CookingDevice {
     private final List<Preparable> contents = new ArrayList<>();
-    private final int capacity = 1; // Wajan biasanya cuma muat 1 di Map B
+    private final int capacity = 1; 
 
     private boolean cooking = false;
     private ScheduledFuture<?> cookTask;
@@ -28,7 +32,6 @@ public class FryingPan extends UtensilBase implements CookingDevice {
         if (cooking) return false;
 
         Item item = (Item) ingredient;
-        // Wajan menerima bahan CHOPPED (Daging, Ikan, dll) TAPI BUKAN PASTA
         return item.getState() == ItemState.CHOPPED && !item.getName().toLowerCase().contains("pasta");
     }
 

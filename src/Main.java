@@ -2,8 +2,11 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
@@ -42,6 +45,19 @@ public class Main {
 
     private static void setupMainWindow() {
         window = new JFrame("CookOrBeCooked");
+
+        try {
+            URL iconUrl = Main.class.getResource("/resources/CookOrBeCooked.png");
+            
+            if (iconUrl != null) {
+                window.setIconImage(ImageIO.read(iconUrl));
+            } else {
+                System.err.println("Warning: Icon image not found in resources!");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         window.setExtendedState(JFrame.MAXIMIZED_BOTH);
         window.setResizable(true);
@@ -113,7 +129,6 @@ public class Main {
 
         GameController controller = new GameController(engine, isCurrentGameMultiplayer);
 
-        // --- PERUBAHAN: HAPUS HUDPanel, Pindah Logic Exit ke GamePanel ---
         gameContainerPanel = new JPanel(new BorderLayout());
 
         GamePanel gamePanel = new GamePanel(engine, () -> {
@@ -124,9 +139,7 @@ public class Main {
 
         engine.addObserver(gamePanel);
 
-        // Tambahkan GamePanel langsung ke Center (Tanpa HUD Panel di North)
         gameContainerPanel.add(gamePanel, BorderLayout.CENTER);
-        // ------------------------------------------------------------------
 
         setupKeyListener(gamePanel, controller);
 

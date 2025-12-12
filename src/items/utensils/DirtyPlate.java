@@ -9,6 +9,6 @@ public class DirtyPlate extends Item {
 
     @Override
     public String getName() {
-        return "Plate_Dirty"; // Sesuai key di SpriteLibrary (huruf kecil/besar akan dihandle toLowerCase)
+        return "Plate_Dirty"; 
     }
 }

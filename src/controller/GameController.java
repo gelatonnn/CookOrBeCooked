@@ -14,7 +14,6 @@ public class GameController {
     private final boolean isMultiplayer;
     private int activeChefIndex = 0;
 
-    // Track active keys for smooth movement
     private final Set<Integer> pressedKeys = new HashSet<>();
 
     public GameController(GameEngine engine, boolean isMultiplayer) {
@@ -26,7 +25,6 @@ public class GameController {
         int code = e.getKeyCode();
         if (!pressedKeys.contains(code)) {
             pressedKeys.add(code);
-            // Handle actions that trigger ONCE on press (not hold)
             handleOneTimeActions(code);
         }
         updateMovement();
@@ -75,7 +73,6 @@ public class GameController {
             dir = Direction.RIGHT;
         }
 
-        // Apply Drunk Effect
         if (model.engine.EffectManager.getInstance().isDrunk() && dir != null) {
             dir = invertDirection(dir);
         }
@@ -117,7 +114,7 @@ public class GameController {
             // --- SINGLE PLAYER CONTROLS ---
             // Switch Chef
             if (code == KeyEvent.VK_TAB || code == KeyEvent.VK_C) {
-                chefs.get(activeChefIndex).setMoveInput(null); // Stop current chef
+                chefs.get(activeChefIndex).setMoveInput(null); 
                 activeChefIndex = (activeChefIndex + 1) % chefs.size();
                 updateMovement();
                 return;
@@ -127,13 +124,11 @@ public class GameController {
             handleSpecificAction(chefs.get(activeChefIndex), code,
                     KeyEvent.VK_E, KeyEvent.VK_F, KeyEvent.VK_T, KeyEvent.VK_SHIFT);
 
-            // Legacy keys (Optional)
             if (code == KeyEvent.VK_P) engine.pickAt(chefs.get(activeChefIndex), chefs.get(activeChefIndex).getFacingPosition());
             if (code == KeyEvent.VK_O) engine.placeAt(chefs.get(activeChefIndex), chefs.get(activeChefIndex).getFacingPosition());
         }
     }
 
-    // Updated Signature: Sekarang menerima dashKey secara spesifik, bukan boolean global
     private void handleSpecificAction(Chef chef, int code, int interact, int pickPlace, int throwItem, int dashKey) {
         if (code == interact) {
             engine.interactAt(chef, chef.getFacingPosition());
@@ -143,12 +138,10 @@ public class GameController {
         } else if (code == throwItem) {
             engine.throwItem(chef);
         } else if (code == dashKey) {
-            // Sekarang Dash hanya terpanggil jika tombol spesifik ditekan
             engine.dashChef(chef);
         }
     }
 
-    // Legacy support
     public void handleInput(KeyEvent e) {
         keyPressed(e);
     }

@@ -1,7 +1,6 @@
 package model.engine;
 
 public class GameConfig {
-    // Basic settings
     public int stageTimeSeconds = 180;
     public int maxFailedStreak = 5;
     public int fps = 60;
@@ -14,7 +13,6 @@ public class GameConfig {
 
     public GameConfig() {}
 
-    // Constructor lengkap untuk Stage Select
     public GameConfig(String name, int time, int maxFail, int targetOrders, int minScore, boolean isSurvival) {
         this.stageName = name;
         this.stageTimeSeconds = time;
@@ -22,6 +20,6 @@ public class GameConfig {
         this.targetOrders = targetOrders;
         this.minScore = minScore;
         this.isSurvival = isSurvival;
-        this.fps = 60; // Default FPS
+        this.fps = 60; 
     }
 }

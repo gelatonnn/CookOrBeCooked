@@ -1,13 +1,13 @@
 package model.chef.states;
 
 import items.core.Item;
-import items.utensils.DirtyPlate; // <--- INI IMPORT YANG KURANG
+import items.utensils.DirtyPlate;
 import items.utensils.Plate;
 import model.chef.Chef;
 import model.chef.ChefState;
 import stations.Station;
 import utils.TimerUtils;
-import view.gui.AssetManager; // Import untuk suara
+import view.gui.AssetManager; 
 
 public class BusyWashingState implements ChefState {
     private final Station station;
@@ -21,13 +21,11 @@ public class BusyWashingState implements ChefState {
     @Override
     public void enter(Chef chef) {
         System.out.println(chef.getName() + " started washing plates...");
-        // Mainkan suara cuci sekali di awal atau loop (opsional)
         AssetManager.getInstance().playSound("wash"); 
         washWithProgress(chef);
     }
 
     private void washWithProgress(Chef chef) {
-        // Cek jika state berubah (misal ditarik oleh event lain), batalkan timer
         if (!(chef.getState() instanceof BusyWashingState)) return;
 
         if (progress >= maxProgress) {
@@ -38,7 +36,6 @@ public class BusyWashingState implements ChefState {
         progress++;
         // System.out.println("   Washing progress: " + progress + "/" + maxProgress);
         
-        // Suara gosok setiap detik
         if (progress < maxProgress) {
              AssetManager.getInstance().playSound("wash");
         }
@@ -47,19 +44,18 @@ public class BusyWashingState implements ChefState {
     }
 
     private void finishWashing(Chef chef) {
-        // Cek apakah ada barang di station
         if (station.isOccupied()) {
             Item item = station.peek();
             
-            // Skenario 1: Item adalah DirtyPlate (Piring Kotor dari Serving)
+            // Skenario 1: Item adalah DirtyPlate 
             if (item instanceof DirtyPlate) {
-                station.pick(); // Hapus piring kotor
-                station.place(new Plate()); // Ganti dengan piring bersih baru
+                station.pick(); 
+                station.place(new Plate()); 
                 
                 System.out.println("✨ Cling! DirtyPlate menjadi Plate bersih.");
-                AssetManager.getInstance().playSound("pick"); // Suara 'cling'
+                AssetManager.getInstance().playSound("pick"); 
             } 
-            // Skenario 2: Item adalah Plate biasa tapi kotor (Legacy logic)
+            // Skenario 2: Item adalah Plate biasa tapi kotor 
             else if (item instanceof Plate p && !p.isClean()) {
                 p.wash();
                 System.out.println("✨ Cling! Plate dicuci bersih.");

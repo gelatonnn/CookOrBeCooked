@@ -12,7 +12,6 @@ public class CuttingStation extends BaseStation {
     public boolean canPlace(Item item) {
         if (item instanceof Preparable p) {
             Item i = (Item) p;
-            // VALIDASI: Hanya terima RAW. Tolak CHOPPED/COOKED/BURNED.
             if (i.getState() != ItemState.RAW) {
                 return false;
             }
@@ -28,7 +27,6 @@ public class CuttingStation extends BaseStation {
             return false;
         }
         
-        // Efek suara place
         view.gui.AssetManager.getInstance().playSound("place");
         
         System.out.println("📍 Menaruh " + item.getName() + " di Cutting Station");

@@ -1,22 +1,24 @@
 package model.orders;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
-import model.recipes.*;
+
+import model.recipes.DishType;
+import model.recipes.Recipe;
+import model.recipes.RecipeBook;
 import utils.TimerUtils;
 
 public class OrderManager {
     private final List<Order> active = new ArrayList<>();
-    private final int max = 3; // Maksimal order di layar
+    private final int max = 3; 
     private int score = 0;
-    private int completedOrdersCount = 0; // TAMBAHAN
+    private int completedOrdersCount = 0; 
     private int failedOrdersCount = 0;
     private ScheduledFuture<?> tickTask;
     
-    // --- VARIABEL BARU UNTUK SPAWN ---
     private int spawnTimer = 0;
-    private final int SPAWN_INTERVAL = 10; // Order baru muncul setiap 10 detik
-    // ---------------------------------
+    private final int SPAWN_INTERVAL = 10; 
 
     public OrderManager(boolean startThread) {
         if (startThread) {
@@ -25,10 +27,8 @@ public class OrderManager {
     }
 
     public void tick() {
-        // Update waktu setiap order aktif
         active.forEach(Order::tick);
 
-        // Hapus order expired
         List<Order> expired = active.stream()
                 .filter(Order::isExpired)
                 .toList();
@@ -40,24 +40,19 @@ public class OrderManager {
         }
         active.removeIf(Order::isExpired);
 
-        // --- LOGIC BARU: SPAWN SATU PER SATU ---
         spawnTimer++;
         
-        // Cek apakah sudah waktunya spawn order baru
         if (spawnTimer >= SPAWN_INTERVAL) {
-            // Hanya spawn jika slot masih ada
             if (active.size() < max) {
                 generateOrder();
-                spawnTimer = 0; // Reset timer setelah spawn
+                spawnTimer = 0; 
             }
         }
-        // ---------------------------------------
     }
 
     private void generateOrder() {
         DishType type = RecipeBook.getRandomDish();
         Recipe recipe = RecipeBook.getRecipe(type);
-        // Durasi order 90 detik (lebih santai)
         Order newOrder = new Order(recipe, 90);
         active.add(newOrder);
         System.out.println("📋 New Order #" + newOrder.getOrderId() + ": " + recipe.getName());
@@ -69,7 +64,7 @@ public class OrderManager {
                 o.complete();
                 
                 int baseScore = 100;
-                int speedBonus = (o.getTimeLeft() > 45) ? 20 : 0; // Bonus jika cepat
+                int speedBonus = (o.getTimeLeft() > 45) ? 20 : 0; 
                 int total = baseScore + speedBonus;
                 if (model.engine.EffectManager.getInstance().isDoubleMoney()) {
                     total *= 2;
@@ -81,7 +76,6 @@ public class OrderManager {
                 completedOrdersCount++;
                 System.out.println("✅ Order completed!");
                 
-                // Opsional: Reset spawn timer agar order pengganti tidak muncul instan
                 spawnTimer = 0; 
                 
                 return true;

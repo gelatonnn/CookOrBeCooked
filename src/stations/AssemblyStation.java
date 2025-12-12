@@ -1,14 +1,17 @@
 package stations;
 
+import java.util.List;
+
 import items.core.CookingDevice;
 import items.core.Item;
-import items.core.Preparable;
-import items.dish.*; // Import Dish classes
+import items.core.Preparable; 
+import items.dish.DishBase;
+import items.dish.PastaBolognese;
+import items.dish.PastaFruttiDiMare;
+import items.dish.PastaMarinara;
 import items.utensils.Plate;
 import model.recipes.DishType;
 import model.recipes.RecipeBook;
-
-import java.util.List;
 
 public class AssemblyStation extends BaseStation {
     @Override
@@ -48,11 +51,8 @@ public class AssemblyStation extends BaseStation {
             ingredientAdded = true;
         }
 
-        // --- CEK RESEP SETELAH BAHAN DITAMBAH ---
         if (ingredientAdded && storedItem instanceof Plate plate) {
             checkAndConvertDish(plate);
-            // Jika item berasal dari tangan (preparable), return true (item hilang dari tangan)
-            // Jika item adalah CookingDevice, return false (device tetap di tangan)
             return !(item instanceof CookingDevice);
         }
 
@@ -64,7 +64,6 @@ public class AssemblyStation extends BaseStation {
         
         if (match != null) {
             System.out.println("Recipe Complete: " + match);
-            // Ganti Plate dengan Dish Jadi
             if (match == DishType.PASTA_MARINARA) storedItem = new PastaMarinara();
             else if (match == DishType.PASTA_BOLOGNESE) storedItem = new PastaBolognese();
             else if (match == DishType.PASTA_FRUTTI_DI_MARE) storedItem = new PastaFruttiDiMare();

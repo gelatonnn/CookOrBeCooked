@@ -33,18 +33,15 @@ public class StageSelectPanel extends JPanel {
     public StageSelectPanel(int unlockedLevel, Consumer<GameConfig> onStageSelected, Runnable onBack) {
         // 1. Load Font & Background
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 17f);
-        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 13f); // Ukuran kecil untuk deskripsi
+        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 13f); 
         loadBackground();
 
-        // --- UBAH LAYOUT KE GRIDBAGLAYOUT (Agar Posisi Center) ---
         setLayout(new GridBagLayout());
 
-        // Container vertikal untuk menampung tombol
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setOpaque(false); // Transparan
+        container.setOpaque(false); 
 
-        // Spacer Atas (Agar tidak menutupi logo di background jika ada)
         container.add(Box.createRigidArea(new Dimension(0, 80)));
 
         // --- STAGE 1: EASY ---
@@ -54,7 +51,7 @@ public class StageSelectPanel extends JPanel {
                 () -> onStageSelected.accept(new GameConfig("Stage 1", 240, 3, 3, 0, false)));
         container.add(btnStage1);
 
-        container.add(Box.createRigidArea(new Dimension(0, 15))); // Jarak antar tombol
+        container.add(Box.createRigidArea(new Dimension(0, 15)));
 
         // --- STAGE 2: MEDIUM ---
         boolean isS2Unlocked = unlockedLevel >= 2;
@@ -74,22 +71,19 @@ public class StageSelectPanel extends JPanel {
                 () -> onStageSelected.accept(new GameConfig("Stage 3", 300, 3, 0, 500, true)));
         container.add(btnStage3);
 
-        container.add(Box.createRigidArea(new Dimension(0, 30))); // Jarak ke tombol Back
+        container.add(Box.createRigidArea(new Dimension(0, 30))); 
 
         // --- BACK BUTTON ---
         JButton btnBack = createSimpleButton("BACK TO MENU", new Color(255, 0, 77));
         btnBack.addActionListener(e -> onBack.run());
 
-        // Wrapper agar tombol back rapi di tengah container
         JPanel backWrapper = new JPanel();
         backWrapper.setOpaque(false);
         backWrapper.add(btnBack);
-        // Pastikan wrapper align center di dalam container
         backWrapper.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         container.add(backWrapper);
 
-        // Tambahkan container ke Panel Utama (Center)
         add(container);
     }
 
@@ -200,7 +194,7 @@ public class StageSelectPanel extends JPanel {
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
-        btn.setAlignmentX(Component.CENTER_ALIGNMENT); // Agar di tengah container
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         if (unlocked) {
             btn.setCursor(new Cursor(Cursor.HAND_CURSOR));

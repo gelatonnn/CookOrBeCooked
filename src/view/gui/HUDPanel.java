@@ -34,18 +34,16 @@ public class HUDPanel extends JPanel implements Observer {
     private Font pixelFont;
     private Font pixelFontSmall;
 
-    // Simpan referensi tombol agar bisa dipindah saat resize
     private JButton btnExit;
 
     public HUDPanel(GameEngine engine, Runnable onExitClicked) {
         this.engine = engine;
 
-        // Load Font
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 20f);
         this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 15f);
 
         this.setBackground(new Color(30, 30, 30));
-        this.setLayout(null); // Absolute positioning
+        this.setLayout(null); 
 
         // 1. Recipe
         JButton btnRecipe = createPixelButton("RECIPE", new Color(41, 173, 255));
@@ -67,7 +65,6 @@ public class HUDPanel extends JPanel implements Observer {
 
         // 3. Exit
         btnExit = createPixelButton("EXIT", new Color(255, 0, 77));
-        // Posisi awal, nanti diupdate di doLayout
         btnExit.setBounds(800, 15, 100, 40);
         btnExit.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
@@ -82,16 +79,13 @@ public class HUDPanel extends JPanel implements Observer {
         this.add(btnExit);
     }
 
-    // --- FIX LAYOUT SAAT FULL SCREEN ---
     @Override
     public void doLayout() {
         super.doLayout();
-        // Update posisi tombol Exit agar selalu di pojok kanan layar
         if (btnExit != null) {
             btnExit.setBounds(getWidth() - 120, 15, 100, 40);
         }
     }
-    // -----------------------------------
 
     private Font loadPixelFont(String path, float size) {
         try {
