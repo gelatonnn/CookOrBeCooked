@@ -22,6 +22,7 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
+import javax.swing.Timer; // Import Timer
 
 import model.engine.GameConfig;
 
@@ -30,51 +31,63 @@ public class StageSelectPanel extends JPanel {
     private Font pixelFont;
     private Font pixelFontSmall;
 
+    // --- ANIMATION VARIABLES ---
+    private Timer animationTimer;
+    private float animationTime = 0f;
+
     public StageSelectPanel(int unlockedLevel, Consumer<GameConfig> onStageSelected, Runnable onBack) {
         // 1. Load Font & Background
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 17f);
-        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 13f); 
+        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 13f);
         loadBackground();
+
+        // 2. SETUP TIMER ANIMASI (60 FPS)
+        animationTimer = new Timer(16, e -> {
+            animationTime += 0.05f;
+            repaint();
+        });
+        animationTimer.start();
 
         setLayout(new GridBagLayout());
 
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setOpaque(false); 
+        container.setOpaque(false);
 
         container.add(Box.createRigidArea(new Dimension(0, 80)));
 
-        // --- STAGE 1: EASY ---
+        // --- STAGE 1: EASY (Index 0) ---
         JButton btnStage1 = createStageButton("STAGE 1: EASY", "TARGET: 3 ORDERS",
                 new Color(41, 173, 255),
                 true,
-                () -> onStageSelected.accept(new GameConfig("Stage 1", 240, 3, 3, 0, false)));
+                () -> onStageSelected.accept(new GameConfig("Stage 1", 5, 3, 3, 0, false)), 0);
         container.add(btnStage1);
 
         container.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // --- STAGE 2: MEDIUM ---
+        // --- STAGE 2: MEDIUM (Index 1) ---
         boolean isS2Unlocked = unlockedLevel >= 2;
         JButton btnStage2 = createStageButton("STAGE 2: MEDIUM", "TARGET: 4 ORDERS",
                 new Color(255, 163, 0),
                 isS2Unlocked,
-                () -> onStageSelected.accept(new GameConfig("Stage 2", 270, 3, 4, 0, false)));
+                () -> onStageSelected.accept(new GameConfig("Stage 2", 270, 3, 4, 0, false)), 1);
         container.add(btnStage2);
 
         container.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // --- STAGE 3: SURVIVAL ---
+        // --- STAGE 3: SURVIVAL (Index 2) ---
         boolean isS3Unlocked = unlockedLevel >= 3;
         JButton btnStage3 = createStageButton("STAGE 3: HARD", "SURVIVE 5 MINS",
                 new Color(0, 228, 54),
                 isS3Unlocked,
-                () -> onStageSelected.accept(new GameConfig("Stage 3", 300, 3, 0, 500, true)));
+                () -> onStageSelected.accept(new GameConfig("Stage 3", 300, 3, 0, 500, true)), 2);
         container.add(btnStage3);
 
-        container.add(Box.createRigidArea(new Dimension(0, 30))); 
+        container.add(Box.createRigidArea(new Dimension(0, 30)));
 
-        // --- BACK BUTTON ---
-        JButton btnBack = createSimpleButton("BACK TO MENU", new Color(255, 0, 77));
+        // --- BACK BUTTON (Index 3) ---
+        // Saya menambahkan animasi juga di sini agar konsisten
+        JButton btnBack = createSimpleButton("BACK TO MENU", new Color(255, 0, 77), 3);
         btnBack.addActionListener(e -> onBack.run());
 
         JPanel backWrapper = new JPanel();
@@ -85,6 +98,15 @@ public class StageSelectPanel extends JPanel {
         container.add(backWrapper);
 
         add(container);
+    }
+
+    // Matikan timer saat panel dihancurkan/diganti
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        if (animationTimer != null && animationTimer.isRunning()) {
+            animationTimer.stop();
+        }
     }
 
     private Font loadPixelFont(String path, float size) {
@@ -105,8 +127,6 @@ public class StageSelectPanel extends JPanel {
 
             if (url != null) {
                 this.backgroundImage = ImageIO.read(url);
-            } else {
-                // System.err.println("SelectStageBackground.png not found.");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -124,13 +144,18 @@ public class StageSelectPanel extends JPanel {
         }
     }
 
-    private JButton createStageButton(String title, String desc, Color baseColor, boolean unlocked, Runnable action) {
+    // Update: Tambahkan parameter 'int index'
+    private JButton createStageButton(String title, String desc, Color baseColor, boolean unlocked, Runnable action, int index) {
         JButton btn = new JButton() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+
+                // --- ANIMASI SINE WAVE ---
+                double offsetY = Math.sin(animationTime + (index * 0.5)) * 4.0;
+                g2.translate(0, offsetY);
 
                 Color color = unlocked ? baseColor : new Color(100, 100, 100);
 
@@ -182,14 +207,14 @@ public class StageSelectPanel extends JPanel {
                 int xDesc = (w - fmDesc.stringWidth(drawDesc)) / 2;
                 int yDesc = (h / 2) + 15;
 
-                g2.setColor(new Color(220, 220, 220)); 
+                g2.setColor(new Color(220, 220, 220));
                 g2.drawString(drawDesc, xDesc, yDesc);
 
                 g2.dispose();
             }
         };
 
-        btn.setPreferredSize(new Dimension(400,75)); 
+        btn.setPreferredSize(new Dimension(400,75));
         btn.setMaximumSize(new Dimension(400,75));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
@@ -206,13 +231,18 @@ public class StageSelectPanel extends JPanel {
         return btn;
     }
 
-    private JButton createSimpleButton(String text, Color baseColor) {
+    // Update: Tambahkan parameter 'int index'
+    private JButton createSimpleButton(String text, Color baseColor, int index) {
         JButton btn = new JButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+
+                // --- ANIMASI SINE WAVE ---
+                double offsetY = Math.sin(animationTime + (index * 0.5)) * 4.0;
+                g2.translate(0, offsetY);
 
                 Color color = baseColor;
                 if (getModel().isPressed()) {
