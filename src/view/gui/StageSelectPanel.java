@@ -43,7 +43,6 @@ public class StageSelectPanel extends JPanel {
         this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 13f);
         loadBackground();
 
-        // 2. SETUP TIMER ANIMASI (60 FPS)
         animationTimer = new Timer(16, e -> {
             animationTime += 0.02f;
             repaint();
@@ -62,7 +61,7 @@ public class StageSelectPanel extends JPanel {
         JButton btnStage1 = createStageButton("STAGE 1: EASY", "TARGET: 3 ORDERS",
                 new Color(41, 173, 255),
                 true,
-                () -> onStageSelected.accept(new GameConfig("Stage 1", 5, 3, 3, 0, false)), 0);
+                () -> onStageSelected.accept(new GameConfig("Stage 1", 240, 3, 3, 0, false)), 0);
         container.add(btnStage1);
 
         container.add(Box.createRigidArea(new Dimension(0, 15)));
