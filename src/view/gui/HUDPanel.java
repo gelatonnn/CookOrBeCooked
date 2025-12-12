@@ -276,7 +276,7 @@ public class HUDPanel extends JPanel implements Observer {
 
             // Nama
             g.setColor(Color.BLACK);
-            g.setFont(pixelFontSmall.deriveFont(6f));
+            g.setFont(pixelFontSmall.deriveFont(15f));
 
             String name = o.getRecipe().getName().toUpperCase().replace("PASTA ", "");
             if (name.length() > 9) name = name.substring(0, 9);

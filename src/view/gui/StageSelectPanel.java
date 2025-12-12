@@ -16,14 +16,14 @@ public class StageSelectPanel extends JPanel {
 
     public StageSelectPanel(int unlockedLevel, Consumer<GameConfig> onStageSelected, Runnable onBack) {
         // 1. Load Font & Background
-        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 10f);
-        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 7f); // Ukuran kecil untuk deskripsi
+        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 20f);
+        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 15f); // Ukuran kecil untuk deskripsi
         loadBackground();
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
         // Jarak dari atas (sesuaikan dengan desain background Anda)
-        add(Box.createRigidArea(new Dimension(0, 190)));
+        add(Box.createRigidArea(new Dimension(0, 210)));
 
         // --- STAGE 1: EASY (Warna Biru Retro) ---
         add(createStageButton("STAGE 1: EASY", "TARGET: 3 ORDERS",
@@ -84,7 +84,7 @@ public class StageSelectPanel extends JPanel {
             if (url != null) {
                 this.backgroundImage = ImageIO.read(url);
             } else {
-                // System.err.println("Warning: SelectStageBackground.png not found.");
+                // System.err.println("SelectStageBackground.png not found.");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -154,7 +154,7 @@ public class StageSelectPanel extends JPanel {
                 g2.setFont(pixelFont);
                 FontMetrics fmTitle = g2.getFontMetrics();
                 int xTitle = (w - fmTitle.stringWidth(title)) / 2;
-                int yTitle = (h / 2) - 8;
+                int yTitle = (h / 2) - 2;
 
                 // Shadow Teks Hitam
                 g2.setColor(Color.BLACK);
@@ -167,16 +167,16 @@ public class StageSelectPanel extends JPanel {
                 FontMetrics fmDesc = g2.getFontMetrics();
                 String drawDesc = unlocked ? desc : "(LOCKED)";
                 int xDesc = (w - fmDesc.stringWidth(drawDesc)) / 2;
-                int yDesc = (h / 2) + 12;
+                int yDesc = (h / 2) + 15;
 
-                g2.setColor(new Color(220, 220, 220)); // Putih agak gelap untuk deskripsi
+                g2.setColor(new Color(220, 220, 220)); 
                 g2.drawString(drawDesc, xDesc, yDesc);
 
                 g2.dispose();
             }
         };
 
-        btn.setPreferredSize(new Dimension(320, 60)); // Ukuran konsisten
+        btn.setPreferredSize(new Dimension(320, 60)); 
         btn.setMaximumSize(new Dimension(320, 60));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
