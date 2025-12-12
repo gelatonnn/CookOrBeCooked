@@ -27,61 +27,83 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer; // Import Timer Swing
 
 public class HomePanel extends JPanel {
     private final BufferedImage backgroundImage;
     private Font pixelFont;
+
+    // --- ANIMATION VARIABLES ---
+    private Timer animationTimer;
+    private float animationTime = 0f; // Waktu berjalan untuk sinus
 
     public HomePanel(Runnable onStartSingle, Runnable onStartMulti) {
         this.backgroundImage = AssetManager.getInstance().getMenuBackground();
         // Load font pixel
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 22.5f);
 
-        // 1. GUNAKAN GRIDBAGLAYOUT 
+        // 1. SETUP TIMER ANIMASI (60 FPS)
+        // Timer ini akan memanggil repaint() setiap 16ms
+        animationTimer = new Timer(16, e -> {
+            animationTime += 0.02f; // Kecepatan animasi
+            repaint(); // Gambar ulang panel beserta tombol-tombolnya
+        });
+        animationTimer.start();
+
+        // 2. GUNAKAN GRIDBAGLAYOUT
         setLayout(new GridBagLayout());
 
-        // 2. BUAT CONTAINER 
+        // 3. BUAT CONTAINER
         JPanel container = new JPanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setOpaque(false);
 
-        // 3. ATUR JARAK DARI ATAS (Spacer)
+        // 4. ATUR JARAK DARI ATAS (Spacer)
         container.add(Box.createRigidArea(new Dimension(0, 120)));
 
-        // 4. TAMBAHKAN TOMBOL KE DALAM CONTAINER
-        
-        // SINGLE PLAYER
-        addButton(container, "SINGLE PLAYER", new Color(41, 173, 255), onStartSingle);
-        container.add(Box.createRigidArea(new Dimension(0, 15))); // Jarak antar tombol
+        // 5. TAMBAHKAN TOMBOL (Dengan Index untuk variasi animasi)
 
-        // MULTIPLAYER
-        addButton(container, "MULTIPLAYER", new Color(255, 163, 0), onStartMulti);
+        // SINGLE PLAYER (Index 0)
+        addButton(container, "SINGLE PLAYER", new Color(41, 173, 255), onStartSingle, 0);
         container.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // HOW TO PLAY
+        // MULTIPLAYER (Index 1)
+        addButton(container, "MULTIPLAYER", new Color(255, 163, 0), onStartMulti, 1);
+        container.add(Box.createRigidArea(new Dimension(0, 15)));
+
+        // HOW TO PLAY (Index 2)
         addButton(container, "HOW TO PLAY", new Color(0, 228, 54),
-                () -> showModelessDialog("Cara Bermain", getHelpContent()));
+                () -> showModelessDialog("Cara Bermain", getHelpContent()), 2);
         container.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // EXIT GAME
+        // EXIT GAME (Index 3)
         addButton(container, "EXIT GAME", new Color(255, 0, 77), () -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Keluar dari permainan?", "Exit", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) System.exit(0);
-        });
+        }, 3);
 
-        // 5. MASUKKAN CONTAINER KE PANEL UTAMA
+        // 6. MASUKKAN CONTAINER KE PANEL UTAMA
         add(container);
     }
 
-    private void addButton(JPanel parent, String text, Color baseColor, Runnable action) {
-        JButton btn = createStyledButton(text, baseColor);
+    // Perlu mematikan timer jika panel tidak digunakan (opsional tapi good practice)
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        if (animationTimer != null && animationTimer.isRunning()) {
+            animationTimer.stop();
+        }
+    }
+
+    // Update method: Menambahkan parameter 'int index'
+    private void addButton(JPanel parent, String text, Color baseColor, Runnable action, int index) {
+        JButton btn = createStyledButton(text, baseColor, index);
         btn.addActionListener(e -> {
             if (action != null) action.run();
         });
 
         btn.setAlignmentX(Component.CENTER_ALIGNMENT);
-
         parent.add(btn);
     }
 
@@ -96,7 +118,8 @@ public class HomePanel extends JPanel {
         }
     }
 
-    private JButton createStyledButton(String text, Color baseColor) {
+    // Update method: Menambahkan logika animasi di paintComponent
+    private JButton createStyledButton(String text, Color baseColor, int index) {
         JButton btn = new JButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -105,21 +128,31 @@ public class HomePanel extends JPanel {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
+                int w = getWidth();
+                int h = getHeight();
+                int visualHeight = 75;
+                int marginY = (h - visualHeight) / 2;
+
+                // --- LOGIKA ANIMASI MELAYANG ---
+                // Amplitude: Seberapa jauh naik turunnya (4 pixel)
+                // Speed: Diatur oleh animationTime
+                // Phase: (index * 0.5) membuat tombol tidak bergerak serentak (efek gelombang)
+                double offsetY = Math.sin(animationTime + (index * 0.5)) * 4.0;
+
+                g2.translate(0, marginY + offsetY);
+
                 // Logika Warna saat ditekan
                 Color color = baseColor;
                 if (getModel().isPressed()) {
                     color = baseColor.darker();
-                    g2.translate(2, 2); 
+                    g2.translate(2, 2); // Efek tekan fisik
                 } else if (getModel().isRollover()) {
                     color = baseColor.brighter();
                 }
 
-                int w = getWidth();
-                int h = getHeight();
-
                 // Gambar Kotak Dasar
                 g2.setColor(color);
-                g2.fillRect(0, 0, w, h);
+                g2.fillRect(0, 0, w, visualHeight);
 
                 // Efek Bevel (3D Highlight & Shadow ala Retro)
                 int stroke = 4;
@@ -127,29 +160,31 @@ public class HomePanel extends JPanel {
                 // Border Luar Hitam
                 g2.setColor(Color.BLACK);
                 g2.setStroke(new BasicStroke(stroke));
-                g2.drawRect(stroke/2, stroke/2, w - stroke, h - stroke);
+                g2.drawRect(stroke/2, stroke/2, w - stroke, visualHeight - stroke);
 
                 // Highlight (Atas & Kiri - Warna Putih Transparan)
                 g2.setColor(new Color(255, 255, 255, 100));
-                g2.fillRect(stroke, stroke, w - stroke*2, 4); 
-                g2.fillRect(stroke, stroke, 4, h - stroke*2); 
+                g2.fillRect(stroke, stroke, w - stroke*2, 4);
+                g2.fillRect(stroke, stroke, 4, visualHeight - stroke*2);
 
                 // Shadow (Bawah & Kanan - Warna Hitam Transparan)
                 g2.setColor(new Color(0, 0, 0, 50));
-                g2.fillRect(stroke, h - stroke - 4, w - stroke*2, 4); 
-                g2.fillRect(w - stroke - 4, stroke, 4, h - stroke*2); 
+                g2.fillRect(stroke, visualHeight - stroke - 4, w - stroke*2, 4);
+                g2.fillRect(w - stroke - 4, stroke, 4, visualHeight - stroke*2);
 
                 // Teks Putih
-                g2.setColor(Color.WHITE); 
+                g2.setColor(Color.WHITE);
                 g2.setFont(getFont());
 
                 FontMetrics fm = g2.getFontMetrics();
                 int x = (w - fm.stringWidth(getText())) / 2;
-                int y = (h - fm.getHeight()) / 2 + fm.getAscent();
+                int y = (visualHeight - fm.getHeight()) / 2 + fm.getAscent();
 
+                // Text Shadow
                 g2.setColor(Color.BLACK);
                 g2.drawString(getText(), x + 2, y + 2);
 
+                // Main Text
                 g2.setColor(Color.WHITE);
                 g2.drawString(getText(), x, y);
 
@@ -158,8 +193,8 @@ public class HomePanel extends JPanel {
         };
 
         btn.setFont(pixelFont);
-        btn.setPreferredSize(new Dimension(400,75));
-        btn.setMaximumSize(new Dimension(400,75)); 
+        btn.setPreferredSize(new Dimension(400,90));
+        btn.setMaximumSize(new Dimension(400,90));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);

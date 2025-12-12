@@ -21,29 +21,41 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.Timer; // 1. Import Timer
 
 public class GameOverPanel extends JPanel {
     private BufferedImage backgroundImage;
     private Font pixelFont;
-    
+
+    // 2. Variabel Animasi
+    private Timer animationTimer;
+    private float animationTime = 0f;
+
     public GameOverPanel(int finalScore, boolean isWin, Runnable onBackToMenu) {
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 24f);
-        
+
         String bgPath = isWin ? "/resources/StageClearBackground.png" : "/resources/GameOverBackground.png";
         loadBackground(bgPath);
 
+        // 3. Setup Timer (60 FPS)
+        animationTimer = new Timer(16, e -> {
+            animationTime += 0.05f;
+            repaint();
+        });
+        animationTimer.start();
+
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        // PENGATURAN POSISI 
-        this.add(Box.createRigidArea(new Dimension(0, 260))); 
+        // PENGATURAN POSISI
+        this.add(Box.createRigidArea(new Dimension(0, 260)));
 
-        //SCORE LABEL
+        // SCORE LABEL (Static - Agar mudah dibaca)
         JLabel scoreLabel = new JLabel("FINAL SCORE: " + finalScore) {
-             @Override
+            @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-                
+
                 String text = getText();
                 FontMetrics fm = g2.getFontMetrics(pixelFont);
                 int x = (getWidth() - fm.stringWidth(text)) / 2;
@@ -51,8 +63,7 @@ public class GameOverPanel extends JPanel {
 
                 g2.setFont(pixelFont);
                 g2.setColor(Color.BLACK);
-                g2.drawString(text, x + 3, y + 3); 
-                // Teks Putih
+                g2.drawString(text, x + 3, y + 3);
                 g2.setColor(Color.WHITE);
                 g2.drawString(text, x, y);
             }
@@ -67,17 +78,27 @@ public class GameOverPanel extends JPanel {
 
         // TOMBOL
         Color btnColor = isWin ? new Color(0, 228, 54) : new Color(255, 0, 77);
-        String btnText = "BACK TO MENU"; 
+        String btnText = "BACK TO MENU";
 
+        // Buat tombol dengan style animasi
         JButton btnBack = createStyledButton(btnText, btnColor);
         btnBack.addActionListener(e -> onBackToMenu.run());
-        
+
         JPanel btnWrapper = new JPanel();
         btnWrapper.setOpaque(false);
         btnWrapper.add(btnBack);
         this.add(btnWrapper);
 
         this.add(Box.createVerticalGlue());
+    }
+
+    // 4. Matikan timer saat panel ditutup
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        if (animationTimer != null && animationTimer.isRunning()) {
+            animationTimer.stop();
+        }
     }
 
     //Helper Methods
@@ -105,7 +126,7 @@ public class GameOverPanel extends JPanel {
         }
     }
 
-    //Button Style
+    // 5. Update Button Style dengan Animasi
     private JButton createStyledButton(String text, Color baseColor) {
         JButton btn = new JButton(text) {
             @Override
@@ -114,6 +135,11 @@ public class GameOverPanel extends JPanel {
 
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+
+                // --- LOGIKA ANIMASI ---
+                // Karena hanya ada 1 tombol, tidak perlu parameter index.
+                double offsetY = Math.sin(animationTime) * 4.0;
+                g2.translate(0, offsetY);
 
                 Color color = baseColor;
                 if (getModel().isPressed()) {
@@ -165,7 +191,7 @@ public class GameOverPanel extends JPanel {
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
+
         return btn;
     }
 
