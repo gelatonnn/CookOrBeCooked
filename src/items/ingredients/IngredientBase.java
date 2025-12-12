@@ -18,7 +18,6 @@ public abstract class IngredientBase extends Item implements Preparable {
 
     @Override
     public void chop() {
-        // Validasi ketat: Hanya bisa dipotong jika RAW dan memang bisa dipotong
         if (state == ItemState.RAW && canBeChopped()) {
             state = ItemState.CHOPPED;
             System.out.println("✂️ " + getName() + " is now CHOPPED");
@@ -29,14 +28,12 @@ public abstract class IngredientBase extends Item implements Preparable {
 
     @Override
     public void cook() {
-        // Method ini sekarang hanya mengubah state, TIDAK mengatur waktu
         if (state == ItemState.RAW || state == ItemState.CHOPPED) {
             state = ItemState.COOKED;
             System.out.println("✅ " + getName() + " is now COOKED!");
         }
     }
     
-    // Tambahan helper untuk gosong
     public void burn() {
         if (state != ItemState.BURNED) {
             state = ItemState.BURNED;

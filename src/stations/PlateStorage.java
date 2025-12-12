@@ -1,16 +1,15 @@
 package stations;
 
+import java.util.Stack;
+
 import items.core.Item;
 import items.utensils.DirtyPlate;
 import items.utensils.Plate;
-import java.util.Stack;
 
 public class PlateStorage implements Station {
-    // Menggunakan Stack untuk tumpukan piring (LIFO)
     private final Stack<Item> plates = new Stack<>();
 
     public PlateStorage() {
-        // Mulai dengan 4 piring bersih
         for (int i = 0; i < 4; i++) {
             plates.push(new Plate());
         }
@@ -29,7 +28,6 @@ public class PlateStorage implements Station {
 
     @Override
     public boolean canPlace(Item item) {
-        // Bisa menerima Piring bersih atau DirtyPlate
         return item instanceof Plate || item instanceof DirtyPlate;
     }
 
@@ -66,7 +64,7 @@ public class PlateStorage implements Station {
 
     @Override
     public boolean isOccupied() {
-        return false; // Storage diasumsikan bisa menampung tumpukan tak terbatas (atau logic handled di place)
+        return false; 
     }
 
     public void returnCleanPlate() {

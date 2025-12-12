@@ -29,13 +29,10 @@ public class CookingStation extends BaseStation {
         return false;
     }
 
-    // --- FIX MASALAH GOSONG ---
     @Override
     public Item pick() {
-        // Ambil item dari station
         Item item = super.pick();
 
-        // Jika yang diambil adalah alat masak, matikan apinya (Timer Stop)
         if (item instanceof CookingDevice device) {
             device.finishCooking();
         }

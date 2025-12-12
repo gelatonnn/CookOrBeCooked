@@ -1,15 +1,23 @@
 package view.gui;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.io.IOException;
 import java.io.InputStream;
+
 import model.engine.EffectManager.EffectType;
 
 public class SpinOverlay {
     private boolean active = false;
     private float scrollY = 0;
     private float speed = 0;
-    private final int BOX_SIZE = 120; // Tinggi per item
+    private final int BOX_SIZE = 120; 
 
     private final EffectType[] reel = EffectType.values();
 
@@ -106,6 +114,7 @@ public class SpinOverlay {
                     AssetManager.getInstance().stopBGM();
                     AssetManager.getInstance().playSound("win");
                 }
+                AssetManager.getInstance().playSound("bgm_game");
             }
             case SHOW_RESULT -> {
                 if (System.currentTimeMillis() - resultStartTime > RESULT_DURATION) {
@@ -131,11 +140,9 @@ public class SpinOverlay {
     public void draw(Graphics2D g2d, int screenWidth, int screenHeight) {
         if (!active) return;
 
-        // Overlay Gelap Pixelated
         g2d.setColor(new Color(0, 0, 0, 200));
         g2d.fillRect(0, 0, screenWidth, screenHeight);
 
-        // Setup Rendering Hints
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
@@ -155,7 +162,7 @@ public class SpinOverlay {
         int border = 10;
 
         // 1. Frame Luar (Emas Retro)
-        g2d.setColor(new Color(255, 163, 0)); // Oranye Emas
+        g2d.setColor(new Color(255, 163, 0)); 
         g2d.fillRect(cx - w/2 - border, cy - h/2 - border, w + border*2, h + border*2);
 
         // Border Hitam Tebal
@@ -164,9 +171,9 @@ public class SpinOverlay {
         g2d.drawRect(cx - w/2 - border, cy - h/2 - border, w + border*2, h + border*2);
 
         // Highlight/Shadow Frame
-        g2d.setColor(new Color(255, 236, 39)); // Highlight Kuning
+        g2d.setColor(new Color(255, 236, 39)); 
         g2d.fillRect(cx - w/2 - border, cy - h/2 - border, w + border*2, 4);
-        g2d.setColor(new Color(171, 82, 54)); // Shadow Coklat
+        g2d.setColor(new Color(171, 82, 54)); 
         g2d.fillRect(cx - w/2 - border, cy + h/2 + border - 4, w + border*2, 4);
 
         // 2. Jendela Slot (Putih)
@@ -195,7 +202,7 @@ public class SpinOverlay {
         g2d.setClip(oldClip);
 
         // 3. Garis Penunjuk (Segitiga Merah Pixel)
-        g2d.setColor(new Color(255, 0, 77)); // Merah Pixel
+        g2d.setColor(new Color(255, 0, 77)); 
 
         // Kiri
         int[] xL = {cx - w/2 - 20, cx - w/2, cx - w/2 - 20};
@@ -212,7 +219,7 @@ public class SpinOverlay {
         g2d.drawLine(cx - w/2, cy, cx + w/2, cy);
 
         // 4. Teks Judul
-        g2d.setColor(new Color(255, 204, 170)); // Krem
+        g2d.setColor(new Color(255, 204, 170)); 
         g2d.setFont(pixelFontLarge);
         String txt = "LUCKY SPIN!";
         g2d.drawString(txt, cx - g2d.getFontMetrics().stringWidth(txt)/2, cy - h/2 - 40);
@@ -223,7 +230,7 @@ public class SpinOverlay {
         int cardH = 350;
         int border = 6;
 
-        // 1. Kartu Background (Putih)
+        // 1. Kartu Background 
         g2d.setColor(Color.WHITE);
         g2d.fillRect(cx - cardW/2, cy - cardH/2, cardW, cardH);
 
@@ -238,7 +245,7 @@ public class SpinOverlay {
         g2d.drawRect(cx - cardW/2 - border/2, cy - cardH/2 - border/2, cardW + border, cardH + border);
 
         // 4. Header "YOU GOT:"
-        g2d.setColor(new Color(41, 173, 255)); // Biru Muda
+        g2d.setColor(new Color(41, 173, 255)); 
         g2d.setFont(pixelFontLarge);
         String title = "YOU GOT:";
         g2d.drawString(title, cx - g2d.getFontMetrics().stringWidth(title)/2, cy - 100);
@@ -252,7 +259,7 @@ public class SpinOverlay {
         String name = target.name().replace("_", " ");
         g2d.drawString(name, cx - g2d.getFontMetrics().stringWidth(name)/2, cy + 60);
 
-        // 7. Deskripsi (Font Kecil)
+        // 7. Deskripsi 
         g2d.setColor(Color.DARK_GRAY);
         g2d.setFont(pixelFontSmall);
         String desc = getEffectDescription(target);
@@ -261,11 +268,11 @@ public class SpinOverlay {
 
     private void drawEffectIcon(Graphics2D g, EffectType type, int x, int y, int size) {
         Color c = switch(type) {
-            case FLASH -> new Color(255, 236, 39);   // Kuning PICO-8
-            case DRUNK -> new Color(131, 118, 156);  // Ungu PICO-8
-            case DOUBLE_MONEY -> new Color(0, 228, 54); // Hijau PICO-8
-            case HELLS_KITCHEN -> new Color(255, 0, 77); // Merah PICO-8
-            case MAGIC_SPONGE -> new Color(41, 173, 255); // Biru PICO-8
+            case FLASH -> new Color(255, 236, 39);   
+            case DRUNK -> new Color(131, 118, 156);  
+            case DOUBLE_MONEY -> new Color(0, 228, 54); 
+            case HELLS_KITCHEN -> new Color(255, 0, 77);
+            case MAGIC_SPONGE -> new Color(41, 173, 255);
         };
 
         // Kotak Warna Dasar
@@ -279,11 +286,10 @@ public class SpinOverlay {
 
         // Efek Bevel (Highlight & Shadow)
         g.setColor(new Color(255, 255, 255, 100));
-        g.fillRect(x - size/2 + 4, y - size/2 + 4, size - 8, 4); // Highlight Atas
+        g.fillRect(x - size/2 + 4, y - size/2 + 4, size - 8, 4); 
 
         // Simbol Unicode
         g.setColor(Color.BLACK);
-        // Pakai font monospaced biasa untuk simbol unicode karena font pixel mungkin gak support emoji
         g.setFont(new Font("Monospaced", Font.BOLD, size/2));
 
         String symbol = switch(type) {

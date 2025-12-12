@@ -1,13 +1,14 @@
 package model.engine;
 
-import items.core.Item;
-import items.core.ItemState;
-import items.core.Preparable;
-import items.utensils.DirtyPlate;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import items.core.Item;
+import items.core.ItemState;
+import items.core.Preparable;
+import items.utensils.DirtyPlate;
 import model.chef.Chef;
 import model.orders.OrderManager;
 import model.world.Tile;
@@ -31,7 +32,6 @@ public class GameEngine {
     private final GameConfig config;
     private final List<Projectile> projectiles = new CopyOnWriteArrayList<>();
     
-    // List untuk task tertunda (Timer 10 detik piring kotor)
     private final List<DelayedTask> delayedTasks = new CopyOnWriteArrayList<>();
     private record DelayedTask(long executeTime, Runnable action) {}
 
@@ -44,7 +44,6 @@ public class GameEngine {
     private static final double DASH_SPEED = 10.0;
     private static final double DASH_TOTAL_DIST = 120.0;
 
-    // Physics Constants
     private static final double CHEF_SIZE = 0.6;
     private static final double ITEM_SIZE = 0.4;
     private static final double THROW_DISTANCE = 4.0;
@@ -122,17 +121,14 @@ public class GameEngine {
     }
 
     private void updatePhysics() {
-        // Update Projectiles
         Iterator<Projectile> it = projectiles.iterator();
         while (it.hasNext()) {
             Projectile p = it.next();
             if (p.update()) projectiles.remove(p);
         }
         
-        // Update Chefs
         for (Chef chef : chefs) updateChefPosition(chef);
         
-        // Update Delayed Tasks
         long now = System.currentTimeMillis();
         Iterator<DelayedTask> taskIt = delayedTasks.iterator();
         while (taskIt.hasNext()) {
@@ -222,15 +218,10 @@ public class GameEngine {
     }
 
     private boolean checkAABBCollision(double tlx, double tly, double size) {
-        // --- FIX COLLISION: Align Box to Feet ---
-        // Alih-alih di tengah (Centered), box ditaruh di bagian bawah tile (bottom aligned)
-        // tlx, tly adalah posisi Top-Left sprite.
-        // Hitbox dimulai dari bawah sprite dikurangi tinggi hitbox.
         
         double minX = tlx + (1.0 - size) / 2.0;
         double maxX = minX + size;
         
-        // Hitbox Y berada di dasar sprite (Feet)
         double maxY = tly + 1.0; 
         double minY = maxY - size;
 
@@ -276,7 +267,6 @@ public class GameEngine {
         double dirX = vec[0];
         double dirY = vec[1];
 
-        // Target selalu full distance (4 tiles), collision ditangani Projectile saat update
         double targetX = startX + dirX * THROW_DISTANCE;
         double targetY = startY + dirY * THROW_DISTANCE;
 
@@ -344,7 +334,6 @@ public class GameEngine {
             }
 
             // 2. Mid-air Collision (HANYA Wall & Station, ITEM DILEWATI)
-            // Item yang ada di lantai tidak menyebabkan tabrakan saat terbang
             if (checkCollisionMidAir(nextX, nextY)) {
                 startBounce(currentX, currentY, nextX, nextY);
                 return false;
@@ -355,10 +344,8 @@ public class GameEngine {
 
             // 3. Arrival Logic
             if (t >= 1.0) {
-                // Cek tabrakan pendaratan: Wall/Station ATAU Item lain
                 if (checkLandingCollision(currentX, currentY)) {
-                    // Pantul mundur sedikit
-                    startBounce(currentX, currentY, startX, startY); // bounce back to origin direction
+                    startBounce(currentX, currentY, startX, startY); 
                     return false;
                 }
 
@@ -368,18 +355,16 @@ public class GameEngine {
             return false;
         }
 
-        // Mid-Air: Only AABB (Wall/Station), NO floor item check
         private boolean checkCollisionMidAir(double tlx, double tly) {
             return checkAABBCollision(tlx, tly, ITEM_SIZE);
         }
 
-        // Landing: Check Wall/Station AND Space Free
         private boolean checkLandingCollision(double tlx, double tly) {
             if (checkAABBCollision(tlx, tly, ITEM_SIZE)) return true;
 
             double cx = tlx + 0.5;
             double cy = tly + 0.5;
-            return !isSpaceFree(cx, cy, item.getSize()); // Collision if space NOT free
+            return !isSpaceFree(cx, cy, item.getSize()); 
         }
 
         private void startBounce(double currX, double currY, double hitX, double hitY) {
@@ -388,7 +373,6 @@ public class GameEngine {
             this.bounceStartX = currX;
             this.bounceStartY = currY;
 
-            // Logic pantul: mundur berlawanan arah tabrakan
             double dx = currX - hitX;
             double dy = currY - hitY;
             double len = Math.sqrt(dx*dx + dy*dy);
@@ -400,7 +384,6 @@ public class GameEngine {
             this.bounceTargetX = currX + ndx * BOUNCE_DISTANCE;
             this.bounceTargetY = currY + ndy * BOUNCE_DISTANCE;
 
-            // Jika target pantul juga nabrak dinding, diam di tempat (safe)
             if (checkAABBCollision(bounceTargetX, bounceTargetY, ITEM_SIZE)) {
                 this.bounceTargetX = currX;
                 this.bounceTargetY = currY;
@@ -428,7 +411,6 @@ public class GameEngine {
             double cx = tlx + 0.5;
             double cy = tly + 0.5;
 
-            // Push out jika clipping dinding (meski harusnya sudah aman dari logic bounce)
             if (checkAABBCollision(tlx, tly, ITEM_SIZE)) {
                 Position p = resolveCollision(cx, cy);
                 cx = p.x + 0.5;
@@ -523,8 +505,6 @@ public class GameEngine {
             return;
         }
 
-        // RULE CHANGE: Tidak bisa drop item ke lantai secara manual.
-        // Hanya bisa lewat Throw.
         System.out.println("❌ Cannot drop item on floor. Use Throw!");
     }
 
@@ -554,7 +534,6 @@ public class GameEngine {
             }
 
             if (target != null && chef.getHeldItem() == null) {
-                // Remove dari tile asal
                 Position itemPos = new Position((int)target.x, (int)target.y);
                 Tile itemTile = world.getTile(itemPos);
                 if (itemTile instanceof WalkableTile wtOrigin) {
@@ -586,17 +565,15 @@ public class GameEngine {
             if (success) {
                 AssetManager.getInstance().playSound("serve");
                 
-                // --- FIX 1: Schedule Dirty Plate Return (10 Detik) ---
                 long targetTime = System.currentTimeMillis() + 10000;
                 delayedTasks.add(new DelayedTask(targetTime, () -> {
-                    // Cari PlateStorage di Map dan taruh DirtyPlate
                     for (int y = 0; y < world.getHeight(); y++) {
                         for (int x = 0; x < world.getWidth(); x++) {
                             Station st = world.getStationAt(new Position(x, y));
                             if (st instanceof stations.PlateStorage ps) {
                                 ps.place(new DirtyPlate());
                                 System.out.println("⚠️ Dirty plate reappeared at storage!");
-                                return; // Hanya taruh 1 piring di salah satu storage (jika ada banyak)
+                                return; 
                             }
                         }
                     }

@@ -1,25 +1,40 @@
 package view.gui;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 public class GameOverPanel extends JPanel {
     private BufferedImage backgroundImage;
     private Font pixelFont;
     
     public GameOverPanel(int finalScore, boolean isWin, Runnable onBackToMenu) {
-        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 30f);
+        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 24f);
         
         String bgPath = isWin ? "/resources/StageClearBackground.png" : "/resources/GameOverBackground.png";
         loadBackground(bgPath);
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 
-        // 3. PENGATURAN POSISI (PADDING ATAS)
+        // PENGATURAN POSISI 
         this.add(Box.createRigidArea(new Dimension(0, 260))); 
 
         //SCORE LABEL

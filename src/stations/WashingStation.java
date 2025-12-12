@@ -13,8 +13,6 @@ public class WashingStation extends BaseStation {
 
     @Override
     public boolean canPlace(Item item) {
-        // FIX: Izinkan DirtyPlate DAN Plate biasa (bersih/kotor)
-        // Ini penting agar saat selesai mencuci, piring bersih bisa ditaruh kembali di sini.
         return item instanceof DirtyPlate || item instanceof Plate;
     }
 
@@ -25,7 +23,6 @@ public class WashingStation extends BaseStation {
             return false;
         }
         
-        // Debug info
         String status = "Bersih";
         if (item instanceof DirtyPlate || (item instanceof Plate p && !p.isClean())) {
             status = "Kotor";

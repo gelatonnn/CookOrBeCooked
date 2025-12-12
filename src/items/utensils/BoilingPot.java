@@ -1,17 +1,20 @@
 package items.utensils;
 
-import items.core.*;
-import items.ingredients.IngredientBase; 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
+
+import items.core.CookingDevice;
+import items.core.Item;
+import items.core.ItemState;
+import items.core.Preparable;
+import items.ingredients.IngredientBase;
 import utils.TimerUtils;
 
 public class BoilingPot extends UtensilBase implements CookingDevice {
     private final List<Preparable> contents = new ArrayList<>();
     private final int capacity = 3;
 
-    // Timer controls
     private boolean cooking = false;
     private ScheduledFuture<?> cookTask;
     private ScheduledFuture<?> burnTask;
@@ -26,7 +29,7 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
     @Override
     public boolean canAccept(Preparable ingredient) {
         if (contents.size() >= capacity) return false;
-        if (cooking) return false; // Jangan terima bahan kalau api sudah nyala
+        if (cooking) return false;
         
         // Map B: Panci Rebus hanya untuk Pasta
         String n = ((Item)ingredient).getName().toLowerCase();
@@ -37,7 +40,6 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
     public void addIngredient(Preparable ingredient) {
         if (canAccept(ingredient)) {
             contents.add(ingredient);
-            // AUTO START: Api otomatis nyala pas bahan masuk
             startCooking();
         }
     }
@@ -49,24 +51,20 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
         System.out.println("🔥 Boiling Pot mulai merebus (12 detik)...");
         cooking = true;
 
-        // TASK 1: OTW MATANG
         cookTask = TimerUtils.schedule(() -> {
             if (!cooking) return;
 
-            // Matangkan semua isi
             for (Preparable p : contents) {
                 p.cook(); 
             }
             System.out.println("✅ Boiling Pot: MATANG! (Angkat sebelum gosong)");
             
-            // Lanjut jadwalkan gosong
             scheduleBurn(); 
             
-        }, 12000); // 12 Detik
+        }, 12000); 
     }
 
     private void scheduleBurn() {
-        // TASK 2: OTW GOSONG
         burnTask = TimerUtils.schedule(() -> {
             if (!cooking) return;
 
@@ -79,14 +77,11 @@ public class BoilingPot extends UtensilBase implements CookingDevice {
             }
             System.out.println("💀 Boiling Pot: GOSONG!");
             
-            // Kita matikan flag cooking, tapi api imajiner tetap nyala sampai diangkat
-            // cooking = false; (Opsional, tergantung mau pemain matikan manual atau tidak)
-        }, 12000); // 12 Detik setelah matang
+        }, 12000); 
     }
 
     @Override
     public void finishCooking() {
-        // Matikan semua timer kalau panci diangkat
         if (cookTask != null && !cookTask.isDone()) cookTask.cancel(false);
         if (burnTask != null && !burnTask.isDone()) burnTask.cancel(false);
         

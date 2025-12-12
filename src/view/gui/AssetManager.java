@@ -1,20 +1,25 @@
 package view.gui;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.imageio.ImageIO;
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 
 public class AssetManager {
     private static AssetManager instance;
     
     // --- SPRITE & IMAGE VARS ---
     private BufferedImage spriteSheet;
-    private BufferedImage menuBackground; // [BARU]
+    private BufferedImage menuBackground; 
+    private BufferedImage gameBackground;
     private final int SPRITE_SIZE = 102; 
     private final Map<String, BufferedImage> spriteCache = new HashMap<>();
     
@@ -34,10 +39,7 @@ public class AssetManager {
         return instance;
     }
 
-    // ============================
-    // BAGIAN GAMBAR (SPRITES)
-    // ============================
-
+    //Sprites
     private void loadSprites() {
         String[] paths = {
             "/resources/sprites.png", 
@@ -60,6 +62,7 @@ public class AssetManager {
         if (spriteSheet == null) System.err.println("❌ ERROR: Sprites.png tidak ditemukan!");
 
         try {
+
             URL bgUrl = getClass().getResource("/resources/bg_menu.jpg");
             if (bgUrl == null) bgUrl = getClass().getResource("/bg_menu.jpg");
             
@@ -71,6 +74,19 @@ public class AssetManager {
             }
         } catch (IOException e) {
             System.err.println("Gagal memuat background menu: " + e.getMessage());
+        }
+        try {
+            URL gameBgUrl = getClass().getResource("/resources/GameWallpaper.jpg");
+            if (gameBgUrl == null) gameBgUrl = getClass().getResource("/GameWallpaper.jpg"); // Fallback
+
+            if (gameBgUrl != null) {
+                gameBackground = ImageIO.read(gameBgUrl);
+                System.out.println("✅ BERHASIL memuat background game");
+            } else {
+                System.err.println("⚠️ Warning: GameWallpaper.png tidak ditemukan");
+            }
+        } catch (IOException e) {
+            System.err.println("Gagal memuat background game: " + e.getMessage());
         }
     }
 
@@ -115,10 +131,7 @@ public class AssetManager {
         return spriteSheet;
     }
 
-    // ============================
-    // BAGIAN SUARA (AUDIO)
-    // ============================
-
+    //Audio
     private void loadSounds() {
         loadSound("bgm_menu", "/resources/sounds/bgm_menu.wav");
         loadSound("bgm_game", "/resources/sounds/bgm_game.wav");
@@ -175,5 +188,9 @@ public class AssetManager {
         if (currentBGM != null && currentBGM.isRunning()) {
             currentBGM.stop();
         }
+    }
+
+    public BufferedImage getGameBackground() {
+        return gameBackground;
     }
 }

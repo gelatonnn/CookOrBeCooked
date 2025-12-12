@@ -3,7 +3,8 @@ package model.chef.states;
 import items.core.Item;
 import items.core.Preparable;
 import items.utensils.Plate;
-import model.chef.*;
+import model.chef.Chef;
+import model.chef.ChefState;
 import stations.Station;
 
 public class CarryingState implements ChefState {
@@ -27,14 +28,12 @@ public class CarryingState implements ChefState {
 
         Item held = chef.getHeldItem();
 
-        // Special handling for Assembly/Plating
         if (st.getName().toLowerCase().contains("assembly")) {
             handlePlating(chef, st, held);
             view.gui.AssetManager.getInstance().playSound("place");
             return;
         }
 
-        // Special handling for Serving
         if (st.getName().toLowerCase().contains("serv")) {
             handleServing(chef, st, held);
             return;
@@ -59,13 +58,11 @@ public class CarryingState implements ChefState {
                 System.out.println("❌ Cannot use dirty plate! Wash it first.");
                 return;
             }
-            // Place plate on station for plating
             st.place(held);
             chef.setHeldItem(null);
             chef.changeState(new IdleState());
             System.out.println("✅ Placed clean plate on Assembly Station");
         } else if (held instanceof Preparable) {
-            // Add ingredient to plate on station
             Item onStation = st.peek();
             if (onStation instanceof Plate plate && plate.isClean()) {
                 plate.addIngredient((Preparable) held);
