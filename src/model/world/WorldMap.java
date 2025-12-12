@@ -223,9 +223,9 @@ public class WorldMap {
         for (int i=0; i<5; i++) essential.add('I');
         for (int i=0; i<4; i++) essential.add('R');
 
-        essential.add('C'); essential.add('C'); essential.add('C');
-        essential.add('W'); essential.add('W');
-        essential.add('S'); essential.add('S');
+        essential.add('C'); essential.add('S'); essential.add('W');
+        essential.add('C'); essential.add('W');
+        essential.add('S'); essential.add('C');
 
         Collections.shuffle(spots);
 
