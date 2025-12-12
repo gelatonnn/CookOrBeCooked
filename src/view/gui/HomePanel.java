@@ -1,51 +1,93 @@
 package view.gui;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
+import java.awt.RenderingHints;
+import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import javax.swing.*;
+
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
 
 public class HomePanel extends JPanel {
     private final BufferedImage backgroundImage;
     private Font pixelFont;
 
     public HomePanel(Runnable onStartSingle, Runnable onStartMulti) {
-
         this.backgroundImage = AssetManager.getInstance().getMenuBackground();
-
-        // Load font pixel (pastikan file ada)
+        // Load font pixel
         this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 22.5f);
 
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        // 1. GUNAKAN GRIDBAGLAYOUT (Agar Container selalu di tengah layar)
+        setLayout(new GridBagLayout());
 
-        // Jarak dari atas layar ke tombol pertama
-        add(Box.createRigidArea(new Dimension(0, 185)));
+        // 2. BUAT CONTAINER (Untuk menampung tombol secara vertikal)
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setOpaque(false); // Transparan agar background terlihat
 
-        // 1. SINGLE PLAYER - Warna Biru Retro (PICO-8 Blue)
-        addButton("SINGLE PLAYER", new Color(41, 173, 255), onStartSingle);
+        // 3. ATUR JARAK DARI ATAS (Spacer)
+        // Karena layout sekarang "Center", kita gunakan spacer ini untuk mendorong tombol 
+        // sedikit ke bawah agar tidak menutupi Logo Game di background.
+        // Nilai 150 - 200 biasanya pas untuk resolusi 800x600.
+        container.add(Box.createRigidArea(new Dimension(0, 120)));
 
-        // --- PENGATURAN JARAK ANTAR TOMBOL ---
-        // Ubah angka '10' di bawah ini untuk mengatur jarak (makin besar makin jauh)
-        add(Box.createRigidArea(new Dimension(0, 0)));
+        // 4. TAMBAHKAN TOMBOL KE DALAM CONTAINER
+        
+        // SINGLE PLAYER
+        addButton(container, "SINGLE PLAYER", new Color(41, 173, 255), onStartSingle);
+        container.add(Box.createRigidArea(new Dimension(0, 15))); // Jarak antar tombol
 
-        // 2. MULTIPLAYER - Warna Orange Retro (PICO-8 Orange)
-        addButton("MULTIPLAYER", new Color(255, 163, 0), onStartMulti);
-        add(Box.createRigidArea(new Dimension(0, 0)));
+        // MULTIPLAYER
+        addButton(container, "MULTIPLAYER", new Color(255, 163, 0), onStartMulti);
+        container.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // 3. HOW TO PLAY - Warna Hijau Retro (PICO-8 Green)
-        addButton("HOW TO PLAY", new Color(0, 228, 54),
+        // HOW TO PLAY
+        addButton(container, "HOW TO PLAY", new Color(0, 228, 54),
                 () -> showModelessDialog("Cara Bermain", getHelpContent()));
-        add(Box.createRigidArea(new Dimension(0, 0)));
+        container.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // 4. EXIT GAME - Warna Merah Retro (PICO-8 Red)
-        addButton("EXIT GAME", new Color(255, 0, 77), () -> {
+        // EXIT GAME
+        addButton(container, "EXIT GAME", new Color(255, 0, 77), () -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Keluar dari permainan?", "Exit", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) System.exit(0);
         });
 
-        add(Box.createVerticalGlue());
+        // 5. MASUKKAN CONTAINER KE PANEL UTAMA
+        add(container);
+    }
+
+    // Method Helper yang diperbarui: Menerima 'parent' container
+    private void addButton(JPanel parent, String text, Color baseColor, Runnable action) {
+        JButton btn = createStyledButton(text, baseColor);
+        btn.addActionListener(e -> {
+            if (action != null) action.run();
+        });
+
+        // Agar tombol berada di tengah-tengah Container (BoxLayout)
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        parent.add(btn);
     }
 
     private Font loadPixelFont(String path, float size) {
@@ -57,20 +99,6 @@ public class HomePanel extends JPanel {
         } catch (FontFormatException | IOException e) {
             return new Font("Monospaced", Font.BOLD, (int)size);
         }
-    }
-
-    private void addButton(String text, Color baseColor, Runnable action) {
-        JButton btn = createStyledButton(text, baseColor);
-        btn.addActionListener(e -> {
-            if (action != null) action.run();
-        });
-
-        JPanel wrapper = new JPanel();
-        wrapper.setOpaque(false);
-        wrapper.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        wrapper.add(btn);
-
-        add(wrapper);
     }
 
     private JButton createStyledButton(String text, Color baseColor) {
@@ -109,16 +137,16 @@ public class HomePanel extends JPanel {
 
                 // Highlight (Atas & Kiri - Warna Putih Transparan)
                 g2.setColor(new Color(255, 255, 255, 100));
-                g2.fillRect(stroke, stroke, w - stroke*2, 4); // Strip Atas
-                g2.fillRect(stroke, stroke, 4, h - stroke*2); // Strip Kiri
+                g2.fillRect(stroke, stroke, w - stroke*2, 4); 
+                g2.fillRect(stroke, stroke, 4, h - stroke*2); 
 
                 // Shadow (Bawah & Kanan - Warna Hitam Transparan)
                 g2.setColor(new Color(0, 0, 0, 50));
-                g2.fillRect(stroke, h - stroke - 4, w - stroke*2, 4); // Strip Bawah
-                g2.fillRect(w - stroke - 4, stroke, 4, h - stroke*2); // Strip Kanan
+                g2.fillRect(stroke, h - stroke - 4, w - stroke*2, 4); 
+                g2.fillRect(w - stroke - 4, stroke, 4, h - stroke*2); 
 
                 // 4. Teks Putih
-                g2.setColor(Color.WHITE); // <-- KEMBALI KE PUTIH
+                g2.setColor(Color.WHITE); 
                 g2.setFont(getFont());
 
                 FontMetrics fm = g2.getFontMetrics();
@@ -138,7 +166,9 @@ public class HomePanel extends JPanel {
         };
 
         btn.setFont(pixelFont);
-        btn.setPreferredSize(new Dimension(320, 55));
+        btn.setPreferredSize(new Dimension(400,75));
+        // Set maximum size agar BoxLayout tidak melebarkan tombol secara paksa
+        btn.setMaximumSize(new Dimension(400,75)); 
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);

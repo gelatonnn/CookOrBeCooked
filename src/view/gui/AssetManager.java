@@ -15,6 +15,7 @@ public class AssetManager {
     // --- SPRITE & IMAGE VARS ---
     private BufferedImage spriteSheet;
     private BufferedImage menuBackground; // [BARU]
+    private BufferedImage gameBackground;
     private final int SPRITE_SIZE = 102; 
     private final Map<String, BufferedImage> spriteCache = new HashMap<>();
     
@@ -60,6 +61,7 @@ public class AssetManager {
         if (spriteSheet == null) System.err.println("❌ ERROR: Sprites.png tidak ditemukan!");
 
         try {
+
             URL bgUrl = getClass().getResource("/resources/bg_menu.jpg");
             if (bgUrl == null) bgUrl = getClass().getResource("/bg_menu.jpg");
             
@@ -71,6 +73,19 @@ public class AssetManager {
             }
         } catch (IOException e) {
             System.err.println("Gagal memuat background menu: " + e.getMessage());
+        }
+        try {
+            URL gameBgUrl = getClass().getResource("/resources/GameWallpaper.jpg");
+            if (gameBgUrl == null) gameBgUrl = getClass().getResource("/GameWallpaper.jpg"); // Fallback
+
+            if (gameBgUrl != null) {
+                gameBackground = ImageIO.read(gameBgUrl);
+                System.out.println("✅ BERHASIL memuat background game");
+            } else {
+                System.err.println("⚠️ Warning: GameWallpaper.png tidak ditemukan");
+            }
+        } catch (IOException e) {
+            System.err.println("Gagal memuat background game: " + e.getMessage());
         }
     }
 
@@ -175,5 +190,9 @@ public class AssetManager {
         if (currentBGM != null && currentBGM.isRunning()) {
             currentBGM.stop();
         }
+    }
+
+    public BufferedImage getGameBackground() {
+        return gameBackground;
     }
 }
