@@ -1,6 +1,6 @@
 # 🍳 CookOrBeCooked
 
-![Game Banner](src/resources/bg_menu.jpg)
+![Game Banner](src/resources/CookOrBeCooked.png)
 
 **CookOrBeCooked** adalah game simulasi memasak 2D yang seru dan *chaotic*, terinspirasi dari game populer *Overcooked*. Dibangun sepenuhnya menggunakan **Java Swing** dan **AWT**, game ini menantang pemain untuk menyiapkan bahan, memasak, dan menyajikan hidangan sebelum waktu habis!
 
@@ -18,6 +18,7 @@ Game ini mendukung **Single Player** (dengan fitur ganti karakter) dan **Local M
     * Rebus pasta di *Boiling Pot* dan goreng daging di *Frying Pan* (Hati-hati gosong! 🔥).
     * Cuci piring kotor di *Washing Station*.
     * Rakit hidangan di *Assembly Station*.
+    * Serving hidangan di *Serving Station*
 * **🎰 Lucky Station (Gacha Mechanics):**
     Station unik yang memberikan efek acak (Buff/Debuff) saat diputar:
     * ⚡ **The Flash:** Lari super cepat & dash tanpa cooldown.
@@ -63,9 +64,9 @@ Game ini mendukung **Single Player** (dengan fitur ganti karakter) dan **Local M
 
 ---
 
-## 🚀 Cara Menjalankan Project
+## 🚀 How To Run Project
 
-### Prasyarat
+### Tools Yang Dibutuhkan
 * **Java JDK 17** atau lebih baru.
 * **VS Code** atau **IntelliJ IDEA**.
 
@@ -89,23 +90,10 @@ Game ini menggunakan arsitektur **MVC (Model-View-Controller)**:
 * `src/model`: Logika utama game (`GameEngine`), entitas (`Chef`, `Item`), dan state management.
 * `src/view`: Rendering grafis menggunakan `Graphics2D`, GUI Panel (`HomePanel`, `GamePanel`), dan animasi sprite.
 * `src/controller`: Menangani input keyboard dan menerjemahkannya menjadi perintah (`Command Pattern`).
-
 ---
 
-## 🛠️ Tech Stack
-* **Language:** Java 17+
-* **GUI Framework:** Java Swing & AWT
-* **Build Tool:** Gradle
-* **Rendering:** Custom 2D Graphics Loop (Double Buffering)
-
----
-
-## 📸 Screenshots
-
-| Menu Utama | Gameplay |
-| :---: | :---: |
-| ![Menu](src/resources/bg_menu.jpg) | ![Gameplay](src/resources/SelectStageBackground.png) |
-
----
-
-Made with ❤️ by [Nama Anda/Kelompok Anda]
+Made by K02 - K
+1. 18224028	Muhammad Fariz Difa'urrahman
+2. 18224046	Muhammad Syauqi Azizi
+3. 18224060	R. Athalla Ananda Putra
+4. 18224072	Francis Galton
