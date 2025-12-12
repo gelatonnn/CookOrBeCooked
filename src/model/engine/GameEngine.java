@@ -1,17 +1,17 @@
 package model.engine;
 
+import items.core.Item;
+import items.core.ItemState;
+import items.core.Preparable;
+import items.utensils.DirtyPlate;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import items.core.Item;
-import items.core.ItemState;
-import items.core.Preparable;
 import model.chef.Chef;
 import model.orders.OrderManager;
 import model.world.Tile;
 import model.world.WorldMap;
-import model.world.tiles.StationTile;
 import model.world.tiles.WalkableTile;
 import model.world.tiles.WalkableTile.DroppedItem;
 import stations.Station;
@@ -30,6 +30,11 @@ public class GameEngine {
 
     private final GameConfig config;
     private final List<Projectile> projectiles = new CopyOnWriteArrayList<>();
+    
+    // List untuk task tertunda (Timer 10 detik piring kotor)
+    private final List<DelayedTask> delayedTasks = new CopyOnWriteArrayList<>();
+    private record DelayedTask(long executeTime, Runnable action) {}
+
     private Runnable onGameEnd;
     private boolean isRunning = false;
     private boolean finished = false;
@@ -117,12 +122,26 @@ public class GameEngine {
     }
 
     private void updatePhysics() {
+        // Update Projectiles
         Iterator<Projectile> it = projectiles.iterator();
         while (it.hasNext()) {
             Projectile p = it.next();
             if (p.update()) projectiles.remove(p);
         }
+        
+        // Update Chefs
         for (Chef chef : chefs) updateChefPosition(chef);
+        
+        // Update Delayed Tasks
+        long now = System.currentTimeMillis();
+        Iterator<DelayedTask> taskIt = delayedTasks.iterator();
+        while (taskIt.hasNext()) {
+            DelayedTask task = taskIt.next();
+            if (now >= task.executeTime) {
+                task.action.run();
+                delayedTasks.remove(task);
+            }
+        }
     }
 
     // --- SHARED HELPER ---
@@ -203,10 +222,17 @@ public class GameEngine {
     }
 
     private boolean checkAABBCollision(double tlx, double tly, double size) {
+        // --- FIX COLLISION: Align Box to Feet ---
+        // Alih-alih di tengah (Centered), box ditaruh di bagian bawah tile (bottom aligned)
+        // tlx, tly adalah posisi Top-Left sprite.
+        // Hitbox dimulai dari bawah sprite dikurangi tinggi hitbox.
+        
         double minX = tlx + (1.0 - size) / 2.0;
-        double minY = tly + (1.0 - size) / 2.0;
         double maxX = minX + size;
-        double maxY = minY + size;
+        
+        // Hitbox Y berada di dasar sprite (Feet)
+        double maxY = tly + 1.0; 
+        double minY = maxY - size;
 
         int startTileX = (int) Math.floor(minX);
         int endTileX = (int) Math.floor(maxX - 0.001);
@@ -556,9 +582,29 @@ public class GameEngine {
             boolean success = orders.submitDish(dish.getRecipe().getType());
             chef.setHeldItem(null);
             chef.changeState(new model.chef.states.IdleState());
-            if (success) AssetManager.getInstance().playSound("serve");
-            else AssetManager.getInstance().playSound("trash");
-            if (station instanceof stations.ServingStation ss && ss.peek() == null) ss.receiveDirtyPlate();
+            
+            if (success) {
+                AssetManager.getInstance().playSound("serve");
+                
+                // --- FIX 1: Schedule Dirty Plate Return (10 Detik) ---
+                long targetTime = System.currentTimeMillis() + 10000;
+                delayedTasks.add(new DelayedTask(targetTime, () -> {
+                    // Cari PlateStorage di Map dan taruh DirtyPlate
+                    for (int y = 0; y < world.getHeight(); y++) {
+                        for (int x = 0; x < world.getWidth(); x++) {
+                            Station st = world.getStationAt(new Position(x, y));
+                            if (st instanceof stations.PlateStorage ps) {
+                                ps.place(new DirtyPlate());
+                                System.out.println("⚠️ Dirty plate reappeared at storage!");
+                                return; // Hanya taruh 1 piring di salah satu storage (jika ada banyak)
+                            }
+                        }
+                    }
+                }));
+                
+            } else {
+                AssetManager.getInstance().playSound("trash");
+            }
         }
     }
 
