@@ -1,8 +1,16 @@
 package view.gui;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.Shape;
 import java.io.IOException;
 import java.io.InputStream;
+
 import model.engine.EffectManager.EffectType;
 
 public class SpinOverlay {
@@ -106,6 +114,7 @@ public class SpinOverlay {
                     AssetManager.getInstance().stopBGM();
                     AssetManager.getInstance().playSound("win");
                 }
+                AssetManager.getInstance().playSound("bgm_game");
             }
             case SHOW_RESULT -> {
                 if (System.currentTimeMillis() - resultStartTime > RESULT_DURATION) {

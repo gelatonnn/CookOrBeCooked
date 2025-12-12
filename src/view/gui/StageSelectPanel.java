@@ -1,12 +1,28 @@
 package view.gui;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontFormatException;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Consumer;
+
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JPanel;
+
 import model.engine.GameConfig;
 
 public class StageSelectPanel extends JPanel {
@@ -16,55 +32,67 @@ public class StageSelectPanel extends JPanel {
 
     public StageSelectPanel(int unlockedLevel, Consumer<GameConfig> onStageSelected, Runnable onBack) {
         // 1. Load Font & Background
-        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 20f);
-        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 15f); // Ukuran kecil untuk deskripsi
+        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 17f);
+        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 13f); // Ukuran kecil untuk deskripsi
         loadBackground();
 
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        // --- UBAH LAYOUT KE GRIDBAGLAYOUT (Agar Posisi Center) ---
+        setLayout(new GridBagLayout());
 
-        // Jarak dari atas (sesuaikan dengan desain background Anda)
-        add(Box.createRigidArea(new Dimension(0, 210)));
+        // Container vertikal untuk menampung tombol
+        JPanel container = new JPanel();
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setOpaque(false); // Transparan
 
-        // --- STAGE 1: EASY (Warna Biru Retro) ---
-        add(createStageButton("STAGE 1: EASY", "TARGET: 3 ORDERS",
+        // Spacer Atas (Agar tidak menutupi logo di background jika ada)
+        container.add(Box.createRigidArea(new Dimension(0, 80)));
+
+        // --- STAGE 1: EASY ---
+        JButton btnStage1 = createStageButton("STAGE 1: EASY", "TARGET: 3 ORDERS",
                 new Color(41, 173, 255),
                 true,
-                () -> onStageSelected.accept(new GameConfig("Stage 1", 240, 5, 3, 0, false))));
+                () -> onStageSelected.accept(new GameConfig("Stage 1", 240, 1, 3, 0, false)));
+        container.add(btnStage1);
 
-        add(Box.createRigidArea(new Dimension(0, 10))); // Spasi antar tombol
+        container.add(Box.createRigidArea(new Dimension(0, 15))); // Jarak antar tombol
 
-        // --- STAGE 2: MEDIUM (Warna Oranye Retro) ---
+        // --- STAGE 2: MEDIUM ---
         boolean isS2Unlocked = unlockedLevel >= 2;
-        add(createStageButton("STAGE 2: MEDIUM", "TARGET: 4 ORDERS",
+        JButton btnStage2 = createStageButton("STAGE 2: MEDIUM", "TARGET: 4 ORDERS",
                 new Color(255, 163, 0),
                 isS2Unlocked,
-                () -> onStageSelected.accept(new GameConfig("Stage 2", 270, 5, 4, 0, false))));
+                () -> onStageSelected.accept(new GameConfig("Stage 2", 270, 2, 4, 0, false)));
+        container.add(btnStage2);
 
-        add(Box.createRigidArea(new Dimension(0, 10)));
+        container.add(Box.createRigidArea(new Dimension(0, 15)));
 
-        // --- STAGE 3: SURVIVAL (Warna Hijau Retro) ---
+        // --- STAGE 3: SURVIVAL ---
         boolean isS3Unlocked = unlockedLevel >= 3;
-        add(createStageButton("STAGE 3: HARD", "SURVIVE 5 MINS",
+        JButton btnStage3 = createStageButton("STAGE 3: HARD", "SURVIVE 5 MINS",
                 new Color(0, 228, 54),
                 isS3Unlocked,
-                () -> onStageSelected.accept(new GameConfig("Stage 3", 300, 3, 0, 500, true))));
+                () -> onStageSelected.accept(new GameConfig("Stage 3", 300, 3, 0, 500, true)));
+        container.add(btnStage3);
 
-        add(Box.createRigidArea(new Dimension(0, 10)));
+        container.add(Box.createRigidArea(new Dimension(0, 30))); // Jarak ke tombol Back
 
-        // --- BACK BUTTON (Warna Merah Retro) ---
+        // --- BACK BUTTON ---
         JButton btnBack = createSimpleButton("BACK TO MENU", new Color(255, 0, 77));
         btnBack.addActionListener(e -> onBack.run());
 
-        // Wrapper agar tombol back rapi di tengah
+        // Wrapper agar tombol back rapi di tengah container
         JPanel backWrapper = new JPanel();
         backWrapper.setOpaque(false);
         backWrapper.add(btnBack);
-        add(backWrapper);
+        // Pastikan wrapper align center di dalam container
+        backWrapper.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        add(Box.createVerticalGlue());
+        container.add(backWrapper);
+
+        // Tambahkan container ke Panel Utama (Center)
+        add(container);
     }
 
-    // Load Font Helper
     private Font loadPixelFont(String path, float size) {
         try {
             InputStream is = getClass().getResourceAsStream(path);
@@ -102,20 +130,16 @@ public class StageSelectPanel extends JPanel {
         }
     }
 
-    // --- TOMBOL STAGE GAYA PIXEL ART ---
     private JButton createStageButton(String title, String desc, Color baseColor, boolean unlocked, Runnable action) {
         JButton btn = new JButton() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-
-                // Matikan Antialiasing
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
-                Color color = unlocked ? baseColor : new Color(100, 100, 100); // Abu-abu jika terkunci
+                Color color = unlocked ? baseColor : new Color(100, 100, 100);
 
-                // Efek Tekan
                 if (unlocked && getModel().isPressed()) {
                     color = baseColor.darker();
                     g2.translate(2, 2);
@@ -127,42 +151,37 @@ public class StageSelectPanel extends JPanel {
                 int h = getHeight();
                 int stroke = 4;
 
-                // 1. Background Kotak
+                // Background
                 g2.setColor(color);
                 g2.fillRect(0, 0, w, h);
 
-                // 2. Border Hitam Tebal
+                // Border Hitam
                 g2.setColor(Color.BLACK);
                 g2.setStroke(new BasicStroke(stroke));
                 g2.drawRect(stroke/2, stroke/2, w - stroke, h - stroke);
 
-                // 3. Efek Bevel 3D
-                // Highlight Putih (Atas & Kiri)
+                // Highlight
                 g2.setColor(new Color(255, 255, 255, 80));
                 g2.fillRect(stroke, stroke, w - stroke*2, 4);
                 g2.fillRect(stroke, stroke, 4, h - stroke*2);
 
-                // Shadow Hitam (Bawah & Kanan)
+                // Shadow
                 g2.setColor(new Color(0, 0, 0, 50));
                 g2.fillRect(stroke, h - stroke - 4, w - stroke*2, 4);
                 g2.fillRect(w - stroke - 4, stroke, 4, h - stroke*2);
 
-                // 4. Teks
+                // Text
                 g2.setColor(Color.WHITE);
-
-                // Judul (Font Besar)
                 g2.setFont(pixelFont);
                 FontMetrics fmTitle = g2.getFontMetrics();
                 int xTitle = (w - fmTitle.stringWidth(title)) / 2;
-                int yTitle = (h / 2) - 2;
+                int yTitle = (h / 2);
 
-                // Shadow Teks Hitam
                 g2.setColor(Color.BLACK);
                 g2.drawString(title, xTitle + 2, yTitle + 2);
                 g2.setColor(Color.WHITE);
                 g2.drawString(title, xTitle, yTitle);
 
-                // Deskripsi (Font Kecil)
                 g2.setFont(pixelFontSmall);
                 FontMetrics fmDesc = g2.getFontMetrics();
                 String drawDesc = unlocked ? desc : "(LOCKED)";
@@ -176,12 +195,12 @@ public class StageSelectPanel extends JPanel {
             }
         };
 
-        btn.setPreferredSize(new Dimension(320, 60)); 
-        btn.setMaximumSize(new Dimension(320, 60));
+        btn.setPreferredSize(new Dimension(400,75)); 
+        btn.setMaximumSize(new Dimension(400,75));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
-        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT); // Agar di tengah container
 
         if (unlocked) {
             btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -193,13 +212,11 @@ public class StageSelectPanel extends JPanel {
         return btn;
     }
 
-    // --- TOMBOL SIMPLE (BACK) ---
     private JButton createSimpleButton(String text, Color baseColor) {
         JButton btn = new JButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
-
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
 
@@ -215,16 +232,13 @@ public class StageSelectPanel extends JPanel {
                 int h = getHeight();
                 int stroke = 3;
 
-                // Background
                 g2.setColor(color);
                 g2.fillRect(0, 0, w, h);
 
-                // Border
                 g2.setColor(Color.BLACK);
                 g2.setStroke(new BasicStroke(stroke));
                 g2.drawRect(stroke/2, stroke/2, w - stroke, h - stroke);
 
-                // Highlight/Shadow
                 g2.setColor(new Color(255, 255, 255, 80));
                 g2.fillRect(stroke, stroke, w - stroke*2, 3);
                 g2.fillRect(stroke, stroke, 3, h - stroke*2);
@@ -233,7 +247,6 @@ public class StageSelectPanel extends JPanel {
                 g2.fillRect(stroke, h - stroke - 3, w - stroke*2, 3);
                 g2.fillRect(w - stroke - 3, stroke, 3, h - stroke*2);
 
-                // Text
                 g2.setColor(Color.WHITE);
                 g2.setFont(pixelFont);
                 FontMetrics fm = g2.getFontMetrics();
@@ -248,7 +261,7 @@ public class StageSelectPanel extends JPanel {
                 g2.dispose();
             }
         };
-        btn.setPreferredSize(new Dimension(200, 45));
+        btn.setPreferredSize(new Dimension(300, 45));
         btn.setContentAreaFilled(false);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);

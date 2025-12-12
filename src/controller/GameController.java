@@ -4,6 +4,7 @@ import java.awt.event.KeyEvent;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import model.chef.Chef;
 import model.engine.GameEngine;
 import utils.Direction;
@@ -26,7 +27,7 @@ public class GameController {
         if (!pressedKeys.contains(code)) {
             pressedKeys.add(code);
             // Handle actions that trigger ONCE on press (not hold)
-            handleOneTimeActions(code, e.isControlDown());
+            handleOneTimeActions(code);
         }
         updateMovement();
     }
@@ -96,39 +97,44 @@ public class GameController {
         }
     }
 
-    private void handleOneTimeActions(int code, boolean isCtrl) {
+    private void handleOneTimeActions(int code) {
         List<Chef> chefs = engine.getChefs();
         if (chefs.isEmpty()) return;
 
         if (isMultiplayer) {
-            // P1 Actions
+            // --- PLAYER 1 CONTROLS ---
+            // Interact: V, Pick/Place: B, Throw: F, Dash: SHIFT
             handleSpecificAction(chefs.get(0), code,
-                    KeyEvent.VK_V, KeyEvent.VK_B, KeyEvent.VK_F, isCtrl);
-            // P2 Actions
+                    KeyEvent.VK_V, KeyEvent.VK_B, KeyEvent.VK_F, KeyEvent.VK_SHIFT);
+
+            // --- PLAYER 2 CONTROLS ---
             if (chefs.size() > 1) {
+                // Interact: K, Pick/Place: L, Throw: ; (Semicolon), Dash: ' (Quote)
                 handleSpecificAction(chefs.get(1), code,
-                        KeyEvent.VK_K, KeyEvent.VK_L, KeyEvent.VK_SEMICOLON, isCtrl);
+                        KeyEvent.VK_K, KeyEvent.VK_L, KeyEvent.VK_SEMICOLON, KeyEvent.VK_QUOTE);
             }
         } else {
-            // Single Player Actions
+            // --- SINGLE PLAYER CONTROLS ---
+            // Switch Chef
             if (code == KeyEvent.VK_TAB || code == KeyEvent.VK_C) {
-                // Stop current chef moving before switching
-                chefs.get(activeChefIndex).setMoveInput(null);
+                chefs.get(activeChefIndex).setMoveInput(null); // Stop current chef
                 activeChefIndex = (activeChefIndex + 1) % chefs.size();
-                System.out.println("Switched to Chef " + (activeChefIndex + 1));
-                updateMovement(); // Update input for new chef
+                updateMovement();
                 return;
             }
-            handleSpecificAction(chefs.get(activeChefIndex), code,
-                    KeyEvent.VK_E, KeyEvent.VK_F, KeyEvent.VK_T, isCtrl);
 
-            // Legacy keys
+            // Interact: E, Pick/Place: F, Throw: T, Dash: SHIFT
+            handleSpecificAction(chefs.get(activeChefIndex), code,
+                    KeyEvent.VK_E, KeyEvent.VK_F, KeyEvent.VK_T, KeyEvent.VK_SHIFT);
+
+            // Legacy keys (Optional)
             if (code == KeyEvent.VK_P) engine.pickAt(chefs.get(activeChefIndex), chefs.get(activeChefIndex).getFacingPosition());
             if (code == KeyEvent.VK_O) engine.placeAt(chefs.get(activeChefIndex), chefs.get(activeChefIndex).getFacingPosition());
         }
     }
 
-    private void handleSpecificAction(Chef chef, int code, int interact, int pickPlace, int throwItem, boolean isCtrl) {
+    // Updated Signature: Sekarang menerima dashKey secara spesifik, bukan boolean global
+    private void handleSpecificAction(Chef chef, int code, int interact, int pickPlace, int throwItem, int dashKey) {
         if (code == interact) {
             engine.interactAt(chef, chef.getFacingPosition());
         } else if (code == pickPlace) {
@@ -136,19 +142,8 @@ public class GameController {
             else engine.placeAt(chef, chef.getFacingPosition());
         } else if (code == throwItem) {
             engine.throwItem(chef);
-        } else if (isCtrl) {
-            // Dash Trigger (Ctrl) - Checks direction inside engine
-            engine.dashChef(chef);
-        }
-
-        // Alternative Dash Trigger (Same key as interact/run if design changes)
-        // Here we rely on updateMovement + isCtrl check in engine?
-        // No, dash is instant trigger.
-        // Let's assume DASH is mapped to CTRL or SHIFT.
-        // Since main `handleInput` passed `isCtrl`, let's use it.
-        // If user presses Ctrl + W (handled in updateMovement + separate Dash check?).
-        // Actually, Dash is better as an "Action" (Press Shift).
-        if (code == KeyEvent.VK_SHIFT) {
+        } else if (code == dashKey) {
+            // Sekarang Dash hanya terpanggil jika tombol spesifik ditekan
             engine.dashChef(chef);
         }
     }
