@@ -215,13 +215,17 @@ public class WorldMap {
 
     private void placeStationsSmartly(char[][] layout, List<Position> spots) {
         List<Character> essential = new ArrayList<>();
-        essential.add('A'); essential.add('L');
+        essential.add('A'); // Assembly
+        essential.add('P'); // Plate Storage
+        essential.add('L'); // Lucky Station
+        essential.add('T'); // Trash
+
         for (int i=0; i<5; i++) essential.add('I');
         for (int i=0; i<4; i++) essential.add('R');
+
         essential.add('C'); essential.add('C'); essential.add('C');
         essential.add('W'); essential.add('W');
         essential.add('S'); essential.add('S');
-        essential.add('P'); essential.add('T');
 
         Collections.shuffle(spots);
 
