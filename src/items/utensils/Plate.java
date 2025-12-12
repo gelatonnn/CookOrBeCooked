@@ -35,6 +35,10 @@ public class Plate extends UtensilBase {
         return new ArrayList<>(contents);
     }
 
+    public void clearIngredients() {
+        contents.clear();
+    }
+
     @Override
     public String toString() {
         String status = isClean() ? "CLEAN" : "DIRTY";
