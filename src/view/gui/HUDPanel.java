@@ -24,8 +24,8 @@ public class HUDPanel extends JPanel implements Observer {
         int mapWidth = engine.getWorld().getWidth() * 60;
 
         // Load Font
-        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 12f);
-        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 8f);
+        this.pixelFont = loadPixelFont("/resources/fonts/PressStart2P.ttf", 20f);
+        this.pixelFontSmall = loadPixelFont("/resources/fonts/PressStart2P.ttf", 15f);
 
         this.setPreferredSize(new Dimension(mapWidth, 80));
         this.setBackground(new Color(30, 30, 30));
